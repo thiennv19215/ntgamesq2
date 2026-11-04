@@ -11,7 +11,7 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 - Cô giáo nói bằng giọng Edge TTS tiếng Việt, vài trăm câu thoại để khen, trêu, cảm ơn quà. Bảng câu mới hiện ngay khi chuyển câu; đồng hồ dừng trong lúc cô đọc đề và chỉ chạy sau khi cô hô bắt đầu. Câu chào, câu cảm ơn chỉ chen vào lúc đang chờ người xem trả lời.
 - Sân khấu có chuyển động nhẹ: cô và học sinh cử động khi chờ, chữ xáo nhấp nhô, biểu cảm đổi mượt; dấu đúng/sai bật lên và học sinh có nhịp chân khi đi tặng hoa. Tôn trọng cài đặt giảm chuyển động của hệ điều hành.
 - Tương tác: bình luận là có ghế (hết 20 ghế thì đứng ngoài cửa lớp, vẫn tính điểm), tặng quà thì học sinh lên bục tặng hoa cô, thả tim thì cả lớp vỗ tay, gõ "sinh nhật" thì có bánh kem, đi học nhiều ngày liền thì cô nhớ mặt.
-- Giờ ra chơi sau mỗi tiết (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng vàng tuần.
+- Giờ ra chơi sau mỗi tiết (kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng vàng tuần.
 - Treo live cả ngày: rớt kết nối TikTok thì tự nối lại, server tắt thì file BAT tự bật lại. Sau buổi live có trang báo cáo câu khó, câu quá dễ.
 - Trang điều khiển có nút giả lập (1 bạn trả lời, tặng quà, 1000 người cùng đoán...) để thử trước khi lên live.
 

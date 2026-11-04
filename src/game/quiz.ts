@@ -21,7 +21,7 @@ export interface ReportRow {
   correct: number;
   at: number;
 }
-export type RecessGame = 'rps' | 'callup' | 'pick' | 'roll' | 'heart';
+export type RecessGame = 'callup' | 'pick' | 'roll' | 'heart';
 type RecessStage = 'play' | 'result' | 'board';
 
 export interface Student {
@@ -159,16 +159,11 @@ export class LineBag {
   }
 }
 
-const RPS = { bua: 'búa', keo: 'kéo', bao: 'bao' } as const;
-type Rps = keyof typeof RPS;
-const BEATS: Record<Rps, Rps> = { bua: 'keo', keo: 'bao', bao: 'bua' };
-const RECESS_GAMES: RecessGame[] = ['rps', 'callup', 'pick', 'roll', 'heart'];
+const RECESS_GAMES: RecessGame[] = ['callup', 'pick', 'roll', 'heart'];
 
 interface Recess {
   game: RecessGame;
   stage: RecessStage;
-  rps: Map<string, Rps>;
-  teacher: Rps | null;
   callTarget: Student | null;
   callQ: Question | null;
   callTiles: string[];
@@ -779,8 +774,6 @@ export class Classroom {
     this.recess = {
       game,
       stage: 'play',
-      rps: new Map(),
-      teacher: null,
       callTarget,
       callQ,
       callTiles: callQ ? scramble(callQ.answer, this.rand) : [],
@@ -793,7 +786,6 @@ export class Classroom {
     this.setPhase('recess', now, GAME.recessPlaySec[game]);
     const out: Say[] = [this.line0('recessIntro')];
     const r = this.recess;
-    if (game === 'rps') out.push(this.line0('rpsIntro'));
     if (game === 'callup') out.push(this.t(this.line('callUp', callTarget!.spoken)), this.t(`${callQ!.kind} ${callQ!.clue}`));
     if (game === 'pick') out.push(this.t(this.line('pickIntro', r.pick[0], r.pick[1])));
     if (game === 'roll') out.push(this.line0('rollIntro'));
@@ -805,7 +797,6 @@ export class Classroom {
     const r = this.recess;
     if (!r || r.stage !== 'play') return [];
     const word = plain(e.comment);
-    if (r.game === 'rps' && word in RPS && !r.rps.has(s.username)) r.rps.set(s.username, word as Rps);
     if (r.game === 'pick' && (word === '1' || word === '2') && !r.votes.has(s.username)) r.votes.set(s.username, word === '1' ? 1 : 2);
     if (r.game === 'roll' && word === 'comat' && !r.roll.some((a) => a.username === s.username)) {
       r.roll.push({ username: s.username, nickname: s.nickname, avatar: s.avatar, createTime: e.createTime, seq: ++this.seq, points: GAME.rollPoints });
@@ -823,21 +814,6 @@ export class Classroom {
     r.stage = 'result';
     this.setPhase('recess', now, GAME.recessResultSec);
     const out: Say[] = [];
-    if (r.game === 'rps') {
-      if (r.rps.size === 0) return this.mainOf([this.line0('rpsNobody')]);
-      r.teacher = (Object.keys(RPS) as Rps[])[Math.floor(this.rand() * 3)];
-      let win = 0;
-      let lose = 0;
-      for (const [u, p] of r.rps) {
-        if (BEATS[p] === r.teacher) {
-          win++;
-          const s = this.students.get(u);
-          if (s) this.award(s, GAME.rpsPoints, now, false);
-        } else if (BEATS[r.teacher] === p) lose++;
-      }
-      const rest = win ? this.line('rpsWin', String(win)) : lose ? this.line('rpsLose', String(lose)) : 'Hòa cả lớp luôn.';
-      out.push(this.t(this.line('rpsReveal', RPS[r.teacher], rest)));
-    }
     if (r.game === 'callup') {
       const s = r.callTarget!;
       if (r.callResult === 'right') this.award(s, GAME.callUpPoints, now, false);
@@ -920,6 +896,7 @@ export class Classroom {
 
   /** Nút "Ra chơi ngay" ở trang điều khiển: chơi luôn 1 trò */
   forceRecess(game: RecessGame, now: number): Say[] {
+    if (!RECESS_GAMES.includes(game)) return [];
     return this.startRecess(now, game);
   }
 
@@ -1133,8 +1110,6 @@ export class Classroom {
       recess: r && {
         game: r.game,
         stage: r.stage,
-        rpsCounts: (Object.keys(RPS) as Rps[]).map((k) => [...r.rps.values()].filter((v) => v === k).length),
-        teacher: r.teacher ? RPS[r.teacher] : '',
         callName: r.callTarget?.nickname ?? '',
         callUser: r.callTarget?.username ?? '',
         callClue: r.callQ ? `${r.callQ.kind} ${r.callQ.clue}` : '',

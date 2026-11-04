@@ -53,10 +53,9 @@ export const GAME = {
   roastChance: 0.6, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án
 
   // ---------- Giờ ra chơi (sau mỗi tiết) ----------
-  recessPlaySec: { rps: 20, callup: 15, pick: 20, roll: 12, heart: 30 },
+  recessPlaySec: { callup: 15, pick: 20, roll: 12, heart: 30 },
   recessResultSec: 8,
   recessBoardSec: 10, // bảng "học sinh giỏi hôm nay"
-  rpsPoints: 2, // oẳn tù tì thắng cô
   callUpPoints: 5, // kiểm tra miệng trả lời đúng
   rollPoints: 3, // điểm danh nhanh
   rollWinners: 10,

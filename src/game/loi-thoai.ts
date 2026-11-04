@@ -624,34 +624,6 @@ export const LINES = {
     'Học mệt rồi, ra chơi một chút. Trò này dễ lắm, ai cũng chơi được.',
   ] as L0,
 
-  rpsIntro: [
-    'Oẳn tù tì với cô! Gõ búa, kéo hoặc bao. Thắng cô được cộng hai điểm.',
-    'Chơi oẳn tù tì nha. Gõ búa, kéo hay bao vào bình luận. Cô ra sau cùng.',
-    'Trò oẳn tù tì! Mỗi người gõ một lần thôi: búa, kéo hoặc bao.',
-    'Ai dám đấu oẳn tù tì với cô? Gõ búa, kéo hoặc bao. Thắng được hai điểm.',
-  ] as L0,
-  rpsReveal: [
-    (pick, rest) => `Cô ra ${pick}! ${rest}`,
-    (pick, rest) => `Một, hai, ba, cô ra ${pick}. ${rest}`,
-    (pick, rest) => `Oẳn tù tì ra cái gì ra cái này: ${pick}! ${rest}`,
-    (pick, rest) => `Cô chọn ${pick} nha. ${rest}`,
-  ] as L2,
-  rpsWin: [
-    (c) => `Có ${c} bạn thắng cô, mỗi bạn hai điểm.`,
-    (c) => `${c} bạn thắng rồi, cô thua tâm phục khẩu phục.`,
-    (c) => `Cô thua ${c} bạn. Hai điểm cho mỗi người.`,
-  ] as L1,
-  rpsLose: [
-    (c) => `${c} bạn thua cô. Về tập oẳn tù tì thêm đi.`,
-    (c) => `Cô hạ được ${c} bạn. Cô vẫn còn phong độ lắm.`,
-    (c) => `${c} bạn thua cô kìa. Lêu lêu.`,
-  ] as L1,
-  rpsNobody: [
-    'Không ai chơi với cô hết. Cô tự oẳn tù tì với cái bảng vậy.',
-    'Lớp mình sợ thua cô nên không ai chơi hả?',
-    'Không ai ra cái gì. Cô thắng mặc định nha.',
-  ] as L0,
-
   callUp: [
     (n) => `Kiểm tra miệng! Cô mời ${n} lên bảng. Bạn nhỏ có mười lăm giây.`,
     (n) => `${n} đâu rồi? Lên bảng trả bài cho cô. Mười lăm giây nha.`,

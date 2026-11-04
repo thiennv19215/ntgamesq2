@@ -358,7 +358,7 @@ function Results({ v }: { v: StageView }) {
 }
 
 // ---------- Giờ ra chơi ----------
-const RECESS_TITLE = { rps: 'Oẳn tù tì với cô', callup: 'Kiểm tra miệng', pick: 'Chọn phe', roll: 'Điểm danh siêu tốc', heart: 'Thả tim cả lớp' };
+const RECESS_TITLE = { callup: 'Kiểm tra miệng', pick: 'Chọn phe', roll: 'Điểm danh siêu tốc', heart: 'Thả tim cả lớp' };
 
 function Recess({ v, left }: { v: StageView; left: number }) {
   const r = v.recess!;
@@ -373,24 +373,6 @@ function Recess({ v, left }: { v: StageView; left: number }) {
         {playing && <Timer left={left} duration={GAME.recessPlaySec[r.game]} />}
       </div>
       {r.game !== 'callup' && <div className="mt-1 shrink-0 text-[48px] leading-tight text-[#ffe680]">{RECESS_TITLE[r.game]}</div>}
-      {r.game === 'rps' && (
-        <>
-          <div className="mt-3 flex w-full justify-center gap-6 text-[34px]">
-            {[
-              ['✊', 'búa'],
-              ['✌️', 'kéo'],
-              ['✋', 'bao'],
-            ].map(([icon, word], i) => (
-              <div key={word} className={`w-[150px] rounded-2xl border-2 py-2 ${r.teacher === word ? 'border-[#ffd84a] bg-white/15' : 'border-white/30'}`}>
-                <div className="text-[56px] leading-none">{icon}</div>
-                <div>{word}</div>
-                <div className="text-[30px] text-[#9df29d]">{r.rpsCounts[i]}</div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 text-[32px]">{playing ? 'Gõ: búa, kéo hoặc bao' : r.teacher ? `Cô ra: ${r.teacher}` : 'Không ai chơi'}</div>
-        </>
-      )}
       {r.game === 'callup' && (
         <>
           <div className="mt-1 max-w-full shrink-0 truncate text-[36px] text-[#ffe680]">📢 {r.callName} lên bảng!</div>

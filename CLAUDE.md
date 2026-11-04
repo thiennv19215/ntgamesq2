@@ -12,7 +12,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
 - Mỗi tiết 20 câu: 14 câu chữ (4 dễ, 4 vừa, 6 khó) + 2 câu tiếng Anh + 2 câu đố mẹo + 2 câu lịch sử; ưu tiên câu chưa hỏi trong ngân hàng. Chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi; câu 20 là câu hỏi vàng (điểm x2). Mỗi câu 20 giây. Hết giờ chưa ai đúng: mở 1 chữ (câu toán không mở số), thêm 10 giây.
 - Cô đọc: "Câu 3. Đây là một món ăn. <gợi ý>" (câu "Đây là..." ghi ở dòng `>` trong file câu hỏi).
-- Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
+- Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 4 trò (không lặp trò vừa chơi): kiểm tra miệng gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
 - Xếp hạng 3 tầng: điểm tiết (xếp ghế, xoá mỗi tiết) · điểm buổi (👑 lớp trưởng, ⭐ lớp phó) · bảng vàng tuần (lưu file `data/so-lop.json`, tự xoá khi sang tuần mới).
 - Comment dài đúng bằng đáp án (không tính khoảng trắng) mới tính là trả lời; nói chuyện thường không bị tính sai. Mỗi người chỉ tính lần trả lời đầu tiên của câu đó. Phải gõ đủ dấu.
 - Điểm theo thứ tự đúng, xếp theo giờ TikTok gắn lúc gửi (`createTime`), không theo lúc bot nhận: 10 / 7 / 5 / hạng 4–10 được 3 / sau đó 1. Đúng 3 câu liền +5.

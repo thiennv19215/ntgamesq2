@@ -230,29 +230,13 @@ for (const lv of [1, 2, 3, 4] as const) {
 }
 
 // ---------- giờ ra chơi ----------
-const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1) => {
+const recessOf = (game: 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1) => {
   const c = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t, () => seed);
   c.newRound(t);
   for (let i = 0; i < 5; i++) chat(c, i, 'chào cô', t, t); // vào lớp, vừa hoạt động
   c.forceRecess(game, t);
   return c;
 };
-{
-  // oẳn tù tì: cô ra theo rand; thắng cô +2 điểm buổi, không đụng điểm tiết
-  const c = recessOf('rps', 0.1); // rand 0.1 -> cô ra "búa"
-  chat(c, 1, 'bao', t, t);
-  chat(c, 2, 'Kéo', t, t);
-  chat(c, 1, 'kéo', t, t); // đổi ý không tính
-  c.tick((t += GAME.recessPlaySec.rps * 1000));
-  assert.equal(c.view(t).recess!.teacher, 'búa');
-  assert.equal(c.students.get('u1')!.session, GAME.rpsPoints);
-  assert.equal(c.students.get('u1')!.score, 0);
-  assert.equal(c.students.get('u2')!.session, 0);
-  c.tick((t += GAME.recessResultSec * 1000));
-  assert.equal(c.recess!.stage, 'board');
-  c.tick((t += GAME.recessBoardSec * 1000));
-  assert.equal(c.phase, 'intro');
-}
 {
   // kiểm tra miệng: chỉ bạn được gọi mới được trả lời, đúng +5, chốt ngay
   const c = recessOf('callup');
