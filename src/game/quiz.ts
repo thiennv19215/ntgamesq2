@@ -599,9 +599,6 @@ export class Classroom {
     const mult = this.golden ? 2 : 1;
     this.correct.forEach((a, i) => (a.points = pointsForRank(i) * mult));
     if (this.correct.length === 1) {
-      // phòng vắng (ít bạn đang chơi): có người đúng thì chốt sớm, khỏi chờ đủ 20 giây
-      const endAfter = this.activePlayers(now) < GAME.smallRoomPlayers ? GAME.smallRoomEndAfterSec : GAME.endAfterFirstSec;
-      if (endAfter > 0) this.phaseEndsAt = Math.min(this.phaseEndsAt, now + endAfter * 1000);
       const fast = now - this.phaseStartedAt < GAME.superFastSec * 1000;
       if (!fast && this.rand() < GAME.giftChance) {
         return [{ ...this.t(this.line('firstCorrectGift', e.spoken, this.giveGift(s, now))), ttl: 6000 }];

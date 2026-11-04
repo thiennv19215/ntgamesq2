@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
-import { GAME } from './config';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -57,7 +56,6 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           </div>
           <div>
             Đang chơi: <b>{view.players}</b> bạn
-            {view.players < GAME.smallRoomPlayers && <span className="text-amber-300"> · phòng vắng: có người đúng là {GAME.smallRoomEndAfterSec} giây sau chốt câu</span>}
           </div>
           {view.topic && <div>Chủ đề cả lớp chọn: {view.topic}</div>}
           {sent > 0 && <div>Giả lập đã gửi: {sent}</div>}

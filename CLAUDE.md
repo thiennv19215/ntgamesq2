@@ -38,7 +38,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 
 ## Quyết định của chủ kênh
 
-- 20 giây mỗi câu (đổi từ 25, 2026-11-04), luôn chạy đủ giờ (`endAfterFirstSec: 0`).
+- 20 giây mỗi câu (đổi từ 25, 2026-11-04), luôn chạy đủ 20 giây kể cả khi đã có người trả lời đúng.
 - Tên lớp đổi được ở ô "Tên lớp" trang điều khiển (hiện trên bảng hiệu).
 - Cô cà khịa nhiều: 60% số câu cô gọi tên trêu 1 bạn trả lời sai; đúng trong 4 giây đầu thì cô khen "thần đồng" kiểu khen bé (không nghi quay cóp nữa, 2026-11-04); lớp im 75 giây thì cô nhắc.
 - Dấu kiểu cũ/mới (hóa/hoá, thủy/thuỷ) đều tính đúng; không dấu thì không tính.
@@ -63,7 +63,6 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Đố dân gian vui (2026-11-04): 23 câu thêm trong `31-do-dan-gian-meo.txt`, trộn vào hai lượt đố mẹo mỗi tiết và có nhãn riêng trên bảng.
 - Câu lịch sử (2026-11-04): câu 9 và 17 mỗi tiết, nhãn "📜 Lịch sử". Chỉ lịch sử Việt Nam tới 1945, kiến thức sách giáo khoa. Chi tiết các nguồn ghi khác nhau thì KHÔNG đưa vào gợi ý (đã bỏ: lý do tên Hắc Đế, năm xây Chùa Cầu); không dùng nhân vật còn tranh cãi (vd Lê Văn Tám). Thêm câu mới thì phải tra lại.
 - Nút "🚫 Bỏ câu này" ở trang điều khiển (2026-11-04): bỏ câu đang hỏi, không ai được điểm, sang câu tiếp, không bao giờ hỏi lại (sổ lớp `banned`). Sửa đáp án trong file là thành câu mới. Câu toán không bỏ được.
-- Tự đổi nhịp (2026-11-04): dưới 5 bạn đang chơi (bình luận trong 2 phút) thì có người đúng là 8 giây sau chốt câu; đông thì chạy đủ 20 giây.
 - Chuyên cần (2026-11-04): lần đầu bình luận mỗi buổi thì server ghi ngày; đi học liền từ ngày thứ 2 cô nhận ra và gọi tên, mốc 3, 5, 7, 10, 14, 21, 30 ngày thì khen to + tặng quà. Bảng tên hiện 🎒 số ngày.
 - Sinh nhật (2026-11-04): bạn nhỏ gõ có chữ "sinh nhật" (không có "chúc"/"mừng") thì cô chúc, bánh kem 🎂 lên bàn, vỗ tay, biểu ngữ 10 giây. Mỗi bạn 1 lần mỗi buổi, 2 lần chúc cách nhau ít nhất 1 phút. Trang điều khiển có ô nhập tên để chủ kênh tự chúc.
 - Cả lớp chọn chủ đề (2026-11-04): sau giờ ra chơi có 15 giây bình chọn 2 chủ đề (gõ 1 hoặc 2), chủ đề thắng chiếm 5 câu chữ thường của tiết sau. Không ai chọn thì trộn như cũ.

@@ -507,20 +507,14 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.deepEqual(m.banCurrent(t), []);
 }
 
-// ---------- phòng vắng: có người đúng thì 8 giây sau chốt; phòng đông thì đủ giờ ----------
+// ---------- có người đúng vẫn giữ nguyên đủ 20 giây cho cả lớp ----------
 {
-  const small = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t);
-  small.newRound(t);
-  small.tick((t += GAME.introSec * 1000));
-  chat(small, 1, small.q!.answer, t, t);
-  assert.equal(small.phaseEndsAt, t + GAME.smallRoomEndAfterSec * 1000);
-  const big = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t);
-  big.newRound(t);
-  big.tick((t += GAME.introSec * 1000));
-  const end = big.phaseEndsAt;
-  for (let i = 10; i < 10 + GAME.smallRoomPlayers; i++) chat(big, i, 'xin chào', t, t);
-  chat(big, 1, big.q!.answer, t, t);
-  assert.equal(big.phaseEndsAt, end, 'phòng đông: chạy đủ giờ');
+  const c = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  const end = c.phaseEndsAt;
+  chat(c, 1, c.q!.answer, t, t);
+  assert.equal(c.phaseEndsAt, end, 'trả lời đúng không rút ngắn thời gian');
 }
 
 // ---------- sinh nhật: bánh kem lên bàn, vỗ tay, mỗi bạn 1 lần, cách nhau 1 phút ----------

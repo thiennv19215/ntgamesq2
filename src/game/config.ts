@@ -19,10 +19,6 @@ export const GAME = {
   ] as const,
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
-  endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
-  // Tự đổi nhịp: dưới 5 bạn đang chơi (bình luận trong 2 phút) thì có người đúng là 8 giây sau chốt câu
-  smallRoomPlayers: 5,
-  smallRoomEndAfterSec: 8,
   activeWindowMs: 120_000,
   // Lớp vắng: 5 phút không ai bình luận / tặng quà / thả tim thì tiết sau là "ôn bài" (hỏi lại câu cũ, để dành câu mới).
   // Có bạn vào lại thì từ câu kế tiếp đổi sang câu mới.
