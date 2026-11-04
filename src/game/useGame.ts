@@ -61,7 +61,7 @@ export function useGame() {
   // - Câu chính (đề, đáp án, tổng kết, ra chơi) đọc ngay; trong lúc cô đọc, đồng hồ phần đó dừng lại.
   // - Câu nói thêm (chào, cảm ơn, cà khịa) giữ ở đây, chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây.
   const mainSpeaking = useRef(0);
-  const chatter = useRef<{ text: string; priority: boolean; until: number }[]>([]);
+  const chatter = useRef<{ text: string; priority: boolean; until: number; context: string }[]>([]);
   function say(lines: Say[]) {
     const now = Date.now();
     for (const l of lines) {
@@ -74,19 +74,23 @@ export function useGame() {
               dirty.current = true;
             }
           : undefined;
-        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart);
+        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart, undefined, l.rateBoost ? Math.min(1.5, voice.rate + l.rateBoost) : undefined);
       } else if (l.warn) {
         voice.say(l.text, true); // nhắc sắp hết giờ: chen lên đọc liền, đồng hồ vẫn chạy
       } else {
         const ttl = l.ttl ?? (l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs);
-        chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl });
+        const room = roomRef.current;
+        const context = room ? `${room.round}:${room.qNo}:${room.phase}` : '';
+        chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl, context });
       }
     }
     dirty.current = true;
   }
   /** Nhả 1 câu nói thêm nếu đang tới lúc (gọi mỗi nhịp game) */
   function flushChatter(room: Classroom, now: number) {
-    chatter.current = chatter.current.filter((c) => c.until > now);
+    const context = `${room.round}:${room.qNo}:${room.phase}`;
+    // Tên/khen/cảm ơn được tạo ở câu trước không được đọc lẫn sang câu mới.
+    chatter.current = chatter.current.filter((c) => c.until > now && c.context === context);
     if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow(now)) return;
     const i = Math.max(0, chatter.current.findIndex((c) => c.priority)); // cảm ơn quà trước
     const next = chatter.current.splice(i, 1)[0];

@@ -95,9 +95,9 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.phaseEndsAt, end + 4000, 'đọc đề xong mới đếm giờ');
   assert.ok(c.chatterWindow(t + 4000), 'đang chờ trả lời: được chào');
   assert.ok(!c.chatterWindow(c.phaseEndsAt - GAME.chatterMinLeftMs + 1), 'sắp hết giờ: không chào');
-  c.hold(GAME.maxHoldMs * 3);
-  assert.equal(c.phaseEndsAt, end + GAME.maxHoldMs, 'dừng giờ có trần');
-  chat(c, 1, c.q!.answer, t + 4000, t + 4000);
+  c.hold(75_000);
+  assert.equal(c.phaseEndsAt, end + 79_000, 'đồng hồ tiếp tục dừng nếu giọng đọc lâu hơn 25 giây');
+  chat(c, 1, c.q!.answer, c.phaseStartedAt, c.phaseStartedAt);
   const reveal = c.tick((t = c.phaseEndsAt));
   assert.equal(c.phase, 'reveal');
   assert.ok(reveal.every((l) => l.main), 'lúc hiện đáp án: toàn câu chính, đọc theo chương trình');

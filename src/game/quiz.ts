@@ -58,6 +58,7 @@ export interface Answerer {
 
 export interface Say {
   text: string;
+  rateBoost?: number; // tăng nhẹ tốc độ cho đoạn cần nhịp nhanh hơn
   priority?: boolean;
   /** câu chính (đọc đề, đáp án, tổng kết, ra chơi): chen lên đọc trước, câu nói thêm còn chờ thì bỏ */
   main?: boolean;
@@ -469,17 +470,14 @@ export class Classroom {
     this.phase = p;
     this.phaseStartedAt = now;
     this.phaseEndsAt = now + sec * 1000;
-    this.heldMs = 0;
     this.warned = false;
   }
 
   private warned = false; // đã nhắc "chuẩn bị hết giờ" ở phần này chưa
 
-  private heldMs = 0;
-  /** Cô đang đọc câu chính: dừng đồng hồ phần hiện tại (đọc đề xong mới đếm giờ trả lời). Có trần để không kẹt. */
+  /** Cô đang đọc câu chính: dừng đồng hồ phần hiện tại cho tới khi audio xong. */
   hold(ms: number) {
-    const add = Math.max(0, Math.min(ms, GAME.maxHoldMs - this.heldMs));
-    this.heldMs += add;
+    const add = Math.max(0, ms);
     this.phaseStartedAt += add;
     this.phaseEndsAt += add;
   }
@@ -579,6 +577,9 @@ export class Classroom {
     if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
+    // Comment tới trễ từ câu trước không được chấm theo câu hiện tại.
+    // createTime là timestamp TikTok lúc người xem gửi, khác với `now` lúc server nhận.
+    if (e.createTime < this.phaseStartedAt) return [];
     this.stats.received++;
     if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
     this.tried.add(e.username);
@@ -743,9 +744,9 @@ export class Classroom {
     const keys = ['praiseFirst', 'praiseSecond', 'praiseThird'] as const;
     return this.mainOf([
       this.line0('praiseIntro'),
-      ...top.map((s, i) => this.t(this.line(keys[i], s.spoken, String(s.score), this.giveGift(s, now)))),
+      ...top.map((s, i) => ({ ...this.t(this.line(keys[i], s.spoken, String(s.score), this.giveGift(s, now))), rateBoost: 0.15 })),
       this.line0('praiseOutro'),
-    ]);
+    ]).map((line) => ({ ...line, rateBoost: 0.15 }));
   }
 
   private startResults(now: number, outOfQuestions = false): Say[] {

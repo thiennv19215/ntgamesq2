@@ -145,7 +145,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
                 {v.slot === 'meo' ? '🤪 Đố mẹo' : v.slot === 'su' ? '📜 Lịch sử' : v.slot === 'anh' ? '🔤 Tiếng Anh' : v.category}
               </span>
             )}
-            {v.phase !== 'reveal' ? <Timer left={left} /> : <span className="text-[34px] text-[#9df29d]">Đáp án</span>}
+            {v.phase !== 'reveal' ? <Timer left={left} duration={v.phase === 'bonus' ? GAME.bonusSec : GAME.questionSec} /> : <span className="text-[34px] text-[#9df29d]">Đáp án</span>}
           </div>
           {!v.boardShown ? (
             // cô đang đọc đề: chưa hiện chữ xáo / phép tính, hô bắt đầu mới hiện
@@ -191,16 +191,47 @@ function Board({ v, now }: { v: StageView; now: number }) {
   );
 }
 
-function Timer({ left }: { left: number }) {
+function Timer({ left, duration }: { left: number; duration: number }) {
   const urgent = left <= 5;
+  const circumference = 2 * Math.PI * 34;
+  const progress = Math.max(0, Math.min(1, left / duration));
+  const ring = urgent ? '#ff8a7a' : '#ffe680';
   return (
     <motion.div
-      key={urgent ? left : 'calm'}
-      initial={urgent ? { scale: 1.35 } : false}
-      animate={{ scale: 1 }}
-      className={`flex h-[64px] min-w-[64px] items-center justify-center rounded-full border-4 px-2 text-[40px] leading-none ${urgent ? 'border-[#ff8a7a] text-[#ff8a7a]' : 'border-[#f4f1e6]'}`}
+      key={left}
+      initial={false}
+      animate={{
+        borderColor: urgent ? ['#ff8a7a', '#ffd84a', '#ff8a7a'] : ['#f4f1e6', '#ffe680', '#f4f1e6'],
+        backgroundColor: urgent ? ['rgba(180,35,35,.28)', 'rgba(180,35,35,.62)', 'rgba(180,35,35,.28)'] : ['rgba(0,0,0,0)', 'rgba(255,255,255,.12)', 'rgba(0,0,0,0)'],
+        boxShadow: urgent ? ['0 0 0 rgba(255,100,80,0)', '0 0 18px rgba(255,100,80,.72)', '0 0 0 rgba(255,100,80,0)'] : ['0 0 0 rgba(255,230,128,0)', '0 0 10px rgba(255,230,128,.38)', '0 0 0 rgba(255,230,128,0)'],
+      }}
+      transition={{ duration: urgent ? 0.42 : 0.3, ease: 'easeOut' }}
+      className={`relative flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full border-4 px-2 text-[40px] font-extrabold leading-none tabular-nums ${urgent ? 'border-[#ff8a7a] text-[#ff8a7a]' : 'border-[#f4f1e6]'}`}
     >
-      {left}
+      <svg aria-hidden="true" className="pointer-events-none absolute -inset-[6px] h-[76px] w-[76px] -rotate-90 overflow-visible">
+        <circle cx="38" cy="38" r="34" fill="none" stroke="rgba(255,255,255,.24)" strokeWidth="3" />
+        <motion.circle
+          cx="38"
+          cy="38"
+          r="34"
+          fill="none"
+          stroke={ring}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          animate={{ strokeDashoffset: circumference * (1 - progress), opacity: urgent ? [1, 0.55, 1] : 1 }}
+          transition={{ strokeDashoffset: { duration: 0.45, ease: 'easeOut' }, opacity: { duration: 0.35 } }}
+        />
+      </svg>
+      <motion.span
+        key={`digit-${left}`}
+        initial={{ scale: 1.22, opacity: 0.7 }}
+        animate={{ scale: [1.22, 0.96, 1.08, 1], opacity: 1 }}
+        transition={{ duration: 0.32, times: [0, 0.45, 0.72, 1], ease: 'easeOut' }}
+        className="inline-block"
+      >
+        {left}
+      </motion.span>
     </motion.div>
   );
 }
@@ -256,7 +287,7 @@ function Vote({ v, left }: { v: StageView; left: number }) {
     <div className="flex h-full flex-col items-center text-center">
       <div className="flex w-full items-center justify-between">
         <span className="rounded-full bg-[#ffd84a] px-4 text-[26px] font-bold text-[#7a2e0e]">🗳️ Cả lớp quyết định</span>
-        <Timer left={left} />
+        <Timer left={left} duration={GAME.voteSec} />
       </div>
       <div className="mt-1 text-[44px] leading-tight text-[#ffe680]">Tiết sau học gì?</div>
       <div className="mt-3 w-full space-y-4 px-4">
@@ -344,7 +375,7 @@ function Recess({ v, left }: { v: StageView; left: number }) {
         <span className="rounded-full bg-[#ffd84a] px-4 text-[26px] font-bold text-[#7a2e0e]">
           🔔 Giờ ra chơi{r.game === 'callup' ? ` · ${RECESS_TITLE.callup}` : ''}
         </span>
-        {playing && <Timer left={left} />}
+        {playing && <Timer left={left} duration={GAME.recessPlaySec[r.game]} />}
       </div>
       {r.game !== 'callup' && <div className="mt-1 shrink-0 text-[48px] leading-tight text-[#ffe680]">{RECESS_TITLE[r.game]}</div>}
       {r.game === 'rps' && (

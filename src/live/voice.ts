@@ -16,6 +16,7 @@ interface Line {
   done?: () => void;
   start?: () => void; // gọi khi câu bắt đầu đọc (để camera lia tới người được nói tới)
   valid?: () => boolean; // tới lượt đọc mà trả về false thì bỏ câu (chuyện đã cũ, vd. đã bị cướp mà vẫn "sắp trả lời")
+  rate?: number;
   keep?: boolean; // không bỏ dù chờ lâu (lời dẫn khai mạc dài)
 }
 
@@ -38,16 +39,16 @@ class Voice {
   onSpeaker?: (who: 'M' | 'F' | null) => void;
 
   /** `done`: gọi khi câu đọc xong, bị bỏ, hoặc trang này không phát tiếng */
-  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean) {
+  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean, rate?: number) {
     if (!this.enabled || !text.trim()) {
       if (start) setTimeout(start, 0);
       if (done) setTimeout(done, 0);
       return;
     }
     const q = priority ? this.priority : this.normal;
-    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid });
+    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid, rate });
     // câu ưu tiên: tạo giọng sẵn ngay lúc xếp hàng, tới lượt là phát liền không phải chờ server
-    if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p)).catch(() => {});
+    if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p, rate)).catch(() => {});
     if (q.length > MAX_QUEUE) q.shift()?.done?.();
     void this.next();
   }
@@ -97,9 +98,9 @@ class Voice {
     return out;
   }
 
-  private urlOf(p: { who: Who; hype: boolean; text: string }) {
+  private urlOf(p: { who: Who; hype: boolean; text: string }, rate = this.rate) {
     const v = p.who === 'F' ? '&v=f' : p.who === 'E' ? '&v=en' : '';
-    return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
+    return `/api/tts?rate=${rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
   }
 
   private async next() {
@@ -120,7 +121,7 @@ class Voice {
     try {
       for (const part of this.parts(line.text)) {
         this.onSpeaker?.(part.who === 'E' ? 'F' : part.who); // giọng tiếng Anh là cô đọc
-        const audio = new Audio(this.urlOf(part));
+        const audio = new Audio(this.urlOf(part, line.rate));
         audio.volume = this.volume;
         this.current = audio;
         await new Promise<void>((resolve) => {

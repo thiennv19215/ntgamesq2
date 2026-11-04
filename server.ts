@@ -437,6 +437,7 @@ async function googleTts(text: string): Promise<Buffer> {
 }
 
 const ttsCache = new Map<string, Buffer>();
+const ttsInFlight = new Map<string, Promise<Buffer>>();
 app.get('/api/tts', async (req, res) => {
   try {
     const text = String(req.query.text || '').trim().slice(0, 1500);
@@ -449,14 +450,25 @@ app.get('/api/tts', async (req, res) => {
     const key = `${voiceName}|${rate}|${hype}|${text}`;
     let audio = ttsCache.get(key);
     if (!audio) {
-      try {
-        audio = await edgeTts(text, rate, hype, voiceName);
-      } catch (err) {
-        console.warn('Edge TTS lỗi, chuyển Google:', err instanceof Error ? err.message : err);
-        audio = await googleTts(text);
+      let pending = ttsInFlight.get(key);
+      if (!pending) {
+        pending = (async () => {
+          try {
+            return await edgeTts(text, rate, hype, voiceName);
+          } catch (err) {
+            console.warn('Edge TTS lỗi, chuyển Google:', err instanceof Error ? err.message : err);
+            return googleTts(text);
+          }
+        })();
+        ttsInFlight.set(key, pending);
       }
-      ttsCache.set(key, audio);
-      if (ttsCache.size > 200) ttsCache.delete(ttsCache.keys().next().value!);
+      try {
+        audio = await pending;
+        ttsCache.set(key, audio);
+        if (ttsCache.size > 200) ttsCache.delete(ttsCache.keys().next().value!);
+      } finally {
+        if (ttsInFlight.get(key) === pending) ttsInFlight.delete(key);
+      }
     }
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'public, max-age=86400');
