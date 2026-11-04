@@ -4,11 +4,12 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 
 ## Tính năng
 
-- 2099 câu hỏi tiếng Việt, 31 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mỗi tiết 20 câu, xen câu toán nhẩm tự sinh, câu tiếng Anh, đố mẹo dân gian vui, lịch sử; câu 20 là câu hỏi vàng nhân đôi điểm.
+- 2099 câu hỏi tiếng Việt, 31 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mỗi tiết ưu tiên 20 câu chưa hỏi trong ngân hàng (câu tiếng Anh, đố mẹo, lịch sử được xếp lịch riêng); chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi. Câu 20 là câu hỏi vàng nhân đôi điểm.
 - Chấm điểm theo giờ TikTok gắn lúc người xem gửi bình luận, nên phòng đông, bình luận tới lệch thứ tự vẫn xếp đúng ai nhanh nhất. Nhất 10 điểm, nhì 7, ba 5; chép đáp án trên khung chat chỉ được 1 điểm.
 - Phải gõ có dấu; kiểu bỏ dấu cũ và mới ("hóa" / "hoá") đều tính đúng. Nói chuyện thường không bị tính là trả lời sai.
 - Game nhớ câu nào đã hỏi (lưu ra file) để nhiều buổi live liền ít lặp.
 - Cô giáo nói bằng giọng Edge TTS tiếng Việt, vài trăm câu thoại để khen, trêu, cảm ơn quà. Bảng câu mới hiện ngay khi chuyển câu; đồng hồ dừng trong lúc cô đọc đề và chỉ chạy sau khi cô hô bắt đầu. Câu chào, câu cảm ơn chỉ chen vào lúc đang chờ người xem trả lời.
+- Sân khấu có chuyển động nhẹ: cô và học sinh cử động khi chờ, chữ xáo nhấp nhô, biểu cảm đổi mượt; dấu đúng/sai bật lên và học sinh có nhịp chân khi đi tặng hoa. Tôn trọng cài đặt giảm chuyển động của hệ điều hành.
 - Tương tác: bình luận là có ghế (hết 20 ghế thì đứng ngoài cửa lớp, vẫn tính điểm), tặng quà thì học sinh lên bục tặng hoa cô, thả tim thì cả lớp vỗ tay, gõ "sinh nhật" thì có bánh kem, đi học nhiều ngày liền thì cô nhớ mặt.
 - Giờ ra chơi sau mỗi tiết (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng vàng tuần.
 - Treo live cả ngày: rớt kết nối TikTok thì tự nối lại, server tắt thì file BAT tự bật lại. Sau buổi live có trang báo cáo câu khó, câu quá dễ.

@@ -7,7 +7,7 @@ import { makeMath, type MathLevel } from './math';
  * Lõi game Lớp Học Chữ: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
  * Trang stage gọi chat/gift/like/tick rồi đọc các câu trả về; test ở quiz.check.ts.
  *
- * Một vòng: intro → 20 câu, có 4 câu toán (question → [bonus] → reveal) → results → recess (giờ ra chơi) → intro ...
+ * Một vòng: intro → 20 câu từ ngân hàng; hết câu chưa hỏi mới dùng toán dự phòng → results → recess → intro ...
  */
 
 export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'results' | 'recess' | 'vote';
@@ -355,7 +355,7 @@ export class Classroom {
   }
 
   // ---------- chọn câu ----------
-  /** Chọn câu lâu chưa hỏi nhất theo độ khó, tránh 2 câu liền cùng chủ đề và quá 2 câu/chủ đề mỗi tiết */
+  /** Ưu tiên câu chưa hỏi theo lịch tiết, không lặp câu cũ khi ngân hàng còn câu mới */
   /** `difficulty` = 'meo' / 'su': bốc câu đố mẹo / lịch sử; còn lại bốc câu chữ thường (không bao giờ lấy câu có chỗ riêng) */
   private pickOne(difficulty: Question['difficulty'] | Slot, taken: Question[], now: number, topic = ''): Question | null {
     const used = new Set(taken.map((q) => q.id));
@@ -373,15 +373,21 @@ export class Classroom {
       if (nice.length) pool = nice;
     }
     if (!pool.length) pool = this.bank.filter((q) => kind(q));
+    // Dùng hết câu mới của nhóm này thì lấy câu mới ở nhóm khác trước, không lặp câu cũ.
+    const fresh = pool.filter((q) => !(this.history[q.id] ?? 0));
+    if (fresh.length) pool = fresh;
+    else {
+      const freshAny = this.bank.filter((q) => !this.banned.has(q.id) && !used.has(q.id) && !(this.history[q.id] ?? 0));
+      const freshTopic = topic ? freshAny.filter((q) => q.category === topic) : [];
+      pool = freshTopic.length ? freshTopic : freshAny;
+    }
     if (!pool.length) return null;
-    // xáo trước rồi xếp theo lần hỏi gần nhất: câu chưa hỏi bao giờ lên đầu, thứ tự trong file không ảnh hưởng
-    const at = (q: Question) => this.history[q.id] ?? 0;
+    // Xáo trước để thứ tự trong file không quyết định câu nào được hỏi.
     pool = [...pool];
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(this.rand() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    pool.sort((a, b) => at(a) - at(b));
     const q = pool[0];
     this.history[q.id] = now;
     this.usedLog.push(q.id);
@@ -398,6 +404,13 @@ export class Classroom {
     return pool.length ? pool[Math.floor(this.rand() * pool.length)] : null;
   }
 
+  /** Ôn bài vẫn có thể lấy câu cũ ở nhóm khác khi nhóm của lịch tiết không còn câu phù hợp. */
+  private pickReviewAny(taken: Question[]): Question | null {
+    const used = new Set(taken.map((q) => q.id));
+    const pool = this.bank.filter((q) => (this.history[q.id] ?? 0) > 0 && !this.banned.has(q.id) && !used.has(q.id));
+    return pool.length ? pool[Math.floor(this.rand() * pool.length)] : null;
+  }
+
   /** Bốc câu cho tiết. `from`: giữ nguyên các câu trước vị trí này (đang ôn bài thì có bạn vào, đổi phần còn lại sang câu mới) */
   private pickRound(now: number, from = 0) {
     const out: Question[] = this.roundQs.slice(0, from);
@@ -409,16 +422,14 @@ export class Classroom {
         continue;
       }
       let q: Question | null;
-      // lớp vắng: ôn bài bằng câu cũ (câu toán vẫn tự sinh); chưa có câu cũ thì lấy câu mới như thường
-      const old = this.review && !d.startsWith('math') ? this.pickReview(d as Question['difficulty'] | Slot, out) : null;
+      // lớp vắng: ưu tiên ôn câu cũ; chỉ lấy câu mới nếu chưa có câu cũ nào phù hợp.
+      const old = this.review ? this.pickReview(d as Question['difficulty'] | Slot, out) ?? this.pickReviewAny(out) : null;
       if (old) {
         out.push(old);
         if (!(SLOTS as readonly string[]).includes(d)) plain++;
         continue;
       }
-      // câu toán tự sinh, không tính vào chủ đề nên câu chữ trước và sau nó vẫn khác chủ đề nhau
-      if (d.startsWith('math')) q = makeMath(Number(d.slice(4)) as MathLevel, this.rand);
-      else if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
+      if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
       else {
         // chủ đề cả lớp chọn: cách 1 câu chữ thường lấy 1 câu chủ đề đó, tối đa GAME.voteTopicQuestions câu
         const useTopic = this.topic && plain % 2 === 0 && fav < GAME.voteTopicQuestions ? this.topic : '';
@@ -426,6 +437,8 @@ export class Classroom {
         if (useTopic && q?.category === useTopic) fav++;
         plain++;
       }
+      // Toán là nguồn dự phòng cuối cùng, chỉ xuất hiện sau khi mọi câu chữ chưa hỏi đã dùng hết.
+      if (!q) q = makeMath(Math.min(4, Math.floor(i / 5) + 1) as MathLevel, this.rand);
       if (q) out.push(q);
     }
     this.roundQs = out;
@@ -708,7 +721,6 @@ export class Classroom {
       if (s) s.reachedAt = now + i / 1000;
     });
     for (const s of this.students.values()) if (!winners.has(s.username)) s.streak = 0;
-    const q = this.q!;
     const top = this.correct[0] && this.students.get(this.correct[0].username);
     if (top && this.firstCorrectGift) this.giveGift(top, now);
     if (top && this.golden && this.rand() < 0.5) this.giveGift(top, now);

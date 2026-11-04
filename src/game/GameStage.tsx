@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
@@ -46,6 +46,15 @@ const ALL_IMGS = [
   ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/${p}.webp`),
   ...['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'].map((p) => `/assets/nv/co-giao/${p}.webp`),
 ];
+const TEACHER_IDLE = { y: [0, -2, 0], rotate: [0, 0.35, 0, -0.35, 0] };
+const TEACHER_IDLE_TRANSITION = { duration: 3.6, repeat: Infinity, ease: 'easeInOut' as const };
+const STUDENT_IDLE = { y: [0, -1.5, 0] };
+const STUDENT_IDLE_TRANSITIONS = Array.from({ length: 20 }, (_, i) => ({
+  duration: 2.3 + (i % 4) * 0.22,
+  delay: (i % 5) * 0.13,
+  repeat: Infinity,
+  ease: 'easeInOut' as const,
+}));
 
 function useNow(ms = 250) {
   const [now, setNow] = useState(Date.now());
@@ -70,25 +79,27 @@ export function GameStage({ game }: { game: GameState }) {
     );
   }
   return (
-    <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
-      <Header v={v} name={game.channelName} />
-      <Motto />
-      <Board v={v} now={now} />
-      <DayTop v={v} />
-      <Vase v={v} />
-      <Teacher v={v} now={now} />
-      <Punished v={v} />
-      <Podium v={v} />
-      <SeatHint now={now} />
-      <Students v={v} now={now} />
-      <Standing v={v} now={now} />
-      <FlowerWalk v={v} />
-      <GiftBanner gift={game.lastGift} now={now} />
-      <BirthdayBanner v={v} />
-      <LoveHearts n={v.loveFans} />
-      <PollCard v={v} />
-      {v.clapping && <Claps />}
-    </div>
+    <MotionConfig reducedMotion="user">
+      <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+        <Header v={v} name={game.channelName} />
+        <Motto />
+        <Board v={v} now={now} />
+        <DayTop v={v} />
+        <Vase v={v} />
+        <Teacher v={v} now={now} />
+        <Punished v={v} />
+        <Podium v={v} />
+        <SeatHint now={now} />
+        <Students v={v} now={now} />
+        <Standing v={v} now={now} />
+        <FlowerWalk v={v} />
+        <GiftBanner gift={game.lastGift} now={now} />
+        <BirthdayBanner v={v} />
+        <LoveHearts n={v.loveFans} />
+        <PollCard v={v} />
+        {v.clapping && <Claps />}
+      </div>
+    </MotionConfig>
   );
 }
 
@@ -136,7 +147,13 @@ function Board({ v, now }: { v: StageView; now: number }) {
       )}
 
       {(v.phase === 'question' || v.phase === 'bonus' || v.phase === 'reveal') && (
-        <div className="flex h-full flex-col">
+        <motion.div
+          key={`${v.phase}-${v.qNo}`}
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
+          className="flex h-full flex-col"
+        >
           <div className="flex items-center justify-between">
             {v.golden ? (
               <span className="rounded-full bg-[#ffd84a] px-4 text-[28px] font-bold text-[#7a2e0e]">⭐ CÂU HỎI VÀNG x2</span>
@@ -180,7 +197,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           {v.phase === 'bonus' && (
             <div className="mt-auto text-center text-[28px] text-[#ffe680]">{v.math ? 'Thêm 10 giây, nhẩm lẹ lên!' : 'Cô mở thêm 1 chữ, thêm 10 giây!'}</div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
@@ -247,10 +264,15 @@ function Tiles({ letters, dim }: { letters: string[]; dim: boolean }) {
           initial={{ y: -30, opacity: 0, rotate: -8 }}
           animate={{ y: 0, opacity: 1, rotate: ((i * 37) % 9) - 4 }}
           transition={{ delay: i * 0.025, type: 'spring', stiffness: 300, damping: 18 }}
-          className="tile flex items-center justify-center font-extrabold"
-          style={{ width: size, height: size * 1.1, fontSize: size * 0.62 }}
+          className="shrink-0"
+          style={{ width: size, height: size * 1.1 }}
         >
-          {ch}
+          <div
+            className={`tile flex h-full w-full items-center justify-center font-extrabold ${dim ? '' : 'tile-float'}`}
+            style={{ fontSize: size * 0.62, animationDelay: `${i * 0.11}s`, animationDuration: `${2.8 + (i % 4) * 0.2}s` }}
+          >
+            {ch}
+          </div>
         </motion.div>
       ))}
     </div>
@@ -507,8 +529,23 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   else if (v.phase === 'recess') pose = v.recess?.stage === 'play' ? '08-vay-chao' : v.recess?.stage === 'result' ? '05-vui' : '03-chi-trai';
   const gotFlower = now - v.lastFlowerAt < 3000;
   return (
-    <div className="absolute left-[96px] top-[410px] h-[490px] w-[300px]">
-      <img src={`/assets/nv/co-giao/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
+    <motion.div
+      className="absolute left-[96px] top-[410px] h-[490px] w-[300px]"
+      animate={TEACHER_IDLE}
+      transition={TEACHER_IDLE_TRANSITION}
+      style={{ transformOrigin: '50% 100%' }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.img
+          key={pose}
+          src={`/assets/nv/co-giao/${pose}.webp`}
+          initial={{ opacity: 0, y: 7, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.99 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]"
+        />
+      </AnimatePresence>
       <AnimatePresence>
         {gotFlower && (
           <motion.div
@@ -527,7 +564,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
           💐 {v.flowers} bó hoa
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -633,14 +670,38 @@ function Students({ v, now }: { v: StageView; now: number }) {
             className={`absolute ${called ? 'called-up' : ''}`}
             style={{ width: w, height: show, zIndex: 10 + Math.floor(i / 5) }}
           >
-            <div className="absolute inset-0 overflow-hidden">
-              <img src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`} style={{ width: w, height: h }} className="max-w-none" />
+            <motion.div
+              className="absolute inset-0 overflow-hidden"
+              animate={STUDENT_IDLE}
+              transition={STUDENT_IDLE_TRANSITIONS[i]}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.img
+                  key={pose}
+                  src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`}
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  style={{ width: w, height: h }}
+                  className="max-w-none"
+                />
+              </AnimatePresence>
               <div className="absolute" style={{ left: hd.x * w, top: hd.y * h, width: hd.w * w, height: hd.h * h }}>
                 <Hair username={s.username} girl={s.girl} />
               </div>
-            </div>
-            {s.answered === 'right' && <div className="badge bg-[#16a34a]">✓</div>}
-            {s.answered === 'wrong' && <div className="badge bg-[#dc2626]">✗</div>}
+            </motion.div>
+            {s.answered && (
+              <motion.div
+                key={s.answered}
+                initial={{ scale: 0, rotate: -22, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 16 }}
+                className={`badge ${s.answered === 'right' ? 'bg-[#16a34a]' : 'bg-[#dc2626]'}`}
+              >
+                {s.answered === 'right' ? '✓' : '✗'}
+              </motion.div>
+            )}
             <DeskGifts desk={s.desk} x={x} y={y} w={w} show={show} scale={scale} />
             {s.sleeping && !s.bubble && (
               <motion.div
@@ -686,6 +747,16 @@ function ChatBubble({ text, scale }: { text: string; scale: number }) {
 
 // Tặng hoa: bạn nhỏ đứng dậy đi lên bục đưa hoa cho cô, rồi đi về chỗ (bạn không có ghế thì đi từ cửa lớp)
 const PODIUM: [number, number] = [372, 690]; // chỗ đứng đưa hoa, cạnh tay cô (toạ độ góc trên trái nhân vật)
+const WALK_PATH_TIMES = [0, 0.35, 0.65, 1];
+const WALK_GAIT_TIMES = [0, 0.035, 0.07, 0.105, 0.14, 0.175, 0.21, 0.245, 0.28, 0.315, 0.35, 0.65, 0.685, 0.72, 0.755, 0.79, 0.825, 0.86, 0.895, 0.93, 0.965, 1];
+const WALK_PATH_TRANSITION = { duration: GAME.walkMs / 1000, times: WALK_PATH_TIMES, ease: 'easeInOut' as const };
+const WALK_GAIT_TRANSITION = { duration: GAME.walkMs / 1000, times: WALK_GAIT_TIMES, ease: 'linear' as const };
+const WALK_GAIT = {
+  y: [0, -3, 0, -3, 0, -3, 0, -3, 0, -3, 0, 0, -3, 0, -3, 0, -3, 0, -3, 0, -3, 0],
+  body: [0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 0, 0, 1, 0, -1, 0, 1, 0, -1, 0, 0],
+  left: [0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0, 0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0],
+  right: [0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0, 0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0],
+};
 function FlowerWalk({ v }: { v: StageView }) {
   const w = v.walk;
   if (!w) return null;
@@ -693,19 +764,49 @@ function FlowerWalk({ v }: { v: StageView }) {
   const H = 210;
   const from: [number, number] = i >= 0 ? [seatBox(i).x, seatBox(i).y - 40] : [990, 760];
   const g = w.girl ? 'nu' : 'nam';
+  return <FlowerWalker key={w.at} walk={w} from={from} gender={g} height={H} />;
+}
+
+function FlowerWalker({ walk, from, gender, height }: { walk: NonNullable<StageView['walk']>; from: [number, number]; gender: 'nam' | 'nu'; height: number }) {
+  const [path] = useState(() => ({
+    left: [from[0], PODIUM[0], PODIUM[0], from[0]],
+    top: [from[1], PODIUM[1], PODIUM[1], from[1]],
+    opacity: [1, 1, 1, 0],
+  }));
+  const sprite = `/assets/nv/${gender}/${POSE[gender].vui}.webp`;
   return (
     <motion.div
-      key={w.at}
       initial={{ left: from[0], top: from[1], opacity: 0 }}
-      animate={{ left: [from[0], PODIUM[0], PODIUM[0], from[0]], top: [from[1], PODIUM[1], PODIUM[1], from[1]], opacity: [1, 1, 1, 0] }}
-      transition={{ duration: GAME.walkMs / 1000, times: [0, 0.35, 0.65, 1], ease: 'easeInOut' }}
+      animate={path}
+      transition={WALK_PATH_TRANSITION}
       className="pointer-events-none absolute z-30"
-      style={{ width: H * 0.47, height: H }}
+      style={{ width: height * 0.47, height }}
     >
-      <img src={`/assets/nv/${g}/${POSE[g].vui}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+      {/* Tách chân khỏi thân để có nhịp bước thay vì chỉ kéo nguyên ảnh qua sân khấu. */}
+      <motion.div
+        className="absolute inset-0 drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]"
+        animate={{ y: WALK_GAIT.y, rotate: WALK_GAIT.body }}
+        transition={WALK_GAIT_TRANSITION}
+      >
+        <img src={sprite} className="absolute inset-0 h-full w-full" style={{ clipPath: 'inset(0 0 40% 0)' }} />
+        <motion.img
+          src={sprite}
+          className="absolute inset-0 h-full w-full"
+          style={{ clipPath: 'inset(60% 50% 0 0)', transformOrigin: '42% 60%' }}
+          animate={{ rotate: WALK_GAIT.left }}
+          transition={WALK_GAIT_TRANSITION}
+        />
+        <motion.img
+          src={sprite}
+          className="absolute inset-0 h-full w-full"
+          style={{ clipPath: 'inset(60% 0 0 50%)', transformOrigin: '58% 60%' }}
+          animate={{ rotate: WALK_GAIT.right }}
+          transition={WALK_GAIT_TRANSITION}
+        />
+      </motion.div>
       <div className="absolute -right-4 top-[70px] text-[44px]">💐</div>
       <div className="nametag" style={{ fontSize: 16, bottom: 'calc(100% - 4px)' }}>
-        <span className="truncate">{w.nickname}</span>
+        <span className="truncate">{walk.nickname}</span>
       </div>
     </motion.div>
   );

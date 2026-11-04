@@ -8,14 +8,13 @@ export const GAME = {
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,
-  // 10 câu chữ (4 dễ, 2 vừa, 4 khó) + 4 câu toán nhẩm khó dần ở câu 5, 10, 15, 19
-  // + 2 câu tiếng Anh ở câu 3, 12 + 2 câu đố mẹo ở câu 7, 13 + 2 câu lịch sử ở câu 9, 17 (chủ kênh chốt 2026-11-04).
-  // Câu 20 là câu hỏi vàng nhân đôi điểm.
+  // 14 câu chữ (4 dễ, 4 vừa, 6 khó) + 2 câu tiếng Anh + 2 câu đố mẹo + 2 câu lịch sử.
+  // Chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi trong ngân hàng; câu 20 là câu hỏi vàng.
   roundPlan: [
-    'easy', 'easy', 'anh', 'easy', 'math1',
-    'easy', 'meo', 'medium', 'su', 'math2',
-    'medium', 'anh', 'meo', 'hard', 'math3',
-    'hard', 'su', 'hard', 'math4', 'hard',
+    'easy', 'easy', 'anh', 'easy', 'medium',
+    'easy', 'meo', 'medium', 'su', 'medium',
+    'medium', 'anh', 'meo', 'hard', 'hard',
+    'hard', 'su', 'hard', 'hard', 'hard',
   ] as const,
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)

@@ -13,6 +13,20 @@
   box-shadow: 0 5px 0 #a8742f, 0 8px 10px rgba(0, 0, 0, 0.35);
 }
 
+.tile-float {
+  animation: tile-float 3s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes tile-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 /* Bảng tên trên đầu học sinh */
 .nametag {
   position: absolute;
@@ -97,6 +111,14 @@
   }
   to {
     outline-color: rgba(255, 216, 74, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-float,
+  .class-clap,
+  .golden-board {
+    animation: none !important;
   }
 }
 

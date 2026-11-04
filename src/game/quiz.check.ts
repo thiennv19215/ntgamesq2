@@ -73,7 +73,7 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.seats()[0].username, 'u299');
   assert.equal(c.weekDelta.get('u299')!.points, 10);
   assert.equal(c.slots(true).join(''), 'BẢNG ĐEN');
-  // hết câu (bộ chỉ 1 câu chữ + 4 câu toán tự sinh) -> tổng kết -> ra chơi -> tiết mới xoá điểm tiết, giữ điểm buổi
+  // hết câu (bộ chỉ có 1 câu chữ, sau đó dùng toán dự phòng) -> tổng kết -> ra chơi
   for (let k = 0; k < 40 && c.phase !== 'results'; k++) c.tick((t = c.phaseEndsAt));
   assert.equal(c.phase, 'results');
   c.tick((t += GAME.resultsSec * 1000));
@@ -151,13 +151,9 @@ for (const q of BANK) {
   for (let k = 0; k < GAME.questionsPerRound; k++) {
     assert.equal(c.phase, 'question');
     const q = c.q!;
-    plan.push(q.math ? GAME.roundPlan[k] : (q.slot ?? q.difficulty));
-    if (!q.math) cats.push(q.category);
-    else {
-      assert.match(q.answer, /^\d+$/, 'câu toán: đáp án là số');
-      assert.equal(c.tiles.length, 0, 'câu toán không xáo chữ');
-      assert.ok(c.view(t).math.endsWith('= ?'));
-    }
+    assert.ok(!q.math, 'chưa hết câu trong ngân hàng thì không sinh toán');
+    plan.push(q.slot ?? q.difficulty);
+    cats.push(q.category);
     if (k === GAME.questionsPerRound - 1) assert.ok(c.golden, 'câu 20 là câu hỏi vàng');
     else assert.ok(!c.golden);
     chat(c, 1, q.answer, t, t);
@@ -172,7 +168,7 @@ for (const q of BANK) {
   // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
   assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
-  assert.equal(c.usedLog.length, 16, 'câu toán không ghi vào sổ lớp');
+  assert.equal(c.usedLog.length, GAME.questionsPerRound, 'câu chữ trong tiết đều ghi vào sổ lớp');
 }
 
 // ---------- câu toán: đáp án đúng phép tính, luôn là số dương ----------

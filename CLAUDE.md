@@ -10,7 +10,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 ## Luật chơi
 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
-- Mỗi tiết 20 câu: 10 câu chữ (4 dễ, 2 vừa, 4 khó) + 4 câu toán nhẩm khó dần ở câu 5, 10, 15, 19 + 2 câu tiếng Anh ở câu 3, 12 + 2 câu đố mẹo ở câu 7, 13 + 2 câu lịch sử ở câu 9, 17; câu 20 là câu hỏi vàng (điểm x2). Mỗi câu 20 giây. Hết giờ chưa ai đúng: mở 1 chữ (câu toán không mở số), thêm 10 giây.
+- Mỗi tiết 20 câu: 14 câu chữ (4 dễ, 4 vừa, 6 khó) + 2 câu tiếng Anh + 2 câu đố mẹo + 2 câu lịch sử; ưu tiên câu chưa hỏi trong ngân hàng. Chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi; câu 20 là câu hỏi vàng (điểm x2). Mỗi câu 20 giây. Hết giờ chưa ai đúng: mở 1 chữ (câu toán không mở số), thêm 10 giây.
 - Cô đọc: "Câu 3. Đây là một món ăn. <gợi ý>" (câu "Đây là..." ghi ở dòng `>` trong file câu hỏi).
 - Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
 - Xếp hạng 3 tầng: điểm tiết (xếp ghế, xoá mỗi tiết) · điểm buổi (👑 lớp trưởng, ⭐ lớp phó) · bảng vàng tuần (lưu file `data/so-lop.json`, tự xoá khi sang tuần mới).
@@ -52,7 +52,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Muốn nhân vật đẹp hơn: làm ảnh học sinh nhìn từ sau lưng cùng nét vẽ, bỏ vào nhan-vat/ rồi sửa tools/tach-nen.py.
 - Giọng đọc bám chương trình (chủ kênh chốt 2026-11-04): câu chính (giới thiệu tiết, đề, đáp án + bạn nhanh nhất, tổng kết, ra chơi) đọc ngay, đồng hồ phần đó DỪNG trong lúc cô đọc (đọc đề xong mới đếm 20 giây). Câu chào, cảm ơn quà, follow chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây (`chatterWindow`, `chatterMinLeftMs`); chờ quá lâu thì bỏ.
 - Mỗi câu chỉ công bố đáp án và bạn trả lời nhanh nhất, rồi chuyển tiếp; không đọc lời khen ngay khi có người trả lời đúng. Giữ màn hình đáp án 2 giây sau khi cô đọc xong (`revealSec`).
-- Tiết 20 câu, xen 4 câu toán nhẩm (2026-11-04): bảng đen hiện phép tính to, người xem gõ số; cô đọc "36 cộng 47 bằng mấy?", hiện đáp án đọc cả phép tính.
+- Toán nhẩm chỉ dùng sau khi đã hỏi hết câu chưa hỏi trong ngân hàng (2026-11-04): bảng đen hiện phép tính to, người xem gõ số; câu toán tăng dần độ khó theo vị trí trong tiết.
 - Đọc đề xong cô hô "bắt đầu" (nhóm `go`), hô xong mới đếm giờ. Còn 5 giây cô nhắc "chuẩn bị hết giờ nhé các bạn nhỏ ơi" (nhóm `timeWarn`, `warnLeftSec`), câu này KHÔNG dừng đồng hồ (2026-11-04).
 - Xưng hô: cô gọi học sinh là "bạn nhỏ" / "các bạn nhỏ", không dùng em, con, mấy đứa (2026-11-04).
 - Cô khen kiểu thưởng quà: kẹo, bánh, sữa, phiếu bé ngoan, ngôi sao, điểm mười (`REWARDS` trong loi-thoai.ts). Chép phạt bốc ngẫu nhiên từ 10 tới 1 triệu lần (`penalty()`), số nhỏ hay gặp hơn (2026-11-04).
