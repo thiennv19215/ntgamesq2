@@ -1,3 +1,5 @@
+import type { StageCharacterSelection } from './stage-characters';
+
 // Dữ liệu server.ts gửi xuống qua SSE. Dùng chung cho mọi game.
 
 export interface LiveStatus {
@@ -59,6 +61,9 @@ export interface LiveHandlers {
   onLike?: (e: LikeEvent) => void;
   onViewers?: (count: number) => void;
   onControl?: (c: ControlCommand) => void;
+  onStageBackground?: (id: string) => void;
+  onStageCharacters?: (selection: StageCharacterSelection) => void;
   onGameState?: (s: any) => void; // ảnh chụp trạng thái game từ trang stage
   onSpeaker?: (d: { id: string | null; count: number }) => void; // trang stage nào đang được phát tiếng
 }
+

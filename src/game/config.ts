@@ -54,8 +54,8 @@ export const GAME = {
 
   // ---------- Giờ ra chơi (sau mỗi tiết) ----------
   recessPlaySec: { callup: 15, pick: 20, roll: 12, heart: 30 },
-  recessResultSec: 8,
-  recessBoardSec: 10, // bảng "học sinh giỏi hôm nay"
+  recessResultSec: 5,
+  recessBoardSec: 6, // bảng "học sinh giỏi hôm nay"
   callUpPoints: 5, // kiểm tra miệng trả lời đúng
   rollPoints: 3, // điểm danh nhanh
   rollWinners: 10,
@@ -63,7 +63,7 @@ export const GAME = {
   heartBoost: 5, // mỗi tim thật tính thành 5 tim (300 tim chỉ cần 60 tim thật) cho cả lớp dễ thắng; cũng áp cho vỗ tay
 
   // ---------- Sau giờ ra chơi: cả lớp chọn chủ đề tiết sau ----------
-  voteSec: 15, // gõ 1 hoặc 2
+  voteSec: 12, // gõ 1 hoặc 2
   voteTopicQuestions: 5, // chủ đề thắng chiếm chừng này câu chữ thường của tiết sau
 
   // ---------- Chuyên cần, sinh nhật ----------
@@ -76,7 +76,7 @@ export const GAME = {
   seatActiveMs: 10 * 60_000, // cùng điểm: bạn im quá chừng này (thường đã rời live) nhường ghế cho bạn đang tương tác
 
   // ---------- Lớp ----------
-  seats: 20, // 4 dãy bàn trên cùng; dãy cuối nằm dưới giao diện TikTok nên để trống
+  seats: 25, // 5 dãy bàn có sẵn trên nền; bạn vượt quá số ghế đứng hai bên
   standing: 60, // hết ghế: chen chúc đứng 2 bên ngoài cửa lớp hóng (30 mỗi bên), vẫn tính điểm
   joinKeywords: ['vaolop'],
 

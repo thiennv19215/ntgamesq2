@@ -1,6 +1,18 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { LiveStatus } from './types';
 import { emitTest, sendControl } from './page';
+import { readStageBackgroundId, STAGE_BACKGROUNDS, STAGE_BACKGROUND_EVENT, STAGE_BACKGROUND_STORAGE_KEY } from './stage-backgrounds';
+import {
+  readStageCharacters,
+  saveStageCharacters,
+  STAGE_CHARACTERS_EVENT,
+  STAGE_CHARACTERS_STORAGE_KEY,
+  STAGE_STUDENT_SETS,
+  STAGE_TEACHER_SETS,
+  type StageCharacterSelection,
+  type StageStudentSetId,
+  type StageTeacherSetId,
+} from './stage-characters';
 
 const FAKE_NAMES = ['Lan Anh', 'Minh Tuấn', 'Bé Na 🌸', 'Hoàng Long', 'Thu Trang', 'Quốc Bảo', 'duyanh99', '𝑵𝒈𝒐̣𝒄 𝑨𝒏𝒉'];
 const pick = () => {
@@ -101,6 +113,13 @@ export function Dashboard({
             {(msg || status?.error) && <div className="mt-1 text-xs text-amber-300">{msg || status?.error}</div>}
           </Card>
 
+          <Card title="Chọn bối cảnh và nhân vật">
+            <div className="grid gap-3 xl:grid-cols-2">
+              <StageBackgroundPicker />
+              <StageCharacterPicker />
+            </div>
+          </Card>
+
           <Card title="Giọng đọc trên stage">
             <div className="flex gap-2">
               <input
@@ -166,6 +185,172 @@ export function Dashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+function StageBackgroundPicker() {
+  const [selected, setSelected] = useState(readStageBackgroundId);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const sync = () => setSelected(readStageBackgroundId());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STAGE_BACKGROUND_STORAGE_KEY) sync();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(STAGE_BACKGROUND_EVENT, sync);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(STAGE_BACKGROUND_EVENT, sync);
+    };
+  }, []);
+
+  const choose = (id: (typeof STAGE_BACKGROUNDS)[number]['id']) => {
+    setSelected(id);
+    setError('');
+    try {
+      localStorage.setItem(STAGE_BACKGROUND_STORAGE_KEY, id);
+    } catch {
+      // The stage keeps its current background if browser storage is unavailable.
+    }
+    window.dispatchEvent(new Event(STAGE_BACKGROUND_EVENT));
+    void fetch('/api/stage/background', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('request failed');
+      })
+      .catch(() => setError('Không gửi được nền tới LIVE Studio.'));
+  };
+
+  return (
+    <section aria-labelledby="stage-background-heading" className="min-w-0">
+      <h3 id="stage-background-heading" className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Bối cảnh sân khấu · 9:16</h3>
+      <p className="mb-2 text-xs text-slate-400">Chọn nền 1080 × 1920. Bản xem trước và LIVE Studio đổi cùng lúc.</p>
+      {error && <p role="status" className="mb-2 text-xs text-amber-300">{error}</p>}
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        {STAGE_BACKGROUNDS.map((background) => {
+          const active = selected === background.id;
+          return (
+            <button
+              key={background.id}
+              type="button"
+              onClick={() => choose(background.id)}
+              aria-pressed={active}
+              aria-label={`${background.title}${active ? ', đang sử dụng' : ''}`}
+              className={`flex min-w-0 items-center gap-2 rounded-xl p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+                active ? 'bg-amber-500/15 ring-2 ring-amber-400' : 'bg-slate-800 ring-1 ring-slate-700 hover:bg-slate-700'
+              }`}
+            >
+              <img src={background.thumbnail} alt="" loading="lazy" decoding="async" className="h-24 w-[54px] shrink-0 rounded-md object-cover" />
+              <span className="min-w-0">
+                <span className="block truncate font-semibold text-slate-100">{background.title}</span>
+                <span className="mt-0.5 block text-xs text-slate-400">{background.description}</span>
+                <span className="mt-1 block text-[11px] text-slate-500">1080 × 1920</span>
+                {active && <span className="mt-1 block text-xs font-semibold text-amber-300">Đang dùng</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StageCharacterPicker() {
+  const [selected, setSelected] = useState(readStageCharacters);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const sync = () => setSelected(readStageCharacters());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STAGE_CHARACTERS_STORAGE_KEY) sync();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(STAGE_CHARACTERS_EVENT, sync);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(STAGE_CHARACTERS_EVENT, sync);
+    };
+  }, []);
+
+  const save = (next: StageCharacterSelection) => {
+    setSelected(next);
+    setError('');
+    saveStageCharacters(next);
+    void fetch('/api/stage/characters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('request failed');
+      })
+      .catch(() => setError('Không gửi được lựa chọn nhân vật tới LIVE Studio.'));
+  };
+
+  const chooseStudent = (student: StageStudentSetId) => save({ ...selected, student });
+  const chooseTeacher = (teacher: StageTeacherSetId) => save({ ...selected, teacher });
+
+  return (
+    <section aria-labelledby="stage-character-heading" className="min-w-0">
+      <h3 id="stage-character-heading" className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Nhân vật</h3>
+      <p className="mb-3 text-xs text-slate-400">Chọn từng bộ riêng. Bản xem trước và LIVE Studio sẽ đổi cùng lúc.</p>
+      {error && <p role="status" className="mb-2 text-xs text-amber-300">{error}</p>}
+      <div className="grid gap-3 md:grid-cols-2">
+        <section aria-labelledby="student-set-heading">
+          <h4 id="student-set-heading" className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Bộ học sinh</h4>
+          <div className="grid grid-cols-1 gap-2">
+            {STAGE_STUDENT_SETS.map((set) => (
+              <CharacterChoice key={set.id} title={set.title} description={set.description} thumbnail={set.thumbnail} active={selected.student === set.id} onClick={() => chooseStudent(set.id)} />
+            ))}
+          </div>
+        </section>
+        <section aria-labelledby="teacher-set-heading">
+          <h4 id="teacher-set-heading" className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Bộ giáo viên</h4>
+          <div className="grid grid-cols-1 gap-2">
+            {STAGE_TEACHER_SETS.map((set) => (
+              <CharacterChoice key={set.id} title={set.title} description={set.description} thumbnail={set.thumbnail} active={selected.teacher === set.id} onClick={() => chooseTeacher(set.id)} />
+            ))}
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function CharacterChoice({
+  title,
+  description,
+  thumbnail,
+  active,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  thumbnail: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={`${title}${active ? ', đang sử dụng' : ''}`}
+      className={`flex min-w-0 items-center gap-3 rounded-xl p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+        active ? 'bg-amber-500/15 ring-2 ring-amber-400' : 'bg-slate-800 ring-1 ring-slate-700 hover:bg-slate-700'
+      }`}
+    >
+      <img src={thumbnail} alt="" loading="lazy" decoding="async" className="h-24 w-16 shrink-0 rounded-md bg-emerald-950/70 object-contain object-bottom" />
+      <span className="min-w-0">
+        <span className="block truncate font-semibold text-slate-100">{title}</span>
+        <span className="mt-0.5 block text-xs text-slate-400">{description}</span>
+        {active && <span className="mt-1 block text-xs font-semibold text-amber-300">Đang dùng</span>}
+      </span>
+    </button>
   );
 }
 

@@ -2,18 +2,16 @@ import type { StageView } from './useGame';
 
 /**
  * Hiệu ứng âm thanh, chỉ phát ở trang stage. Mặc định trình duyệt tự tạo tiếng (không cần file, không lo bản quyền).
- * Muốn tiếng đẹp hơn: bỏ file mp3 cùng tên vào public/assets/sfx/ (vd ting.mp3), game tự dùng file thay cho tiếng tự tạo.
- *   ting    có bạn trả lời đúng
+ * Muốn thay tiếng: bỏ file mp3 cùng tên vào public/assets/sfx/ (vd tick.mp3), game tự dùng file thay cho tiếng tự tạo.
  *   drum    trống vào tiết
- *   go      cô hô bắt đầu, hiện bảng chữ
- *   tick    tích tắc 5 giây cuối
+ *   tick    tích tắc nhẹ khi đồng hồ chạy; nhanh hơn ở 5 giây cuối
  *   bell    hết giờ, hiện đáp án
  *   pop     quà bay xuống bàn
  *   clap    cả lớp vỗ tay
  *   fanfare phát quà giữa tiết, sinh nhật
  */
-export type SfxName = 'ting' | 'drum' | 'go' | 'tick' | 'bell' | 'pop' | 'clap' | 'fanfare';
-const NAMES: SfxName[] = ['ting', 'drum', 'go', 'tick', 'bell', 'pop', 'clap', 'fanfare'];
+export type SfxName = 'drum' | 'tick' | 'bell' | 'pop' | 'clap' | 'fanfare';
+const NAMES: SfxName[] = ['drum', 'tick', 'bell', 'pop', 'clap', 'fanfare'];
 
 class Sfx {
   volume = 0.35; // nhỏ hơn giọng cô để không lấn tiếng
@@ -35,17 +33,18 @@ class Sfx {
     const now = performance.now();
     if (now - (this.lastAt[name] ?? -Infinity) < minGapMs) return;
     this.lastAt[name] = now;
+    const volume = this.volume * (name === 'tick' ? 0.2 : 1);
     const file = this.files[name];
     if (file) {
       const a = file.cloneNode() as HTMLAudioElement;
-      a.volume = Math.min(1, this.volume * 2);
+      a.volume = Math.min(1, volume * 2);
       void a.play().catch(() => {});
       return;
     }
     try {
       this.ctx ??= new AudioContext();
       if (this.ctx.state === 'suspended') void this.ctx.resume();
-      SYNTH[name](this.ctx, this.volume);
+      SYNTH[name](this.ctx, volume);
     } catch {
       // trình duyệt không cho phát tiếng: bỏ qua
     }
@@ -55,17 +54,17 @@ class Sfx {
   private lastTick = -1;
   private lastGiftAt = -1;
 
-  /** Gọi mỗi nhịp game: tích tắc 5 giây cuối lúc đang chờ trả lời */
+  /** Gọi mỗi nhịp game: tích tắc thưa khi đếm giờ, mỗi giây ở 5 giây cuối */
   clock(phase: string, boardShown: boolean, endsAt: number, now: number) {
     const left = Math.ceil((endsAt - now) / 1000);
     const asking = (phase === 'question' && boardShown) || phase === 'bonus';
-    if (!asking || left > 5 || left < 1) {
+    if (!asking || left < 1) {
       this.lastTick = -1;
       return;
     }
     if (left !== this.lastTick) {
       this.lastTick = left;
-      this.play('tick', 0);
+      if (left <= 5 || left % 2 === 0) this.play('tick', 0);
     }
   }
 
@@ -77,7 +76,6 @@ class Sfx {
       return;
     }
     if (next.phase === 'intro' && prev.phase !== 'intro') this.play('drum');
-    if (next.qNo === prev.qNo && next.correctCount > prev.correctCount) this.play('ting', 150);
     if (next.phase === 'reveal' && prev.phase !== 'reveal') this.play('bell');
     if (giftAt > this.lastGiftAt) this.play('pop');
     this.lastGiftAt = Math.max(this.lastGiftAt, giftAt);
@@ -124,11 +122,6 @@ function noise(ctx: AudioContext, vol: number, start: number, dur: number, gain 
 }
 
 const SYNTH: Record<SfxName, Synth> = {
-  // 2 nốt cao trong trẻo
-  ting: (c, v) => {
-    tone(c, v, 'sine', 1319, 0, 0.25, 0.6);
-    tone(c, v, 'sine', 1760, 0.07, 0.35, 0.5);
-  },
   // trống trường "tùng tùng tùng"
   drum: (c, v) => {
     for (const s of [0, 0.32, 0.64]) {
@@ -136,13 +129,11 @@ const SYNTH: Record<SfxName, Synth> = {
       noise(c, v, s, 0.12, 0.4, 300);
     }
   },
-  // "ting ting" đi lên: bắt đầu
-  go: (c, v) => {
-    tone(c, v, 'triangle', 784, 0, 0.15, 0.7);
-    tone(c, v, 'triangle', 1175, 0.12, 0.3, 0.7);
+  // Tiếng đồng hồ trầm, ngắn và dịu để không lấn giọng cô.
+  tick: (c, v) => {
+    tone(c, v, 'sine', 760, 0, 0.035, 0.55);
+    tone(c, v, 'triangle', 1080, 0, 0.018, 0.16);
   },
-  // Ngắn, rõ để nghe được trên tiếng live; bản cũ rất nhỏ nên dễ tưởng đồng hồ không phát.
-  tick: (c, v) => tone(c, v, 'square', 1200, 0, 0.08, 0.8),
   // chuông báo hết giờ
   bell: (c, v) => {
     tone(c, v, 'sine', 880, 0, 0.9, 0.6);

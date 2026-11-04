@@ -1,23 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
 import { AnswerBadge, BouquetIcon, VaseFlower, ConfettiBurst } from './StageAssets';
+import { readStageCharacters, STAGE_CHARACTERS_EVENT, STAGE_CHARACTERS_STORAGE_KEY, type StageStudentSetId, type StageTeacherSetId } from '../live/stage-characters';
 import './stage.css';
 
 /**
- * Màn hình lớp học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (941x1672 phóng lên 1080 ngang),
- * nên mọi toạ độ dưới đây = toạ độ trên ảnh gốc x K.
+ * Màn hình lớp học 1080x1920. Ảnh nền được chọn ở src/live/stage-backgrounds.ts;
+ * mọi toạ độ bàn dưới đây vẫn dựa trên bố cục ảnh gốc 941x1672 và nhân với K.
  */
 const K = 1080 / 941;
 
-// 4 dãy bàn trên cùng: mép trên mặt bàn (y) và tâm từng bàn (x), đo trên ảnh nền gốc
+// 5 dãy bàn: mép trên mặt bàn (y) và tâm từng bàn (x), đo trên ảnh nền gốc
 const ROWS = [
   { y: 815, xs: [170, 322, 471, 620, 768], s: 0.92 },
   { y: 945, xs: [148, 310, 473, 636, 796], s: 0.98 },
   { y: 1097, xs: [125, 300, 476, 648, 822], s: 1.04 },
   { y: 1257, xs: [113, 296, 479, 661, 840], s: 1.1 },
+  { y: 1460, xs: [95, 295, 490, 685, 875], s: 1.16 },
 ];
 const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
@@ -40,33 +42,98 @@ const POSE = {
   nu: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
 };
 type PoseKey = keyof typeof POSE.nam;
-
-// tải trước mọi tư thế để đổi tư thế không bị nháy trắng
-const ALL_IMGS = [
-  ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/${p}.webp`),
-  ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/sau-${p}.webp`),
-  ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/${p}.webp`),
-  ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/sau-${p}.webp`),
-  ...['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'].map((p) => `/assets/nv/co-giao/${p}.webp`),
-];
-const TEACHER_IDLE = {
-  x: [0, 0, 0, 0, 0],
-  y: [0, -3, -1, -2, 0],
-  rotate: [0, 0.45, 0, -0.45, 0],
+const SPRING_STUDENT_POSE: Record<PoseKey, string> = {
+  dung: '01-dung',
+  tay: '02-giong-tay',
+  nghi: '03-suy-nghi',
+  vui: '05-vui-mung',
+  buon: '01-dung',
+  ngac: '03-suy-nghi',
+  chao: '02-giong-tay',
 };
-const TEACHER_IDLE_TRANSITION = { duration: 5.2, repeat: Infinity, ease: 'easeInOut' as const };
-const STUDENT_IDLE = {
-  x: [0, 1.5, 0, -1.5, 0],
-  y: [0, -4, 0, -2, 0],
-  rotate: [0, 0.45, 0, -0.45, 0],
-};
-const STUDENT_IDLE_TRANSITIONS = Array.from({ length: 20 }, (_, i) => ({
-  duration: 2.8 + (i % 4) * 0.3,
-  delay: (i % 5) * 0.24,
-  repeat: Infinity,
-  ease: 'easeInOut' as const,
-}));
+function studentSprite(studentSet: StageStudentSetId, gender: 'nam' | 'nu', pose: PoseKey, seated = false) {
+  const folder = studentSet === 'spring' ? `hoc-sinh-moi/${gender}` : gender;
+  const sprite = studentSet === 'spring' ? SPRING_STUDENT_POSE[pose] : POSE[gender][pose];
+  return `/assets/nv/${folder}/${seated ? 'sau-' : ''}${sprite}.webp`;
+}
 
+const TEACHER_POSES = ['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'];
+const STUDENT_POSES = Object.keys(POSE.nam) as PoseKey[];
+const STAGE_IMAGE_LOADS = new Map<string, Promise<boolean>>();
+const IDLE_CYCLE_MS = 4800;
+const IDLE_CYCLE_EPOCH = Date.now();
+
+function SynchronizedIdle({ children, className, style }: { children: ReactNode; className: string; style?: CSSProperties }) {
+  const [phaseDelay] = useState(() => -((Date.now() - IDLE_CYCLE_EPOCH) % IDLE_CYCLE_MS));
+  return (
+    <div className={className} style={{ ...style, animationDelay: `${phaseDelay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
+function loadStageImage(src: string, fetchPriority: 'high' | 'low' | 'auto' = 'auto') {
+  const cached = STAGE_IMAGE_LOADS.get(src);
+  if (cached) return cached;
+
+  const image = new Image();
+  image.decoding = 'async';
+  image.fetchPriority = fetchPriority;
+  const promise = new Promise<boolean>((resolve) => {
+    let settled = false;
+    const finish = (loaded: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (!loaded || typeof image.decode !== 'function') {
+        resolve(loaded);
+        return;
+      }
+      void image.decode().then(() => resolve(true), () => resolve(true));
+    };
+    image.onload = () => finish(true);
+    image.onerror = () => finish(false);
+    image.src = src;
+    if (image.complete) finish(image.naturalWidth > 0);
+  });
+  STAGE_IMAGE_LOADS.set(src, promise);
+  void promise.then((loaded) => {
+    if (!loaded) STAGE_IMAGE_LOADS.delete(src);
+  });
+  return promise;
+}
+
+function useStableImageSource(src: string) {
+  const [loadedSrc, setLoadedSrc] = useState(src);
+  useEffect(() => {
+    let active = true;
+    void loadStageImage(src).then((loaded) => {
+      if (active && loaded) setLoadedSrc(src);
+    });
+    return () => {
+      active = false;
+    };
+  }, [src]);
+  return loadedSrc;
+}
+
+function StableSpriteImage(props: ImgHTMLAttributes<HTMLImageElement> & { src: string }) {
+  const visibleSrc = useStableImageSource(props.src);
+  return <img {...props} src={visibleSrc} />;
+}
+
+function stageImageSources(studentSet: StageStudentSetId, teacherSet: StageTeacherSetId) {
+  const students = (['nam', 'nu'] as const).flatMap((gender) =>
+    STUDENT_POSES.flatMap((pose) => [
+      studentSprite(studentSet, gender, pose),
+      studentSprite(studentSet, gender, pose, true),
+    ]),
+  );
+  const teacherFolder = teacherSet === 'spring' ? 'co-giao-moi' : 'co-giao';
+  const teachers = TEACHER_POSES.map((pose) =>
+    `/assets/nv/${teacherFolder}/${pose}.webp${teacherSet === 'spring' && pose === '04-chi-phai' ? '?v=2' : ''}`,
+  );
+  return [...new Set([...students, ...teachers])];
+}
 function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -76,12 +143,53 @@ function useNow(ms = 1000) {
   return now;
 }
 
+function useStageCharacters() {
+  const [selection, setSelection] = useState(readStageCharacters);
+  useEffect(() => {
+    const sync = () => setSelection(readStageCharacters());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STAGE_CHARACTERS_STORAGE_KEY) sync();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(STAGE_CHARACTERS_EVENT, sync);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(STAGE_CHARACTERS_EVENT, sync);
+    };
+  }, []);
+  return selection;
+}
+
 export function GameStage({ game, staticPreview = false }: { game: GameState; staticPreview?: boolean }) {
   const now = useNow();
-  useEffect(() => {
-    for (const src of ALL_IMGS) new Image().src = src;
-  }, []);
+  const characters = useStageCharacters();
   const v = game.view;
+  useEffect(() => {
+    if (!v) return;
+    let cancelled = false;
+    const preload = () => {
+      if (cancelled) return;
+      for (const src of stageImageSources(characters.student, characters.teacher)) {
+        void loadStageImage(src, 'low');
+      }
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    let idleHandle: number | undefined;
+    let timeoutHandle: number | undefined;
+    if (idleWindow.requestIdleCallback) {
+      idleHandle = idleWindow.requestIdleCallback(preload, { timeout: 1500 });
+    } else {
+      timeoutHandle = window.setTimeout(preload, 350);
+    }
+    return () => {
+      cancelled = true;
+      if (idleHandle !== undefined) idleWindow.cancelIdleCallback?.(idleHandle);
+      if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
+    };
+  }, [characters.student, characters.teacher, Boolean(v)]);
   if (!v) {
     return (
       <div className="flex h-full items-center justify-center bg-black/60 p-20 text-center text-[48px] text-white">
@@ -97,13 +205,13 @@ export function GameStage({ game, staticPreview = false }: { game: GameState; st
         <Board v={v} now={now} />
         <DayTop v={v} />
         <Vase v={v} />
-        <Teacher v={v} now={now} />
-        <Punished v={v} />
+        <Teacher v={v} now={now} teacherSet={characters.teacher} />
+        <Punished v={v} studentSet={characters.student} />
         <Podium v={v} />
         <SeatHint now={now} />
-        <Students v={v} now={now} />
-        <Standing v={v} now={now} />
-        <StudentWalk v={v} />
+        <Students v={v} now={now} studentSet={characters.student} />
+        <Standing v={v} now={now} studentSet={characters.student} />
+        <StudentWalk v={v} studentSet={characters.student} />
         <GiftBanner gift={game.lastGift} now={now} />
         <BirthdayBanner v={v} />
         <LoveHearts n={v.loveFans} />
@@ -512,7 +620,7 @@ function DayTop({ v }: { v: StageView }) {
 }
 
 // ---------- Cô giáo ----------
-function Teacher({ v, now }: { v: StageView; now: number }) {
+function Teacher({ v, now, teacherSet }: { v: StageView; now: number; teacherSet: StageTeacherSetId }) {
   let pose = '01-dung';
   if (now - v.lastFlowerAt < 3000) pose = '05-vui';
   else if (v.walk?.kind === 'answer') pose = '04-chi-phai';
@@ -524,22 +632,22 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   else if (v.phase === 'results') pose = '02-giang-bai';
   else if (v.phase === 'recess') pose = v.recess?.stage === 'play' ? '08-vay-chao' : v.recess?.stage === 'result' ? '05-vui' : '03-chi-trai';
   const gotFlower = now - v.lastFlowerAt < 3000;
+  const sprite = `/assets/nv/${teacherSet === 'spring' ? 'co-giao-moi' : 'co-giao'}/${pose}.webp${teacherSet === 'spring' && pose === '04-chi-phai' ? '?v=2' : ''}`;
+  const visibleSprite = useStableImageSource(sprite);
   return (
-    <motion.div
+    <SynchronizedIdle
       className="teacher-character absolute left-[96px] top-[410px] h-[490px] w-[300px]"
-      animate={TEACHER_IDLE}
-      transition={TEACHER_IDLE_TRANSITION}
       style={{ transformOrigin: '50% 100%' }}
     >
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="sync" initial={false}>
         <motion.img
-          key={pose}
-          src={`/assets/nv/co-giao/${pose}.webp`}
+          key={visibleSprite}
+          src={visibleSprite}
           initial={{ opacity: 0, y: 7, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -4, scale: 0.99 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]"
+          className="absolute inset-0 h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]"
         />
       </AnimatePresence>
       <AnimatePresence>
@@ -560,7 +668,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
           💐 {v.flowers} bó hoa
         </div>
       )}
-    </motion.div>
+    </SynchronizedIdle>
   );
 }
 
@@ -568,13 +676,13 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 function Podium({ v }: { v: StageView }) {
   if (v.phase !== 'question' && v.phase !== 'bonus' && v.phase !== 'reveal') return null;
   return (
-    <div className="absolute left-[330px] top-[636px] w-[600px]">
-      <div className="flex items-center justify-between rounded-t-[20px] bg-[#7a2e0e] px-5 py-1 text-[26px] font-bold text-[#ffe9b8]">
+    <div className="absolute left-[417px] top-[634px] w-[420px]">
+      <div className="flex items-center justify-between rounded-t-[14px] bg-[#7a2e0e] px-3 py-[1px] text-[19px] font-bold text-[#ffe9b8]">
         <span>⚡ Nhanh nhất</span>
         <span>{v.correctCount} bạn đã đúng</span>
       </div>
-      <div className="flex h-[74px] items-center gap-2 rounded-b-[20px] bg-[#fff6dd]/95 px-3 shadow-lg">
-        {v.correctTop.length === 0 && <div className="w-full text-center text-[28px] text-[#8a6a3a]">Chưa ai đoán ra…</div>}
+      <div className="flex h-[48px] items-center gap-1 rounded-b-[14px] bg-[#fff6dd]/95 px-2 shadow-lg">
+        {v.correctTop.length === 0 && <div className="w-full text-center text-[20px] text-[#8a6a3a]">Chưa ai đoán ra…</div>}
         <AnimatePresence initial={false}>
           {v.correctTop.map((a, i) => (
             <motion.div
@@ -582,9 +690,9 @@ function Podium({ v }: { v: StageView }) {
               layout
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex w-1/3 min-w-0 items-center gap-1 text-[24px] text-[#4a2c0e]"
+              className="flex w-1/3 min-w-0 items-center gap-1 text-[17px] text-[#4a2c0e]"
             >
-              <span className="text-[30px]">{['🥇', '🥈', '🥉'][i]}</span>
+              <span className="text-[20px]">{['🥇', '🥈', '🥉'][i]}</span>
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate font-semibold">{a.nickname}</div>
                 <div className="font-extrabold text-[#c2410c]">+{a.points}</div>
@@ -602,14 +710,14 @@ const SEAT_HINTS = ['⭐ Đoán nhanh, điểm cao được vào lớp ngồi!',
 function SeatHint({ now }: { now: number }) {
   const i = Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
-    <div className="pointer-events-none absolute left-[360px] top-[770px] z-[9] flex w-[560px] justify-center">
+    <div className="pointer-events-none absolute left-[397px] top-[718px] z-[9] flex w-[460px] justify-center">
       <AnimatePresence mode="wait">
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          className="whitespace-nowrap rounded-full bg-[#7a2e0e]/85 px-5 py-1 text-[26px] font-bold text-[#ffe9b8] shadow-md"
+          className="whitespace-nowrap rounded-full bg-[#7a2e0e]/80 px-3 py-[1px] text-[18px] font-bold text-[#ffe9b8] shadow-md"
         >
           {SEAT_HINTS[i]}
         </motion.div>
@@ -643,7 +751,7 @@ function seatBox(i: number) {
   return { scale, w, h, show, x, y };
 }
 
-function Students({ v, now }: { v: StageView; now: number }) {
+function Students({ v, now, studentSet }: { v: StageView; now: number; studentSet: StageStudentSetId }) {
   const asking = v.phase === 'question' || v.phase === 'bonus';
   const first = asking ? v.correctTop[0]?.username : undefined;
   return (
@@ -653,6 +761,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
         const pose = studentPose(s, v, i, now);
         const g = s.girl ? 'nu' : 'nam';
         const hd = HEAD[g];
+        const sprite = studentSprite(studentSet, g, pose, true);
         const called = v.recess?.game === 'callup' && v.recess.callUser === s.username;
         // đang đi lên bảng / bục hoặc bị phạt: ghế trống, nhân vật vẽ ở chỗ khác
         const away = s.standing || v.walk?.username === s.username;
@@ -666,20 +775,20 @@ function Students({ v, now }: { v: StageView; now: number }) {
             className={`absolute ${called ? 'called-up' : ''}`}
             style={{ width: w, height: show, zIndex: 10 + Math.floor(i / 5) }}
           >
-            <motion.div
+            <SynchronizedIdle
               className="student-character absolute inset-0 overflow-hidden"
-              animate={STUDENT_IDLE}
-              transition={STUDENT_IDLE_TRANSITIONS[i]}
             >
-              <img
-                src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`}
+              <StableSpriteImage
+                src={sprite}
                 style={{ width: w, height: h }}
                 className="max-w-none"
               />
-              <div className="absolute" style={{ left: hd.x * w, top: hd.y * h, width: hd.w * w, height: hd.h * h }}>
-                <Hair username={s.username} girl={s.girl} />
-              </div>
-            </motion.div>
+              {studentSet === 'classic' && (
+                <div className="absolute" style={{ left: hd.x * w, top: hd.y * h, width: hd.w * w, height: hd.h * h }}>
+                  <Hair username={s.username} girl={s.girl} />
+                </div>
+              )}
+            </SynchronizedIdle>
             {s.answered && (
               <motion.div
                 key={s.answered}
@@ -746,7 +855,7 @@ const WALK_GAIT = {
   left: [0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0, 0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0],
   right: [0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0, 0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0],
 };
-function StudentWalk({ v }: { v: StageView }) {
+function StudentWalk({ v, studentSet }: { v: StageView; studentSet: StageStudentSetId }) {
   const w = v.walk;
   if (!w) return null;
   const i = v.seats.findIndex((s) => s.username === w.username);
@@ -755,17 +864,18 @@ function StudentWalk({ v }: { v: StageView }) {
   const [standX, standFoot] = STAND[standIndex] ?? [990, 760];
   const from: [number, number] = i >= 0 ? [seatBox(i).x, seatBox(i).y - 40] : [standX - (H * 0.47) / 2, standFoot - H];
   const g = w.girl ? 'nu' : 'nam';
-  return <StudentWalker key={w.at} walk={w} from={from} gender={g} height={H} />;
+  return <StudentWalker key={w.at} walk={w} from={from} gender={g} height={H} studentSet={studentSet} />;
 }
 
-function StudentWalker({ walk, from, gender, height }: { walk: NonNullable<StageView['walk']>; from: [number, number]; gender: 'nam' | 'nu'; height: number }) {
+function StudentWalker({ walk, from, gender, height, studentSet }: { walk: NonNullable<StageView['walk']>; from: [number, number]; gender: 'nam' | 'nu'; height: number; studentSet: StageStudentSetId }) {
   const target: [number, number] = walk.kind === 'answer' ? [430, 670] : PODIUM;
   const [path] = useState(() => ({
     left: [from[0], target[0], target[0], from[0]],
     top: [from[1], target[1], target[1], from[1]],
     opacity: [1, 1, 1, 0],
   }));
-  const sprite = `/assets/nv/${gender}/${POSE[gender][walk.kind === 'answer' ? 'tay' : 'vui']}.webp`;
+  const sprite = studentSprite(studentSet, gender, walk.kind === 'answer' ? 'tay' : 'vui');
+  const visibleSprite = useStableImageSource(sprite);
   return (
     <motion.div
       initial={{ left: from[0], top: from[1], opacity: 0 }}
@@ -780,16 +890,16 @@ function StudentWalker({ walk, from, gender, height }: { walk: NonNullable<Stage
         animate={{ y: WALK_GAIT.y, rotate: WALK_GAIT.body }}
         transition={WALK_GAIT_TRANSITION}
       >
-        <img src={sprite} className="absolute inset-0 h-full w-full" style={{ clipPath: 'inset(0 0 40% 0)' }} />
+        <img src={visibleSprite} className="absolute inset-0 h-full w-full" style={{ clipPath: 'inset(0 0 40% 0)' }} />
         <motion.img
-          src={sprite}
+          src={visibleSprite}
           className="absolute inset-0 h-full w-full"
           style={{ clipPath: 'inset(60% 50% 0 0)', transformOrigin: '42% 60%' }}
           animate={{ rotate: WALK_GAIT.left }}
           transition={WALK_GAIT_TRANSITION}
         />
         <motion.img
-          src={sprite}
+          src={visibleSprite}
           className="absolute inset-0 h-full w-full"
           style={{ clipPath: 'inset(60% 0 0 50%)', transformOrigin: '58% 60%' }}
           animate={{ rotate: WALK_GAIT.right }}
@@ -810,7 +920,7 @@ function StudentWalker({ walk, from, gender, height }: { walk: NonNullable<Stage
 
 // Học sinh cá biệt: bị cô phạt đứng cạnh bảng (bên phải), đeo bảng tên đỏ
 const STAND_SPOTS = [870, 965];
-function Punished({ v }: { v: StageView }) {
+function Punished({ v, studentSet }: { v: StageView; studentSet: StageStudentSetId }) {
   return (
     <>
       {v.punished.slice(0, STAND_SPOTS.length).map((s, i) => {
@@ -824,11 +934,13 @@ function Punished({ v }: { v: StageView }) {
             className="pointer-events-none absolute z-30"
             style={{ left: STAND_SPOTS[i] - (H * 0.47) / 2, top: 640 - H, width: H * 0.47, height: H }}
           >
-            <img src={`/assets/nv/${g}/${POSE[g].buon}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
-            <div className="absolute -top-[52px] left-1/2 w-[120px] -translate-x-1/2 rounded-md bg-red-600 px-1 text-center text-[15px] font-bold leading-tight text-white shadow">
-              😅 Học sinh cá biệt
-              <div className="truncate text-[14px] font-semibold">{s.nickname}</div>
-            </div>
+            <SynchronizedIdle className="crowd-character absolute inset-0">
+              <StableSpriteImage src={studentSprite(studentSet, g, 'buon')} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+              <div className="absolute -top-[52px] left-1/2 w-[120px] -translate-x-1/2 rounded-md bg-red-600 px-1 text-center text-[15px] font-bold leading-tight text-white shadow">
+                😅 Học sinh cá biệt
+                <div className="truncate text-[14px] font-semibold">{s.nickname}</div>
+              </div>
+            </SynchronizedIdle>
           </motion.div>
         );
       })}
@@ -891,7 +1003,7 @@ function DeskGifts({ desk, x, y, w, show, scale }: { desk: StageView['seats'][nu
 }
 
 // Hết ghế: chen chúc đứng ngoài 2 bên cửa nhìn vào, vẫn tính điểm; chỉ vài bạn đứng đầu có bảng tên
-function Standing({ v, now }: { v: StageView; now: number }) {
+function Standing({ v, now, studentSet }: { v: StageView; now: number; studentSet: StageStudentSetId }) {
   return (
     <>
       {v.standing.slice(0, STAND.length).map((s, i) => {
@@ -909,15 +1021,17 @@ function Standing({ v, now }: { v: StageView; now: number }) {
             className="absolute"
             style={{ width: w, height: H, zIndex: Math.floor(foot / 20) }}
           >
-            <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} className="h-full w-full drop-shadow-[0_3px_2px_rgba(0,0,0,0.3)]" />
-            {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 20, height: 20, fontSize: 13, right: 0 }}>✓</div>}
-            {i < NAMED_STANDING && (
-              <div className="nametag" style={{ fontSize: 14, maxWidth: 104, bottom: 'calc(100% - 2px)', zIndex: 60 }}>
-                {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
-                <span className="truncate">{s.nickname}</span>
-                {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
-              </div>
-            )}
+            <SynchronizedIdle className="crowd-character absolute inset-0">
+              <StableSpriteImage src={studentSprite(studentSet, g, pose)} className="h-full w-full drop-shadow-[0_3px_2px_rgba(0,0,0,0.3)]" />
+              {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 20, height: 20, fontSize: 13, right: 0 }}>✓</div>}
+              {i < NAMED_STANDING && (
+                <div className="nametag" style={{ fontSize: 14, maxWidth: 104, bottom: 'calc(100% - 2px)', zIndex: 60 }}>
+                  {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
+                  <span className="truncate">{s.nickname}</span>
+                  {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
+                </div>
+              )}
+            </SynchronizedIdle>
           </motion.div>
         );
       })}

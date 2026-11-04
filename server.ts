@@ -15,6 +15,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
+import { STAGE_BACKGROUNDS, type StageBackgroundId } from './src/live/stage-backgrounds';
+import { DEFAULT_STAGE_CHARACTERS, STAGE_STUDENT_SETS, STAGE_TEACHER_SETS, type StageStudentSetId, type StageTeacherSetId } from './src/live/stage-characters';
 
 dotenv.config();
 
@@ -74,13 +76,29 @@ const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 let lastNameControl: { action: string; text: string } | null = null;
 // tài khoản TikTok đang cần giữ kết nối: rớt thì tự kết nối lại, tắt server bật lại cũng tự kết nối
 let wantUser = '';
-let settings: { channelName?: string; tiktokUser?: string } = {};
+let settings: {
+  channelName?: string;
+  tiktokUser?: string;
+  stageBackground?: StageBackgroundId;
+  stageStudent?: StageStudentSetId;
+  stageTeacher?: StageTeacherSetId;
+} = {};
+let stageBackground: StageBackgroundId = 'classic';
+let stageCharacters = DEFAULT_STAGE_CHARACTERS;
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
     lastNameControl = { action: 'setName', text: settings.channelName.trim() };
   }
   if (typeof settings.tiktokUser === 'string') wantUser = settings.tiktokUser;
+  const savedBackground = STAGE_BACKGROUNDS.find((background) => background.id === settings.stageBackground);
+  if (savedBackground) stageBackground = savedBackground.id;
+  const savedStudent = STAGE_STUDENT_SETS.find((set) => set.id === settings.stageStudent);
+  const savedTeacher = STAGE_TEACHER_SETS.find((set) => set.id === settings.stageTeacher);
+  stageCharacters = {
+    student: savedStudent?.id ?? 'classic',
+    teacher: savedTeacher?.id ?? 'classic',
+  };
 } catch {
   // chưa lưu tên nào: dùng tên mặc định trong config.ts
 }
@@ -112,6 +130,8 @@ app.get('/api/tiktok/events', (req, res) => {
   res.write(`event: status\ndata: ${JSON.stringify(liveStats)}\n\n`);
   if (lastRateControl) res.write(`event: control\ndata: ${JSON.stringify(lastRateControl)}\n\n`);
   if (lastNameControl) res.write(`event: control\ndata: ${JSON.stringify(lastNameControl)}\n\n`);
+  res.write(`event: stageBackground\ndata: ${JSON.stringify({ id: stageBackground })}\n\n`);
+  res.write(`event: stageCharacters\ndata: ${JSON.stringify(stageCharacters)}\n\n`);
   sseClients.push(res);
   const stageId = typeof req.query.stage === 'string' ? req.query.stage.slice(0, 40) : '';
   if (stageId) {
@@ -138,6 +158,27 @@ app.get('/api/tiktok/events', (req, res) => {
 });
 
 app.get('/api/tiktok/status', (_req, res) => res.json({ success: true, data: liveStats }));
+
+// Nền sân khấu dùng chung cho trang điều khiển (localhost) và LIVE Studio (lvh.me).
+app.post('/api/stage/background', (req, res) => {
+  const background = STAGE_BACKGROUNDS.find((item) => item.id === req.body?.id);
+  if (!background) return res.status(400).json({ success: false, error: 'Nền sân khấu không hợp lệ' });
+  stageBackground = background.id;
+  saveSettings({ stageBackground });
+  broadcast('stageBackground', { id: stageBackground });
+  res.json({ success: true, id: stageBackground });
+});
+
+// Bộ học sinh và cô giáo dùng chung cho trang điều khiển, bản xem trước và LIVE Studio.
+app.post('/api/stage/characters', (req, res) => {
+  const student = STAGE_STUDENT_SETS.find((set) => set.id === req.body?.student);
+  const teacher = STAGE_TEACHER_SETS.find((set) => set.id === req.body?.teacher);
+  if (!student || !teacher) return res.status(400).json({ success: false, error: 'Bộ nhân vật không hợp lệ' });
+  stageCharacters = { student: student.id, teacher: teacher.id };
+  saveSettings({ stageStudent: student.id, stageTeacher: teacher.id });
+  broadcast('stageCharacters', stageCharacters);
+  res.json({ success: true, ...stageCharacters });
+});
 
 // ---------- Đọc dữ liệu TikTok (proto v3) ----------
 const userOf = (data: any) => data?.user?.displayId || data?.user?.uniqueId || data?.uniqueId || 'nguoi-xem';

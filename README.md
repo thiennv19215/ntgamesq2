@@ -14,6 +14,7 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 - Giờ ra chơi sau mỗi tiết (kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng vàng tuần.
 - Treo live cả ngày: rớt kết nối TikTok thì tự nối lại, server tắt thì file BAT tự bật lại. Sau buổi live có trang báo cáo câu khó, câu quá dễ.
 - Trang điều khiển có nút giả lập (1 bạn trả lời, tặng quà, 1000 người cùng đoán...) để thử trước khi lên live.
+- Chọn được 3 nền sân khấu dọc 9:16 (1080 × 1920) ngay trên trang điều khiển; lựa chọn đồng bộ với khung xem trước và LIVE Studio.
 
 ## Cần có
 
@@ -50,6 +51,7 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
 - **Tên lớp**: đổi chữ trên bảng hiệu.
 - **Giọng đọc trên stage**: gõ câu cho cô đọc ngay. Thêm `F: ` ở đầu câu để dùng giọng nữ.
 - **Tốc độ giọng**: kéo thanh trượt, có tác dụng ngay khi đang live.
+- **Nền sân khấu dọc**: chọn lớp hiện tại, nắng sớm hoặc mưa chiều; đổi ngay ở preview và stage đang mở.
 - **⏭ Qua phần tiếp / 🔄 Ván mới / 🚫 Bỏ câu này**: điều khiển lớp bằng tay. Câu bị bỏ sẽ không bao giờ hỏi lại.
 - Các nút giả lập để thử khi chưa live.
 - **📊 Báo cáo hôm nay** sau buổi live, hoặc mở thẳng `http://localhost:3006/bao-cao`.
@@ -77,6 +79,8 @@ npx tsx src/game/bank.check.ts
 ```
 
 Lời thoại của cô nằm ở `src/game/loi-thoai.ts`, các con số (thời gian mỗi câu, điểm, giờ ra chơi...) ở `src/game/config.ts`.
+
+Thêm nền sân khấu: đặt ảnh dọc **1080 × 1920** trong `public/assets/bg/`, rồi thêm lựa chọn vào `src/live/stage-backgrounds.ts`.
 
 ## Tuỳ chỉnh khác
 

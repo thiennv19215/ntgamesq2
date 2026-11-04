@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { STAGE_H, STAGE_W } from './page';
+import { getStageBackground, readStageBackgroundId, STAGE_BACKGROUND_EVENT, STAGE_BACKGROUND_STORAGE_KEY } from './stage-backgrounds';
 
 /** Khung 1080x1920 tự co giãn vừa cửa sổ. Bên trong cứ vẽ theo pixel 1080x1920. */
 export function StageFrame({ children, maxHeight }: { children: ReactNode; maxHeight?: number }) {
   const [scale, setScale] = useState(1);
+  const [backgroundId, setBackgroundId] = useState(readStageBackgroundId);
   useEffect(() => {
     const fit = () => {
       const h = Math.min(window.innerHeight, maxHeight ?? Infinity);
@@ -14,11 +16,32 @@ export function StageFrame({ children, maxHeight }: { children: ReactNode; maxHe
     return () => window.removeEventListener('resize', fit);
   }, [maxHeight]);
 
+  useEffect(() => {
+    const syncBackground = () => setBackgroundId(readStageBackgroundId());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STAGE_BACKGROUND_STORAGE_KEY) syncBackground();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(STAGE_BACKGROUND_EVENT, syncBackground);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(STAGE_BACKGROUND_EVENT, syncBackground);
+    };
+  }, []);
+
+  const background = getStageBackground(backgroundId);
+
   return (
     <div style={{ width: STAGE_W * scale, height: STAGE_H * scale }} className="relative overflow-hidden">
       <div
         className="stage-bg absolute left-0 top-0"
-        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+        style={{
+          width: STAGE_W,
+          height: STAGE_H,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          backgroundImage: `url("${background.src}")`,
+        }}
       >
         {children}
       </div>

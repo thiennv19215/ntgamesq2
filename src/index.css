@@ -11,9 +11,12 @@ body,
   height: 100%;
 }
 
-/* Nền stage. Đổi ảnh: bỏ ảnh vào public/assets/bg/ rồi thay dòng background */
+/* Nền stage dọc 1080x1920; ảnh đang chọn được gán trong StageFrame. */
 .stage-bg {
-  background: #c8642a url('/assets/bg/lop.webp') top center / 1080px auto no-repeat;
+  background-color: #c8642a;
+  background-position: top center;
+  background-size: 1080px 1920px;
+  background-repeat: no-repeat;
 }
 
 /* Hiệu ứng khi đủ tim */

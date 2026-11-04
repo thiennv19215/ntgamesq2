@@ -10,6 +10,8 @@ import { GAME } from './config';
 import { QUESTIONS } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
 import { sfx } from './sfx';
+import { getStageBackground, STAGE_BACKGROUND_EVENT, STAGE_BACKGROUND_STORAGE_KEY } from '../live/stage-backgrounds';
+import { normalizeStageCharacters, saveStageCharacters } from '../live/stage-characters';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
@@ -70,7 +72,6 @@ export function useGame() {
         // câu hô bắt đầu: cô vừa mở miệng hô thì hiện bảng chữ
         const onStart = l.go
           ? () => {
-              sfx.play('go');
               roomRef.current?.showBoard();
               dirty.current = true;
             }
@@ -107,6 +108,16 @@ export function useGame() {
   useLiveEvents({
     onStatus: setStatus,
     onSpeaker: (d) => setStageCount(d.count),
+    onStageBackground: (id) => {
+      const backgroundId = getStageBackground(id).id;
+      try {
+        localStorage.setItem(STAGE_BACKGROUND_STORAGE_KEY, backgroundId);
+      } catch {
+        // The SSE event still updates other open stage pages.
+      }
+      window.dispatchEvent(new Event(STAGE_BACKGROUND_EVENT));
+    },
+    onStageCharacters: (selection) => saveStageCharacters(normalizeStageCharacters(selection)),
     onGameState: (s) => {
       if (!IS_STAGE) setView(s as StageView);
     },
@@ -247,11 +258,17 @@ export function useGame() {
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
           const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta) };
+          const phaseChanged = !!prevView && (
+            prevView.phase !== v.phase ||
+            prevView.qNo !== v.qNo ||
+            prevView.recess?.stage !== v.recess?.stage ||
+            prevView.recess?.game !== v.recess?.game
+          );
           sfx.watch(prevView, v);
           prevView = v;
           setView(v);
-          // Trang điều khiển chỉ cần ảnh xem trước 1 lần/giây; giảm SSE/JSON khi phòng đông.
-          if (now - lastSent >= 1000) {
+          // Gửi ngay lúc đổi pha/câu để preview không trễ; các trạng thái thường vẫn tối đa 1 lần/giây.
+          if (phaseChanged || now - lastSent >= 1000) {
             lastSent = now;
             fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }).catch(() => {});
           }

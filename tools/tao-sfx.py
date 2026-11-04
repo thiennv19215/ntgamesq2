@@ -96,15 +96,15 @@ def gen_go():
         out += snd * 0.4
     return out
 
-# 4. TICK: Tiếng tích tắc đồng hồ cơ đanh gọn
+# 4. TICK: Tiếng tích tắc đồng hồ cơ trầm, ngắn và dịu
 def gen_tick():
-    dur = 0.15
+    dur = 0.12
     t = np.linspace(0, dur, int(SR * dur), endpoint=False)
-    env = np.exp(-55 * t)
-    # Tiếng cơ khí kim loại: 1600Hz + click noise
-    body = np.sin(2 * np.pi * 1850 * t) * env
-    noise = np.random.uniform(-1, 1, len(t)) * np.exp(-120 * t) * 0.5
-    return (body * 0.7 + noise * 0.4) * 0.8
+    env = np.exp(-85 * t)
+    # Âm gỗ trầm thay cho tiếng vuông cao, chỉ thêm một transient rất nhẹ.
+    body = (np.sin(2 * np.pi * 760 * t) + 0.2 * np.sin(2 * np.pi * 1080 * t)) * env
+    click = np.random.uniform(-1, 1, len(t)) * np.exp(-220 * t) * 0.08
+    return (body * 0.42 + click) * 0.65
 
 # 5. BELL: Chuông điện báo hết giờ tan học
 def gen_bell():

@@ -23,26 +23,30 @@
   animation: none !important;
 }
 
-/* The dashboard preview keeps the scene still, but lets the characters stay alive. */
-.stage-preview .teacher-character {
-  animation: preview-teacher-idle 5.2s ease-in-out infinite;
+/* One shared clock keeps the teacher and class moving together in the live stage and preview. */
+.teacher-character,
+.crowd-character {
+  animation: idle-teacher 4.8s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.teacher-character {
   will-change: transform;
 }
-.stage-preview .student-character {
-  animation: preview-student-idle 3.4s ease-in-out infinite;
-  will-change: transform;
+.student-character {
+  animation: idle-student 4.8s ease-in-out infinite;
+  transform-origin: 50% 100%;
 }
-@keyframes preview-teacher-idle {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  25% { transform: translate(0, -3px) rotate(0.45deg); }
-  50% { transform: translate(0, -1px) rotate(0); }
-  75% { transform: translate(0, -2px) rotate(-0.45deg); }
+@keyframes idle-teacher {
+  0%, 100% { transform: translate(0, 0) rotate(0) scale(1, 1); }
+  25% { transform: translate(-1px, -2px) rotate(0.35deg) scale(1.002, 1.006); }
+  50% { transform: translate(0, 0) rotate(0) scale(1, 1.001); }
+  75% { transform: translate(1px, -1.5px) rotate(-0.3deg) scale(0.999, 1.004); }
 }
-@keyframes preview-student-idle {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  25% { transform: translate(1.5px, -4px) rotate(0.45deg); }
-  50% { transform: translate(0, 0) rotate(0); }
-  75% { transform: translate(-1.5px, -2px) rotate(-0.45deg); }
+@keyframes idle-student {
+  0%, 100% { transform: translate(0, 0) rotate(0) scaleY(1); }
+  25% { transform: translate(-0.5px, -2px) rotate(0.25deg) scaleY(1.006); }
+  50% { transform: translate(0, 0) rotate(0) scaleY(1.001); }
+  75% { transform: translate(0.5px, -1.5px) rotate(-0.2deg) scaleY(1.004); }
 }
 @keyframes tile-float {
   0%,
@@ -146,7 +150,8 @@
   .class-clap,
   .golden-board,
   .teacher-character,
-  .student-character {
+  .student-character,
+  .crowd-character {
     animation: none !important;
   }
 }
