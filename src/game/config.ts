@@ -42,7 +42,7 @@ export const GAME = {
   giftChance: 0.4, // tỉ lệ cô thưởng quà cho bạn đúng đầu tiên / đúng 3 câu liền
   deskGifts: 4, // mỗi bàn bày tối đa chừng này món quà (mới nhất)
   warnLeftSec: 5, // còn chừng này giây thì cô nhắc "chuẩn bị hết giờ" (đồng hồ không dừng)
-  revealSec: 8,
+  revealSec: 4, // giữ đáp án ngắn hơn rồi chuyển câu tiếp
   resultsSec: 12,
   superFastSec: 4, // đúng trong 4 giây đầu: cô nghi "quay cóp"
 

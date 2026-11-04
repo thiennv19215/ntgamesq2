@@ -51,6 +51,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Chỗ ngồi: điểm cao bàn đầu; cùng điểm thì bạn còn tương tác (bình luận trong 10 phút) ngồi trước bạn đã im lâu, rồi ai vào lớp trước ngồi trước (không đổi chỗ mỗi lần comment). Dưới khung Nhanh nhất có dòng nhắc ngắn đổi mỗi 8 giây: đoán nhanh, điểm cao, tương tác nhiều được vào lớp ngồi (2026-11-04).
 - Muốn nhân vật đẹp hơn: làm ảnh học sinh nhìn từ sau lưng cùng nét vẽ, bỏ vào nhan-vat/ rồi sửa tools/tach-nen.py.
 - Giọng đọc bám chương trình (chủ kênh chốt 2026-11-04): câu chính (giới thiệu tiết, đề, đáp án + cà khịa lúc hiện đáp án, tổng kết, ra chơi) đọc ngay, đồng hồ phần đó DỪNG trong lúc cô đọc (đọc đề xong mới đếm 20 giây). Câu chào, cảm ơn quà, follow, khen người đúng đầu tiên chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây (`chatterWindow`, `chatterMinLeftMs`); chờ quá lâu thì bỏ.
+- Sau khi cô đọc đáp án xong, giữ màn hình đáp án 4 giây rồi chuyển câu tiếp (`revealSec`).
 - Có thêm 10 câu khen kiểu khen bé nhỏ tuổi trong nhóm `firstCorrect`.
 - Tiết 20 câu, xen 4 câu toán nhẩm (2026-11-04): bảng đen hiện phép tính to, người xem gõ số; cô đọc "36 cộng 47 bằng mấy?", hiện đáp án đọc cả phép tính.
 - Đọc đề xong cô hô "bắt đầu" (nhóm `go`), hô xong mới đếm giờ. Còn 5 giây cô nhắc "chuẩn bị hết giờ nhé các bạn nhỏ ơi" (nhóm `timeWarn`, `warnLeftSec`), câu này KHÔNG dừng đồng hồ (2026-11-04).
