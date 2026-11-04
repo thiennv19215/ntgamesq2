@@ -56,7 +56,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Đọc đề xong cô hô "bắt đầu" (nhóm `go`), hô xong mới đếm giờ. Còn 5 giây cô nhắc "chuẩn bị hết giờ nhé các bạn nhỏ ơi" (nhóm `timeWarn`, `warnLeftSec`), câu này KHÔNG dừng đồng hồ (2026-11-04).
 - Xưng hô: cô gọi học sinh là "bạn nhỏ" / "các bạn nhỏ", không dùng em, con, mấy đứa (2026-11-04).
 - Cô khen kiểu thưởng quà: kẹo, bánh, sữa, phiếu bé ngoan, ngôi sao, điểm mười (`REWARDS` trong loi-thoai.ts). Chép phạt bốc ngẫu nhiên từ 10 tới 1 triệu lần (`penalty()`), số nhỏ hay gặp hơn (2026-11-04).
-- Cô đọc đề trước, bảng chữ xáo / phép tính / ô đáp án CHƯA hiện; lúc cô bắt đầu hô "bắt đầu" mới hiện (Say.go -> showBoard). Giọng hỏng thì đồng hồ chạy lại là tự hiện (2026-11-04).
+- Bảng chữ xáo / phép tính / ô đáp án của câu mới hiện ngay khi chuyển câu; cô vẫn đọc đề rồi hô "bắt đầu", đồng hồ chỉ chạy sau khi cô nói xong (2026-11-04).
 - Cứ 5 câu (sau câu 5, 10, 15) cô dừng lại điểm danh 3 bạn nhỏ điểm cao nhất, tặng mỗi bạn 1 món quà, mời cả lớp chào cô / thả tim; đọc xong chờ thêm 8 giây (praiseSec) rồi mới ra câu tiếp. Pha praise (2026-11-04).
 - Quà cô thưởng (kẹo, nơ, bánh, sữa, phiếu bé ngoan, gấu bông...: REWARDS trong loi-thoai.ts) bay từ tay cô xuống đặt trên bàn bạn nhỏ, tối đa 4 món/bàn, xoá khi sang tiết mới. Ngoài điểm danh, bạn đúng đầu tiên / đúng 3 câu liền có 40% được quà (giftChance), câu hỏi vàng 50% (2026-11-04).
 - Câu đố mẹo (2026-11-04): câu 7 và 13 mỗi tiết, bảng hiện nhãn "🤪 Đố mẹo", cô có lời riêng lúc hiện đáp án (riddleReveal), không ai đúng (riddleNobody: "bị cô lừa hết rồi"), trêu bạn sai (riddleWrong). Câu có nhiều đáp án hợp lý thì ghi thêm ở cột cách viết khác.

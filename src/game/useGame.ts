@@ -70,6 +70,7 @@ export function useGame() {
         // câu hô bắt đầu: cô vừa mở miệng hô thì hiện bảng chữ
         const onStart = l.go
           ? () => {
+              sfx.play('go');
               roomRef.current?.showBoard();
               dirty.current = true;
             }

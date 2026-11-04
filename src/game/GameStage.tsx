@@ -162,7 +162,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           ) : v.math ? (
             // câu toán: phép tính viết to bằng phấn, người xem gõ số
             <motion.div
-              key={v.math}
+              key={v.qNo}
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className={`mt-4 shrink-0 text-center text-[76px] font-extrabold leading-[96px] text-[#ffe680] ${v.phase === 'reveal' ? 'opacity-50' : ''}`}
@@ -172,7 +172,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           ) : (
             <>
               <div className="mt-2 line-clamp-2 min-h-[96px] shrink-0 text-center text-[38px] leading-[48px]">{v.clue}</div>
-              <Tiles letters={v.tiles} dim={v.phase === 'reveal'} />
+              <Tiles key={v.qNo} letters={v.tiles} dim={v.phase === 'reveal'} />
             </>
           )}
           {v.boardShown && <Slots slots={v.slots} reveal={v.phase === 'reveal'} />}
@@ -247,7 +247,7 @@ function Tiles({ letters, dim }: { letters: string[]; dim: boolean }) {
           key={`${i}${ch}`}
           initial={{ y: -30, opacity: 0, rotate: -8 }}
           animate={{ y: 0, opacity: 1, rotate: ((i * 37) % 9) - 4 }}
-          transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 18 }}
+          transition={{ delay: i * 0.025, type: 'spring', stiffness: 300, damping: 18 }}
           className="tile flex items-center justify-center font-extrabold"
           style={{ width: size, height: size * 1.1, fontSize: size * 0.62 }}
         >

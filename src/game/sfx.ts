@@ -77,7 +77,6 @@ class Sfx {
       return;
     }
     if (next.phase === 'intro' && prev.phase !== 'intro') this.play('drum');
-    if (next.phase === 'question' && next.boardShown && !(prev.phase === 'question' && prev.boardShown && prev.qNo === next.qNo)) this.play('go');
     if (next.qNo === prev.qNo && next.correctCount > prev.correctCount) this.play('ting', 150);
     if (next.phase === 'reveal' && prev.phase !== 'reveal') this.play('bell');
     if (giftAt > this.lastGiftAt) this.play('pop');
@@ -142,7 +141,8 @@ const SYNTH: Record<SfxName, Synth> = {
     tone(c, v, 'triangle', 784, 0, 0.15, 0.7);
     tone(c, v, 'triangle', 1175, 0.12, 0.3, 0.7);
   },
-  tick: (c, v) => tone(c, v, 'square', 1000, 0, 0.05, 0.25),
+  // Ngắn, rõ để nghe được trên tiếng live; bản cũ rất nhỏ nên dễ tưởng đồng hồ không phát.
+  tick: (c, v) => tone(c, v, 'square', 1200, 0, 0.08, 0.8),
   // chuông báo hết giờ
   bell: (c, v) => {
     tone(c, v, 'sine', 880, 0, 0.9, 0.6);

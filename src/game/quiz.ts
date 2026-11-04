@@ -274,7 +274,11 @@ export class Classroom {
     return lines.map((l) => ({ ...l, main: true }));
   }
   private line0(key: keyof typeof LINES) {
-    return this.t(this.lines.pick(key, LINES[key] as string[]));
+    const text = this.lines.pick(key, LINES[key] as string[]);
+    // Các câu thoại cô giáo không khai báo giọng riêng thì mặc định dùng giọng nữ.
+    // Giữ các tiền tố M:/F:/E: nếu câu đã chỉ định giọng tường minh.
+    const firstPart = text.split('|', 1)[0].trim();
+    return { text: /^(?:M|F|E):\s*/.test(firstPart) ? text : `F: ${text}` };
   }
   private line(key: keyof typeof LINES, ...args: string[]) {
     const fn = this.lines.pick(key, LINES[key] as ((...a: string[]) => string)[]);
@@ -482,7 +486,7 @@ export class Classroom {
     this.phaseEndsAt += add;
   }
 
-  /** Đã hiện bảng chữ (chữ xáo / phép tính) chưa: cô đọc đề xong, hô bắt đầu mới hiện */
+  /** Bảng chữ (chữ xáo / phép tính) đã hiện chưa */
   boardShown = false;
   showBoard() {
     this.boardShown = true;
@@ -524,7 +528,8 @@ export class Classroom {
     this.q = this.roundQs[this.qNo - 1] ?? null;
     if (!this.q) return this.startResults(now, true);
     this.tiles = this.q.math ? [] : scramble(this.q.answer, this.rand);
-    this.boardShown = false;
+    // Hiện câu mới ngay khi chuyển câu; đồng hồ vẫn chờ cô đọc xong và hô bắt đầu.
+    this.boardShown = true;
     this.revealed = new Set();
     this.bonusUsed = false;
     this.quietSaid = false;
@@ -537,7 +542,7 @@ export class Classroom {
     if (this.golden) out.push(this.line0('goldenIntro'));
     else if (this.q.math) out.push(this.line0('mathIntro'));
     out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${this.q.clue}`));
-    // đọc đề xong cô hô bắt đầu (lúc đó mới hiện bảng chữ); đồng hồ dừng trong lúc cô nói nên hô xong mới đếm giờ
+    // Câu mới hiện ngay; cô vẫn đọc đề rồi hô bắt đầu, đồng hồ chỉ chạy sau khi cô nói xong.
     out.push({ ...this.line0('go'), go: true });
     return this.mainOf(out);
   }
@@ -944,7 +949,7 @@ export class Classroom {
       this.warned = true;
       extra.push({ ...this.line0('timeWarn'), warn: true });
     }
-    // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ
+    // Dự phòng nếu bảng chưa hiện do luồng đọc giọng bị lỗi.
     if (asking && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
     if (now < this.phaseEndsAt) return extra;
     return [...extra, ...this.advance(now)];
@@ -1123,7 +1128,7 @@ export class Classroom {
       poll: this.poll && this.poll.opts.map((o) => ({ ...o, n: [...this.poll!.votes.values()].filter((k) => k === o.key).length })),
       birthday: this.birthday && now - this.birthday.at < GAME.birthdayBannerSec * 1000 ? this.birthday : null,
       players: this.activePlayers(now),
-      // cô đang đọc đề: chưa hiện chữ xáo / phép tính / ô đáp án, hô bắt đầu mới hiện
+      // Câu mới có thể hiện trong lúc cô đọc; đồng hồ vẫn chờ cô hô bắt đầu.
       boardShown: this.phase !== 'question' || this.boardShown,
       // dừng giữa tiết: 3 bạn nhỏ điểm cao nhất kèm quà trên bàn
       praiseTop: this.phase === 'praise' ? this.seats(3).filter((s) => s.score > 0).map(({ username, nickname, score, desk }) => ({ username, nickname, score, desk })) : [],
