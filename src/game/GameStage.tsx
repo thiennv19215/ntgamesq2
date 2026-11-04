@@ -201,22 +201,23 @@ function Timer({ left, duration }: { left: number; duration: number }) {
       key={left}
       initial={false}
       animate={{
-        borderColor: urgent ? ['#ff8a7a', '#ffd84a', '#ff8a7a'] : ['#f4f1e6', '#ffe680', '#f4f1e6'],
-        backgroundColor: urgent ? ['rgba(180,35,35,.28)', 'rgba(180,35,35,.62)', 'rgba(180,35,35,.28)'] : ['rgba(0,0,0,0)', 'rgba(255,255,255,.12)', 'rgba(0,0,0,0)'],
-        boxShadow: urgent ? ['0 0 0 rgba(255,100,80,0)', '0 0 18px rgba(255,100,80,.72)', '0 0 0 rgba(255,100,80,0)'] : ['0 0 0 rgba(255,230,128,0)', '0 0 10px rgba(255,230,128,.38)', '0 0 0 rgba(255,230,128,0)'],
+        filter: urgent
+          ? ['drop-shadow(0 0 2px rgba(255,110,80,.25))', 'drop-shadow(0 0 11px rgba(255,110,80,.8))', 'drop-shadow(0 0 2px rgba(255,110,80,.25))']
+          : ['drop-shadow(0 0 1px rgba(255,230,128,.15))', 'drop-shadow(0 0 7px rgba(255,230,128,.52))', 'drop-shadow(0 0 1px rgba(255,230,128,.15))'],
       }}
       transition={{ duration: urgent ? 0.42 : 0.3, ease: 'easeOut' }}
-      className={`relative flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full border-4 px-2 text-[40px] font-extrabold leading-none tabular-nums ${urgent ? 'border-[#ff8a7a] text-[#ff8a7a]' : 'border-[#f4f1e6]'}`}
+      className={`relative flex h-[64px] w-[64px] shrink-0 items-center justify-center px-2 text-[40px] font-extrabold leading-none tabular-nums ${urgent ? 'text-[#ff8a7a]' : 'text-[#fff7dc]'}`}
     >
-      <svg aria-hidden="true" className="pointer-events-none absolute -inset-[6px] h-[76px] w-[76px] -rotate-90 overflow-visible">
-        <circle cx="38" cy="38" r="34" fill="none" stroke="rgba(255,255,255,.24)" strokeWidth="3" />
+      <img src="/assets/ui/classroom-timer.svg" alt="" aria-hidden="true" className="pointer-events-none absolute -inset-[9px] h-[82px] w-[82px] select-none" />
+      <svg aria-hidden="true" className="pointer-events-none absolute -inset-[12px] h-[88px] w-[88px] -rotate-90 overflow-visible">
+        <circle cx="44" cy="44" r="41" fill="none" stroke="rgba(255,255,255,.24)" strokeWidth="2.5" />
         <motion.circle
-          cx="38"
-          cy="38"
-          r="34"
+          cx="44"
+          cy="44"
+          r="41"
           fill="none"
           stroke={ring}
-          strokeWidth="4"
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={circumference}
           animate={{ strokeDashoffset: circumference * (1 - progress), opacity: urgent ? [1, 0.55, 1] : 1 }}

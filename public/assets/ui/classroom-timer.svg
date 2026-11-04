@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="wood" x1="18" y1="15" x2="103" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe39a"/>
+      <stop offset=".28" stop-color="#bd792e"/>
+      <stop offset=".53" stop-color="#fff0b2"/>
+      <stop offset=".77" stop-color="#8c4a20"/>
+      <stop offset="1" stop-color="#e5ad54"/>
+    </linearGradient>
+    <linearGradient id="face" x1="60" y1="12" x2="60" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#245d48"/>
+      <stop offset="1" stop-color="#123c32"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="matrix(0 46 -46 0 44 30)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff9d8" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#fff9d8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="2" y="3" width="116" height="116" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+  <circle cx="60" cy="62" r="52" fill="#17140f" opacity=".48" filter="url(#shadow)"/>
+  <!-- Brass school-bell crown -->
+  <path d="M36 19 28 10c-2-3 1-6 4-5l13 8m39 6 8-9c2-3-1-6-4-5L75 13" fill="url(#wood)" stroke="#75421e" stroke-width="2.5"/>
+  <circle cx="60" cy="12" r="5" fill="#f7d77e" stroke="#875327" stroke-width="2"/>
+  <!-- Hand-turned wood and brass bezel -->
+  <circle cx="60" cy="62" r="51" fill="#56321d" stroke="#422515" stroke-width="2"/>
+  <circle cx="60" cy="60" r="49" fill="url(#wood)" stroke="#ffe5a0" stroke-width="2"/>
+  <circle cx="60" cy="60" r="43.5" fill="#714522" stroke="#4c2c19" stroke-width="2"/>
+  <circle cx="60" cy="60" r="39.5" fill="url(#face)" stroke="#f4d27c" stroke-width="2"/>
+  <circle cx="60" cy="60" r="38" fill="url(#shine)"/>
+  <!-- Chalk-hour marks -->
+  <g stroke="#fff0bd" stroke-linecap="round">
+    <path d="M60 25v5M60 90v5M25 60h5M90 60h5" stroke-width="2.8"/>
+    <path d="m35.3 35.3 3.5 3.5m42.4 42.4 3.5 3.5m0-49.4-3.5 3.5m-42.4 42.4-3.5 3.5" stroke-width="2" opacity=".9"/>
+    <path d="M60 33v2m0 50v2M33 60h2m50 0h2m-44-19 1.5 1.5m31 31L77 75m0-30-1.5 1.5m-31 31L43 79" stroke-width="1.5" opacity=".65"/>
+  </g>
+  <!-- Tiny chalk glint -->
+  <path d="m43 54 1.5 3.5L48 59l-3.5 1.5L43 64l-1.5-3.5L38 59l3.5-1.5L43 54Z" fill="#e8f1cf" opacity=".58"/>
+  <circle cx="60" cy="60" r="2.3" fill="#ffe28b" stroke="#6e4528" stroke-width="1.3"/>
+  <!-- Tiny corner rivets -->
+  <g fill="#fff0bd" stroke="#8b5428" stroke-width="1.5">
+    <circle cx="60" cy="15" r="1.8"/><circle cx="60" cy="105" r="1.8"/>
+    <circle cx="15" cy="60" r="1.8"/><circle cx="105" cy="60" r="1.8"/>
+  </g>
+</svg>
