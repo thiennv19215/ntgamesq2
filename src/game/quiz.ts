@@ -10,7 +10,7 @@ import { makeMath, type MathLevel } from './math';
  * Một vòng: intro → 20 câu, có 4 câu toán (question → [bonus] → reveal) → results → recess (giờ ra chơi) → intro ...
  */
 
-export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'vote';
+export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'results' | 'recess' | 'vote';
 
 /** 1 dòng báo cáo sau buổi live: câu nào khó quá / dễ quá */
 export interface ReportRow {
@@ -193,6 +193,7 @@ export class Classroom {
   revealed = new Set<number>(); // vị trí chữ đã mở (tính trên đáp án bỏ khoảng trắng)
   private bonusUsed = false;
   private quietSaid = false;
+  private firstCorrectGift = false;
   correct: Answerer[] = [];
   private tried = new Set<string>(); // ai đã trả lời câu này (đúng hay sai)
   private wrong = new Set<string>();
@@ -208,7 +209,7 @@ export class Classroom {
   review = false;
   private lastPeriod = '';
   private lastIdleAt = 0;
-  private monitor = ''; // lớp trưởng hiện tại: điểm tiết này cao nhất (mỗi tiết tranh lại từ đầu)
+  private monitor = ''; // lớp trưởng hiện tại: điểm tiết này cao nhất
   /** lớp trưởng các tiết đã xong (mới nhất trước), hiện ở bảng giờ ra chơi */
   champions: { round: number; username: string; nickname: string; score: number }[] = [];
   recess: Recess | null = null;
@@ -315,21 +316,20 @@ export class Classroom {
     this.weekDelta.set(s.username, w);
   }
 
-  /** Cô tặng 1 món quà: đặt lên bàn bạn nhỏ, trả về tên quà để cô đọc */
-  private giveGift(s: Student, now: number): string {
-    const g = REWARDS[Math.floor(this.rand() * REWARDS.length)];
-    s.desk = [...s.desk, { icon: g.icon, at: now }].slice(-GAME.deskGifts);
-    return g.name;
-  }
-
-  /** Lớp trưởng đổi người thì cô thông báo */
+  /** Lớp trưởng đổi người thì cô thông báo lúc tổng kết trò chơi giờ ra chơi. */
   private checkMonitor(): Say[] {
     const top = this.seats(1)[0];
     if (!top || top.score <= 0 || top.username === this.monitor) return [];
     const first = this.monitor === '';
     this.monitor = top.username;
-    // người đầu tiên có điểm trong tiết thì khỏi báo (cô vừa khen rồi), từ lần đổi người mới báo
     return first ? [] : [this.t(this.line('newMonitor', top.spoken))];
+  }
+
+  /** Cô tặng 1 món quà: đặt lên bàn bạn nhỏ, trả về tên quà để cô đọc */
+  private giveGift(s: Student, now: number): string {
+    const g = REWARDS[Math.floor(this.rand() * REWARDS.length)];
+    s.desk = [...s.desk, { icon: g.icon, at: now }].slice(-GAME.deskGifts);
+    return g.name;
   }
 
   /** Lớp trưởng, lớp phó: 3 bạn điểm tiết cao nhất (chỉ tính 20 câu của tiết này) */
@@ -498,7 +498,6 @@ export class Classroom {
     const answering =
       this.phase === 'question' ||
       this.phase === 'bonus' ||
-      this.phase === 'praise' ||
       this.phase === 'vote' ||
       (this.phase === 'recess' && this.recess?.stage === 'play');
     return answering && left > GAME.chatterMinLeftMs;
@@ -533,6 +532,7 @@ export class Classroom {
     this.revealed = new Set();
     this.bonusUsed = false;
     this.quietSaid = false;
+    this.firstCorrectGift = false;
     this.correct = [];
     this.tried = new Set();
     this.wrong = new Set();
@@ -600,10 +600,7 @@ export class Classroom {
     this.correct.forEach((a, i) => (a.points = pointsForRank(i) * mult));
     if (this.correct.length === 1) {
       const fast = now - this.phaseStartedAt < GAME.superFastSec * 1000;
-      if (!fast && this.rand() < GAME.giftChance) {
-        return [{ ...this.t(this.line('firstCorrectGift', e.spoken, this.giveGift(s, now))), ttl: 6000 }];
-      }
-      return [{ ...this.t(this.line(fast ? 'superFast' : 'firstCorrect', e.spoken)), ttl: 6000 }];
+      this.firstCorrectGift = !fast && this.rand() < GAME.giftChance;
     }
     return [];
   }
@@ -694,7 +691,6 @@ export class Classroom {
     this.setPhase('reveal', now, GAME.revealSec);
     const q = this.q!;
     this.reportLog.push({ id: q.id, answer: q.answer, category: q.category, attempts: this.stats.attempts, correct: this.correct.length, at: now });
-    const out: Say[] = [];
     const winners = new Set(this.correct.map((a) => a.username));
     for (const a of this.correct) {
       const s = this.students.get(a.username);
@@ -703,7 +699,7 @@ export class Classroom {
       s.streak++;
       if (s.streak % GAME.streakEvery === 0) {
         this.award(s, GAME.streakBonus, now, true);
-        out.push(this.t(this.rand() < GAME.giftChance ? this.line('streakGift', s.spoken, this.giveGift(s, now)) : this.line('streak', s.spoken)));
+        if (this.rand() < GAME.giftChance) this.giveGift(s, now);
       }
     }
     // cùng lúc chốt điểm: ai trả lời trước xếp trên
@@ -712,55 +708,43 @@ export class Classroom {
       if (s) s.reachedAt = now + i / 1000;
     });
     for (const s of this.students.values()) if (!winners.has(s.username)) s.streak = 0;
-    const math = this.q!.math;
-    const riddle = this.q!.slot === 'meo';
-    const eng = this.q!.slot === 'anh'; // câu tiếng Anh: lời hiện đáp án đọc từ tiếng Anh bằng giọng tiếng Anh
-    // câu toán đọc cả phép tính: "36 cộng 47 bằng 83"
-    const answer = math ? `${math.say} bằng ${this.q!.answer}` : this.q!.answer.toLowerCase();
+    const q = this.q!;
     const top = this.correct[0] && this.students.get(this.correct[0].username);
-    let main: string;
-    if (top) {
-      const rest = this.line('revealTop', top.spoken) + (this.correct.length > 1 ? ' ' + this.line('revealCount', String(this.correct.length)) : '');
-      main = this.line(math ? 'mathReveal' : riddle ? 'riddleReveal' : eng ? 'englishReveal' : this.q!.slot === 'su' ? 'historyReveal' : 'reveal', answer, rest);
-      if (this.golden) out.unshift(this.t(this.rand() < 0.5 ? this.line('goldenGift', top.spoken, this.giveGift(top, now)) : this.line('goldenWinner', top.spoken)));
-    } else main = this.line(math ? 'mathNobody' : riddle ? 'riddleNobody' : eng ? 'englishNobody' : 'revealNobody', answer);
-    out.unshift({ ...this.t(main), main: true });
+    if (top && this.firstCorrectGift) this.giveGift(top, now);
+    if (top && this.golden && this.rand() < 0.5) this.giveGift(top, now);
+    const answer = q.math ? `${q.math.say} bằng ${q.answer}` : q.answer.toLowerCase();
+    const winner = top ? `Bạn trả lời nhanh nhất là ${top.spoken}.` : 'Chưa có ai trả lời đúng.';
+    // Cuối câu chỉ công bố đáp án và người nhanh nhất; lời khen tổng kết để dành tới hết tiết.
+    const main = q.slot === 'anh'
+      ? `Đáp án là | E: ${q.answer}. | F: ${winner}`
+      : `${q.math ? answer : `Đáp án là ${answer}`}. ${winner}`;
     // cà khịa 1 bạn trả lời sai (60% số câu, tên đọc được)
     const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
     if (wrongs.length && this.rand() < GAME.roastChance) {
       const w = wrongs[Math.floor(this.rand() * wrongs.length)];
       // thỉnh thoảng phạt lên bục đứng thật (học sinh cá biệt), tối đa 2 bạn cùng lúc
       const standing = [...this.students.values()].filter((s) => s.standUntil > now).length;
-      if (standing < 2 && w.standUntil <= now && this.rand() < GAME.standChance) {
-        w.standUntil = now + GAME.standSec * 1000;
-        out.push(this.t(this.line('roastStand', w.spoken)));
-      } else out.push(this.t(this.line(math ? 'mathWrong' : riddle ? 'riddleWrong' : 'roastWrong', w.spoken)));
+      if (standing < 2 && w.standUntil <= now && this.rand() < GAME.standChance) w.standUntil = now + GAME.standSec * 1000;
     }
-    return this.mainOf([...out, ...this.checkMonitor()]);
-  }
-
-  /** Dừng giữa tiết: cô điểm danh 3 bạn nhỏ điểm cao nhất, tặng quà, mời cả lớp tương tác rồi mới ra câu tiếp */
-  private startPraise(now: number): Say[] {
-    const top = this.seats(3).filter((s) => s.score > 0);
-    this.setPhase('praise', now, GAME.praiseSec);
-    const keys = ['praiseFirst', 'praiseSecond', 'praiseThird'] as const;
-    return this.mainOf([
-      this.line0('praiseIntro'),
-      ...top.map((s, i) => ({ ...this.t(this.line(keys[i], s.spoken, String(s.score), this.giveGift(s, now))), rateBoost: 0.15 })),
-      this.line0('praiseOutro'),
-    ]).map((line) => ({ ...line, rateBoost: 0.15 }));
+    return this.mainOf([this.t(main)]);
   }
 
   private startResults(now: number, outOfQuestions = false): Say[] {
     this.setPhase('results', now, GAME.resultsSec);
-    const best = this.seats(1)[0];
+    const leaders = this.seats(3).filter((s) => s.score > 0);
+    const best = leaders[0];
     const lines: Say[] = [];
     // ghi lớp trưởng tiết này vào bảng các tiết trước
     if (best && best.score > 0) {
       this.champions = [{ round: this.round, username: best.username, nickname: best.nickname, score: best.score }, ...this.champions].slice(0, GAME.championsKept);
     }
     if (outOfQuestions) lines.push(this.t('Hết câu hỏi rồi, cô tổng kết luôn nha.'));
-    lines.push(best && best.score > 0 ? this.t(this.line('results', best.spoken, String(best.score))) : this.line0('resultsNobody'));
+    if (leaders.length) {
+      const ranks = ['Nhất', 'Nhì', 'Ba'];
+      const summary = leaders.map((s, i) => `${ranks[i]} ${s.spoken}, ${s.score} điểm`).join('; ');
+      for (const s of leaders) this.giveGift(s, now);
+      lines.push(this.t(this.line('resultsSummary', summary)));
+    } else lines.push(this.line0('resultsNobody'));
     if (this.weekLeader && this.round % 3 === 0) lines.push(this.t(this.line('weekBoard', this.weekLeader)));
     return this.mainOf(lines);
   }
@@ -894,7 +878,7 @@ export class Classroom {
     const voted = this.phase === 'vote' ? this.closeVote() : [];
     if (this.phase !== 'vote') this.topic = '';
     this.round++;
-    this.monitor = ''; // tiết mới: cả lớp tranh lớp trưởng lại từ đầu
+    this.monitor = '';
     this.qNo = 0;
     this.q = null;
     this.correct = [];
@@ -969,8 +953,6 @@ export class Classroom {
         return this.reveal(now);
       case 'reveal':
         return this.afterQuestion(now);
-      case 'praise':
-        return this.startQuestion(now);
       case 'results':
         return this.startRecess(now);
       case 'recess':
@@ -1024,11 +1006,9 @@ export class Classroom {
     return [{ ...this.line0('funFact'), ttl: 8000 }];
   }
 
-  /** Xong 1 câu: tổng kết tiết / dừng điểm danh / câu tiếp */
+  /** Xong 1 câu: sang câu tiếp hoặc tổng kết tiết */
   private afterQuestion(now: number): Say[] {
     if (this.qNo >= this.roundQs.length) return this.startResults(now);
-    // cứ 5 câu dừng lại điểm danh bạn nhỏ giỏi (chưa ai có điểm thì thôi)
-    if (this.qNo % GAME.praiseEvery === 0 && this.seats(1)[0]?.score > 0) return this.startPraise(now);
     return this.startQuestion(now);
   }
 
@@ -1127,8 +1107,6 @@ export class Classroom {
       players: this.activePlayers(now),
       // Câu mới có thể hiện trong lúc cô đọc; đồng hồ vẫn chờ cô hô bắt đầu.
       boardShown: this.phase !== 'question' || this.boardShown,
-      // dừng giữa tiết: 3 bạn nhỏ điểm cao nhất kèm quà trên bàn
-      praiseTop: this.phase === 'praise' ? this.seats(3).filter((s) => s.score > 0).map(({ username, nickname, score, desk }) => ({ username, nickname, score, desk })) : [],
       correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),
       correctCount: this.correct.length,
       seats: seated.slice(0, GAME.seats).map(pub),

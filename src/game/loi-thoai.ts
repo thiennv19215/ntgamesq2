@@ -497,6 +497,11 @@ export const LINES = {
     (n, s) => `Hết giờ! ${n} được ${s} điểm, về nhà khoe ba mẹ đi.`,
     (n, s) => `Nhất tiết này là ${n} với ${s} điểm. Mấy bạn khác tiết sau lấy lại nha.`,
   ] as L2,
+  resultsSummary: [
+    (summary) => `Tổng kết tiết học: ${summary}. Cô khen các bạn nhỏ!`,
+    (summary) => `Kết quả cuối tiết: ${summary}. Cả lớp cố gắng giỏi lắm!`,
+    (summary) => `Bảng vàng của tiết: ${summary}. Cô chúc mừng các bạn!`,
+  ] as L1,
   resultsNobody: [
     'Tiết này chưa ai ghi điểm. Tiết sau cả lớp cố lên nha.',
     'Không ai có điểm luôn. Cô đi xin thêm phấn rồi dạy lại từ đầu.',

@@ -50,17 +50,16 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Bảng đỏ chữ vàng "TIÊN HỌC LỄ – HẬU HỌC VĂN" phía trên bảng đen.
 - Chỗ ngồi: điểm cao bàn đầu; cùng điểm thì bạn còn tương tác (bình luận trong 10 phút) ngồi trước bạn đã im lâu, rồi ai vào lớp trước ngồi trước (không đổi chỗ mỗi lần comment). Dưới khung Nhanh nhất có dòng nhắc ngắn đổi mỗi 8 giây: đoán nhanh, điểm cao, tương tác nhiều được vào lớp ngồi (2026-11-04).
 - Muốn nhân vật đẹp hơn: làm ảnh học sinh nhìn từ sau lưng cùng nét vẽ, bỏ vào nhan-vat/ rồi sửa tools/tach-nen.py.
-- Giọng đọc bám chương trình (chủ kênh chốt 2026-11-04): câu chính (giới thiệu tiết, đề, đáp án + cà khịa lúc hiện đáp án, tổng kết, ra chơi) đọc ngay, đồng hồ phần đó DỪNG trong lúc cô đọc (đọc đề xong mới đếm 20 giây). Câu chào, cảm ơn quà, follow, khen người đúng đầu tiên chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây (`chatterWindow`, `chatterMinLeftMs`); chờ quá lâu thì bỏ.
-- Sau khi cô đọc đáp án xong, giữ màn hình đáp án 4 giây rồi chuyển câu tiếp (`revealSec`).
-- Có thêm 10 câu khen kiểu khen bé nhỏ tuổi trong nhóm `firstCorrect`.
+- Giọng đọc bám chương trình (chủ kênh chốt 2026-11-04): câu chính (giới thiệu tiết, đề, đáp án + bạn nhanh nhất, tổng kết, ra chơi) đọc ngay, đồng hồ phần đó DỪNG trong lúc cô đọc (đọc đề xong mới đếm 20 giây). Câu chào, cảm ơn quà, follow chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây (`chatterWindow`, `chatterMinLeftMs`); chờ quá lâu thì bỏ.
+- Mỗi câu chỉ công bố đáp án và bạn trả lời nhanh nhất, rồi chuyển tiếp; không đọc lời khen ngay khi có người trả lời đúng. Giữ màn hình đáp án 2 giây sau khi cô đọc xong (`revealSec`).
 - Tiết 20 câu, xen 4 câu toán nhẩm (2026-11-04): bảng đen hiện phép tính to, người xem gõ số; cô đọc "36 cộng 47 bằng mấy?", hiện đáp án đọc cả phép tính.
 - Đọc đề xong cô hô "bắt đầu" (nhóm `go`), hô xong mới đếm giờ. Còn 5 giây cô nhắc "chuẩn bị hết giờ nhé các bạn nhỏ ơi" (nhóm `timeWarn`, `warnLeftSec`), câu này KHÔNG dừng đồng hồ (2026-11-04).
 - Xưng hô: cô gọi học sinh là "bạn nhỏ" / "các bạn nhỏ", không dùng em, con, mấy đứa (2026-11-04).
 - Cô khen kiểu thưởng quà: kẹo, bánh, sữa, phiếu bé ngoan, ngôi sao, điểm mười (`REWARDS` trong loi-thoai.ts). Chép phạt bốc ngẫu nhiên từ 10 tới 1 triệu lần (`penalty()`), số nhỏ hay gặp hơn (2026-11-04).
 - Bảng chữ xáo / phép tính / ô đáp án của câu mới hiện ngay khi chuyển câu; cô vẫn đọc đề rồi hô "bắt đầu", đồng hồ chỉ chạy sau khi cô nói xong (2026-11-04).
-- Cứ 5 câu (sau câu 5, 10, 15) cô dừng lại điểm danh 3 bạn nhỏ điểm cao nhất, tặng mỗi bạn 1 món quà, mời cả lớp chào cô / thả tim; đọc xong chờ thêm 8 giây (praiseSec) rồi mới ra câu tiếp. Pha praise (2026-11-04).
-- Quà cô thưởng (kẹo, nơ, bánh, sữa, phiếu bé ngoan, gấu bông...: REWARDS trong loi-thoai.ts) bay từ tay cô xuống đặt trên bàn bạn nhỏ, tối đa 4 món/bàn, xoá khi sang tiết mới. Ngoài điểm danh, bạn đúng đầu tiên / đúng 3 câu liền có 40% được quà (giftChance), câu hỏi vàng 50% (2026-11-04).
-- Câu đố mẹo (2026-11-04): câu 7 và 13 mỗi tiết, bảng hiện nhãn "🤪 Đố mẹo", cô có lời riêng lúc hiện đáp án (riddleReveal), không ai đúng (riddleNobody: "bị cô lừa hết rồi"), trêu bạn sai (riddleWrong). Câu có nhiều đáp án hợp lý thì ghi thêm ở cột cách viết khác.
+- Cuối tiết, cô tổng kết top 3 theo điểm và tặng mỗi bạn một món quà; không dừng lại khen giữa các câu.
+- Quà cô thưởng (kẹo, nơ, bánh, sữa, phiếu bé ngoan, gấu bông...: REWARDS trong loi-thoai.ts) bay từ tay cô xuống đặt trên bàn bạn nhỏ, tối đa 4 món/bàn, xoá khi sang tiết mới. Ngoài tổng kết, bạn đúng đầu tiên / đúng 3 câu liền có 40% được quà (giftChance), câu hỏi vàng 50% (2026-11-04).
+- Câu đố mẹo (2026-11-04): câu 7 và 13 mỗi tiết, bảng hiện nhãn "🤪 Đố mẹo"; phần công bố đáp án theo lời ngắn chung và gọi bạn nhanh nhất. Câu có nhiều đáp án hợp lý thì ghi thêm ở cột cách viết khác.
 - Đố dân gian vui (2026-11-04): 23 câu thêm trong `31-do-dan-gian-meo.txt`, trộn vào hai lượt đố mẹo mỗi tiết và có nhãn riêng trên bảng.
 - Câu lịch sử (2026-11-04): câu 9 và 17 mỗi tiết, nhãn "📜 Lịch sử". Chỉ lịch sử Việt Nam tới 1945, kiến thức sách giáo khoa. Chi tiết các nguồn ghi khác nhau thì KHÔNG đưa vào gợi ý (đã bỏ: lý do tên Hắc Đế, năm xây Chùa Cầu); không dùng nhân vật còn tranh cãi (vd Lê Văn Tám). Thêm câu mới thì phải tra lại.
 - Nút "🚫 Bỏ câu này" ở trang điều khiển (2026-11-04): bỏ câu đang hỏi, không ai được điểm, sang câu tiếp, không bao giờ hỏi lại (sổ lớp `banned`). Sửa đáp án trong file là thành câu mới. Câu toán không bỏ được.

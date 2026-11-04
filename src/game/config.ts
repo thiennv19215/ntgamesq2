@@ -37,12 +37,10 @@ export const GAME = {
   standChance: 0.3, // lúc trêu bạn trả lời sai: tỉ lệ cô phạt lên bục đứng (học sinh cá biệt)
   standSec: 45,
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
-  praiseEvery: 5, // cứ 5 câu cô dừng lại điểm danh bạn nhỏ giỏi, tặng quà top 3 (câu 5, 10, 15)
-  praiseSec: 4, // đọc xong chờ ngắn rồi sang câu tiếp
   giftChance: 0.4, // tỉ lệ cô thưởng quà cho bạn đúng đầu tiên / đúng 3 câu liền
   deskGifts: 4, // mỗi bàn bày tối đa chừng này món quà (mới nhất)
   warnLeftSec: 5, // còn chừng này giây thì cô nhắc "chuẩn bị hết giờ" (đồng hồ không dừng)
-  revealSec: 4, // giữ đáp án ngắn hơn rồi chuyển câu tiếp
+  revealSec: 2, // chốt nhanh đáp án rồi chuyển câu tiếp
   resultsSec: 12,
   superFastSec: 4, // đúng trong 4 giây đầu: cô nghi "quay cóp"
 

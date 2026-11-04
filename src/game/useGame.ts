@@ -62,7 +62,7 @@ export function useGame() {
   // - Câu nói thêm (chào, cảm ơn, cà khịa) giữ ở đây, chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây.
   const mainSpeaking = useRef(0);
   const chatter = useRef<{ text: string; priority: boolean; until: number; context: string }[]>([]);
-  function say(lines: Say[]) {
+  function say(lines: Say[], changed = false) {
     const now = Date.now();
     for (const l of lines) {
       if (l.main) {
@@ -85,7 +85,7 @@ export function useGame() {
         chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl, context });
       }
     }
-    dirty.current = true;
+    if (lines.length > 0 || changed) dirty.current = true;
   }
   /** Nhả 1 câu nói thêm nếu đang tới lúc (gọi mỗi nhịp game) */
   function flushChatter(room: Classroom, now: number) {
@@ -116,13 +116,13 @@ export function useGame() {
       if (!room) return;
       const p = person(e);
       const isNew = !room.students.has(e.username);
-      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, safe: !containsBanned(e.comment) }, Date.now()));
+      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, safe: !containsBanned(e.comment) }, Date.now()), true);
       if (isNew && p.spoken !== 'bạn' && GAME.joinKeywords.includes(plain(e.comment))) talk.greeter.add(e.username, p.spoken);
       // chuyên cần: lần đầu bình luận trong buổi thì báo server, server trả về số ngày đi học liền
       if (isNew && IS_STAGE) {
         fetch('/api/game/attend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: e.username, nickname: p.nickname }) })
           .then((r) => r.json())
-          .then((d) => roomRef.current && say(roomRef.current.attendance(p, Number(d.days) || 0, Date.now())))
+          .then((d) => roomRef.current && say(roomRef.current.attendance(p, Number(d.days) || 0, Date.now()), true))
           .catch(() => {});
       }
     },
@@ -134,7 +134,7 @@ export function useGame() {
       const coins = e.diamondCount * e.repeatCount;
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
       const hint = room.gift(p, coins, Date.now());
-      say(hint);
+      say(hint, true);
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
       if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
@@ -151,7 +151,7 @@ export function useGame() {
       // tim thật x GAME.heartBoost: đủ 300 tim (60 tim thật) là cả lớp vỗ tay
       const reached = (e.totalLikes - likeBase.current) * GAME.heartBoost >= GAME.likesPerClap;
       if (reached) likeBase.current = e.totalLikes;
-      say(room.like(e.likeCount, Date.now(), reached));
+      say(room.like(e.likeCount, Date.now(), reached), true);
     },
 
     onControl: (c) => {

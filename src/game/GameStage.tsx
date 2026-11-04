@@ -183,7 +183,6 @@ function Board({ v, now }: { v: StageView; now: number }) {
         </div>
       )}
 
-      {v.phase === 'praise' && <Praise v={v} />}
       {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
       {v.phase === 'results' && <Results v={v} />}
       {v.phase === 'recess' && v.recess && <Recess v={v} left={left} />}
@@ -307,33 +306,6 @@ function Vote({ v, left }: { v: StageView; left: number }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-// Dừng giữa tiết: bạn nhỏ giỏi nhất từ đầu tiết, kèm quà cô vừa tặng
-function Praise({ v }: { v: StageView }) {
-  return (
-    <div className="flex h-full flex-col items-center">
-      <div className="text-[50px] leading-none text-[#ffe680]">🎁 Cô phát quà nè!</div>
-      <div className="mt-1 text-[28px] opacity-80">Bạn nhỏ giỏi nhất sau {v.qNo} câu</div>
-      <div className="mt-4 w-full space-y-2">
-        {v.praiseTop.map((s, i) => (
-          <motion.div
-            key={s.username}
-            initial={{ x: -40, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: i * 0.4 }}
-            className="flex items-center gap-3 px-6 text-[40px]"
-          >
-            <span className="w-12">{['🥇', '🥈', '🥉'][i]}</span>
-            <span className="flex-1 truncate">{s.nickname}</span>
-            <span className="text-[34px]">{s.desk[s.desk.length - 1]?.icon}</span>
-            <span>{s.score}đ</span>
-          </motion.div>
-        ))}
-      </div>
-      <div className="mt-auto text-[30px] text-[#ffe680]">Chào cô, thả tim để được quà nha! 💕</div>
     </div>
   );
 }
@@ -530,7 +502,6 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   else if (v.phase === 'question') pose = '04-chi-phai';
   else if (v.phase === 'bonus') pose = '07-suy-nghi';
   else if (v.phase === 'reveal') pose = v.correctCount > 0 ? '05-vui' : '06-buon';
-  else if (v.phase === 'praise') pose = '05-vui';
   else if (v.phase === 'vote') pose = '02-giang-bai';
   else if (v.phase === 'results') pose = '02-giang-bai';
   else if (v.phase === 'recess') pose = v.recess?.stage === 'play' ? '08-vay-chao' : v.recess?.stage === 'result' ? '05-vui' : '03-chi-trai';
@@ -622,7 +593,7 @@ function studentPose(s: StageView['seats'][number], v: StageView, rank: number, 
   if (s.answered === 'right') return 'vui';
   if (s.answered === 'wrong') return asking ? 'buon' : 'ngac';
   if (asking) return now - s.lastActive < 2500 ? 'tay' : 'nghi';
-  if ((v.phase === 'results' || v.phase === 'praise') && rank < 3 && s.score > 0) return 'vui';
+  if (v.phase === 'results' && rank < 3 && s.score > 0) return 'vui';
   if (now - (s.desk[s.desk.length - 1]?.at ?? 0) < 3000) return 'vui'; // vừa được cô tặng quà
   return now - s.lastActive < 2500 ? 'tay' : 'dung';
 }

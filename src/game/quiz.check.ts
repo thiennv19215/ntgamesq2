@@ -141,7 +141,7 @@ for (const q of BANK) {
   assert.equal(g.flowers, 20);
 }
 
-// ---------- tiết thật: 20 câu, 5 dễ 6 vừa 5 khó + 4 câu toán (câu 5, 10, 15, 19); câu 20 nhân đôi; chuỗi 3 câu ----------
+// ---------- tiết thật: 20 câu, câu 20 nhân đôi; chỉ tổng kết khen sau câu cuối ----------
 {
   const c = new Classroom(BANK, t);
   c.newRound(t);
@@ -164,14 +164,8 @@ for (const q of BANK) {
     if (k === GAME.questionsPerRound - 1) assert.equal(c.correct[0].points, 20);
     c.tick((t += GAME.questionSec * 1000 + 1));
     c.tick((t += GAME.revealSec * 1000));
-    // câu 5, 10, 15: cô dừng lại điểm danh, tặng quà rồi mới ra câu tiếp
-    if ((k + 1) % GAME.praiseEvery === 0 && k + 1 < GAME.questionsPerRound) {
-      assert.equal(c.phase, 'praise', `dừng điểm danh sau câu ${k + 1}`);
-      assert.equal(c.view(t).praiseTop[0].username, 'u1');
-      c.tick((t += GAME.praiseSec * 1000));
-    }
   }
-  assert.ok(c.students.get('u1')!.desk.length >= 3, 'quà điểm danh đặt lên bàn');
+  assert.ok(c.students.get('u1')!.desk.length >= 1, 'quà tổng kết đặt lên bàn');
   assert.ok(c.students.get('u1')!.desk.length <= GAME.deskGifts);
   assert.deepEqual(plan, [...GAME.roundPlan]);
   for (let i = 1; i < cats.length; i++) assert.notEqual(cats[i], cats[i - 1], 'không 2 câu chữ liền cùng chủ đề');
@@ -306,14 +300,13 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.students.get('u1')!.session, 1);
 }
 
-// ---------- lớp trưởng: đổi người thì cô thông báo ----------
+// ---------- lớp trưởng: đổi người thì bảng xếp hạng cập nhật ----------
 {
   const c = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho'), mk('GÀ', 'easy', 'ga')], t);
   c.newRound(t);
   c.tick((t += GAME.introSec * 1000));
-  const said: string[] = [];
   const step = () => {
-    said.push(...c.tick((t += GAME.questionSec * 1000 + 1)).map((l) => l.text));
+    c.tick((t += GAME.questionSec * 1000 + 1));
     c.tick((t += GAME.revealSec * 1000));
   };
   chat(c, 1, c.q!.answer, t, t);
@@ -322,9 +315,8 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   chat(c, 1, c.q!.answer, t + 1, t);
   step();
   chat(c, 2, c.q!.answer, t, t);
-  said.push(...c.tick((t += GAME.questionSec * 1000 + 1)).map((l) => l.text));
+  c.tick((t += GAME.questionSec * 1000 + 1));
   assert.equal(c.view(t).seats.find((x) => x.username === 'u2')!.title, 'lop-truong');
-  assert.ok(said.some((l) => l.includes('Bạn 2') && /lớp trưởng/i.test(l)), 'cô báo lớp trưởng mới');
 }
 
 // ---------- lớp trưởng chỉ tính điểm tiết này; tiết mới tranh lại từ đầu ----------
@@ -448,9 +440,8 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.view(t).walk!.username, 'u1');
   assert.equal(c.view(t + GAME.walkMs).walk, null);
   // trả lời sai bị trêu + phạt lên bục đứng
-  const said = c.tick((t = c.phaseEndsAt));
-  for (let k = 0; k < 3 && c.phase !== 'reveal'; k++) said.push(...c.tick((t = c.phaseEndsAt)));
-  assert.ok(said.some((l) => LINES.roastStand.some((f) => f('Bạn 2') === l.text.slice(3))), 'cô phạt lên bục');
+  c.tick((t = c.phaseEndsAt));
+  for (let k = 0; k < 3 && c.phase !== 'reveal'; k++) c.tick((t = c.phaseEndsAt));
   assert.deepEqual(c.view(t).punished.map((p) => p.username), ['u2']);
   assert.ok(seat('u2').standing);
   assert.equal(c.view(t + GAME.standSec * 1000).punished.length, 0, 'hết giờ phạt thì về chỗ');

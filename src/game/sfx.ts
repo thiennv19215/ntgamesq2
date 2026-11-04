@@ -82,7 +82,7 @@ class Sfx {
     if (giftAt > this.lastGiftAt) this.play('pop');
     this.lastGiftAt = Math.max(this.lastGiftAt, giftAt);
     if (next.clapping && !prev.clapping) this.play('clap');
-    if ((next.phase === 'praise' && prev.phase !== 'praise') || (next.birthday && next.birthday.at !== prev.birthday?.at)) this.play('fanfare', 500);
+    if ((next.phase === 'results' && prev.phase !== 'results') || (next.birthday && next.birthday.at !== prev.birthday?.at)) this.play('fanfare', 500);
   }
 }
 
