@@ -250,7 +250,8 @@ export function useGame() {
           sfx.watch(prevView, v);
           prevView = v;
           setView(v);
-          if (now - lastSent >= 400) {
+          // Trang điều khiển chỉ cần ảnh xem trước 1 lần/giây; giảm SSE/JSON khi phòng đông.
+          if (now - lastSent >= 1000) {
             lastSent = now;
             fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }).catch(() => {});
           }

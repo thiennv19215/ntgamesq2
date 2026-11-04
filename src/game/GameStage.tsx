@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
+import { AnswerBadge, BouquetIcon, VaseFlower, ConfettiBurst } from './StageAssets';
 import './stage.css';
 
 /**
@@ -20,8 +21,8 @@ const ROWS = [
 ];
 const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
-// khung đầu đã xoá khỏi ảnh thân sau lưng, tính theo tỉ lệ ảnh (tools/tach-nen.py ghi ra public/assets/nv/*/head.json)
-const HEAD = { nam: { x: 0.136, y: 0, w: 0.682, h: 0.284 }, nu: { x: 0.174, y: 0, w: 0.668, h: 0.248 } };
+// khung đầu đã xoá khỏi ảnh thân sau lưng; Hair vẽ tóc riêng theo tài khoản học sinh
+const HEAD = { nam: { x: 0.158, y: 0, w: 0.703, h: 0.293 }, nu: { x: 0.162, y: 0, w: 0.680, h: 0.263 } };
 // người không có ghế chen chúc 2 bên ngoài cửa lớp: [tâm x, chân y] (px stage), hàng trước (gần lớp) trước
 const CROWD_ROWS = 10;
 const STAND: [number, number][] = [];
@@ -43,20 +44,30 @@ type PoseKey = keyof typeof POSE.nam;
 // tải trước mọi tư thế để đổi tư thế không bị nháy trắng
 const ALL_IMGS = [
   ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/${p}.webp`),
+  ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/sau-${p}.webp`),
   ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/${p}.webp`),
+  ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/sau-${p}.webp`),
   ...['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'].map((p) => `/assets/nv/co-giao/${p}.webp`),
 ];
-const TEACHER_IDLE = { y: [0, -2, 0], rotate: [0, 0.35, 0, -0.35, 0] };
-const TEACHER_IDLE_TRANSITION = { duration: 3.6, repeat: Infinity, ease: 'easeInOut' as const };
-const STUDENT_IDLE = { y: [0, -1.5, 0] };
+const TEACHER_IDLE = {
+  x: [0, 0, 0, 0, 0],
+  y: [0, -3, -1, -2, 0],
+  rotate: [0, 0.45, 0, -0.45, 0],
+};
+const TEACHER_IDLE_TRANSITION = { duration: 5.2, repeat: Infinity, ease: 'easeInOut' as const };
+const STUDENT_IDLE = {
+  x: [0, 1.5, 0, -1.5, 0],
+  y: [0, -4, 0, -2, 0],
+  rotate: [0, 0.45, 0, -0.45, 0],
+};
 const STUDENT_IDLE_TRANSITIONS = Array.from({ length: 20 }, (_, i) => ({
-  duration: 2.3 + (i % 4) * 0.22,
-  delay: (i % 5) * 0.13,
+  duration: 2.8 + (i % 4) * 0.3,
+  delay: (i % 5) * 0.24,
   repeat: Infinity,
   ease: 'easeInOut' as const,
 }));
 
-function useNow(ms = 250) {
+function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), ms);
@@ -65,7 +76,7 @@ function useNow(ms = 250) {
   return now;
 }
 
-export function GameStage({ game }: { game: GameState }) {
+export function GameStage({ game, staticPreview = false }: { game: GameState; staticPreview?: boolean }) {
   const now = useNow();
   useEffect(() => {
     for (const src of ALL_IMGS) new Image().src = src;
@@ -79,8 +90,8 @@ export function GameStage({ game }: { game: GameState }) {
     );
   }
   return (
-    <MotionConfig reducedMotion="user">
-      <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+    <MotionConfig reducedMotion={staticPreview ? 'always' : 'user'}>
+      <div className={`relative h-full w-full overflow-hidden ${staticPreview ? 'stage-preview' : ''} ${v.clapping ? 'class-clap' : ''}`}>
         <Header v={v} name={game.channelName} />
         <Motto />
         <Board v={v} now={now} />
@@ -92,12 +103,14 @@ export function GameStage({ game }: { game: GameState }) {
         <SeatHint now={now} />
         <Students v={v} now={now} />
         <Standing v={v} now={now} />
-        <FlowerWalk v={v} />
+        <StudentWalk v={v} />
         <GiftBanner gift={game.lastGift} now={now} />
         <BirthdayBanner v={v} />
         <LoveHearts n={v.loveFans} />
         <PollCard v={v} />
         {v.clapping && <Claps />}
+        {(v.correctCount > 0 && v.correctTop.length > 0 && (v.phase === 'question' || v.phase === 'bonus')) && <ConfettiBurst key={v.correctTop[0]?.username ?? v.qNo} />}
+        {v.phase === 'results' && <ConfettiBurst key={`results-${v.round}`} />}
       </div>
     </MotionConfig>
   );
@@ -502,6 +515,7 @@ function DayTop({ v }: { v: StageView }) {
 function Teacher({ v, now }: { v: StageView; now: number }) {
   let pose = '01-dung';
   if (now - v.lastFlowerAt < 3000) pose = '05-vui';
+  else if (v.walk?.kind === 'answer') pose = '04-chi-phai';
   else if (v.phase === 'intro') pose = '08-vay-chao';
   else if (v.phase === 'question') pose = '04-chi-phai';
   else if (v.phase === 'bonus') pose = '07-suy-nghi';
@@ -512,7 +526,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   const gotFlower = now - v.lastFlowerAt < 3000;
   return (
     <motion.div
-      className="absolute left-[96px] top-[410px] h-[490px] w-[300px]"
+      className="teacher-character absolute left-[96px] top-[410px] h-[490px] w-[300px]"
       animate={TEACHER_IDLE}
       transition={TEACHER_IDLE_TRANSITION}
       style={{ transformOrigin: '50% 100%' }}
@@ -535,9 +549,9 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
             initial={{ scale: 0, y: 80 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="absolute left-[130px] top-[150px] text-[80px]"
+            className="absolute left-[110px] top-[140px] drop-shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
           >
-            💐
+            <BouquetIcon className="h-32 w-32" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -640,7 +654,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
         const g = s.girl ? 'nu' : 'nam';
         const hd = HEAD[g];
         const called = v.recess?.game === 'callup' && v.recess.callUser === s.username;
-        // đang lên bục (tặng hoa / bị phạt): ghế trống, nhân vật vẽ ở chỗ khác
+        // đang đi lên bảng / bục hoặc bị phạt: ghế trống, nhân vật vẽ ở chỗ khác
         const away = s.standing || v.walk?.username === s.username;
         return (
           <motion.div
@@ -653,22 +667,15 @@ function Students({ v, now }: { v: StageView; now: number }) {
             style={{ width: w, height: show, zIndex: 10 + Math.floor(i / 5) }}
           >
             <motion.div
-              className="absolute inset-0 overflow-hidden"
+              className="student-character absolute inset-0 overflow-hidden"
               animate={STUDENT_IDLE}
               transition={STUDENT_IDLE_TRANSITIONS[i]}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.img
-                  key={pose}
-                  src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`}
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.99 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                  style={{ width: w, height: h }}
-                  className="max-w-none"
-                />
-              </AnimatePresence>
+              <img
+                src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`}
+                style={{ width: w, height: h }}
+                className="max-w-none"
+              />
               <div className="absolute" style={{ left: hd.x * w, top: hd.y * h, width: hd.w * w, height: hd.h * h }}>
                 <Hair username={s.username} girl={s.girl} />
               </div>
@@ -679,9 +686,9 @@ function Students({ v, now }: { v: StageView; now: number }) {
                 initial={{ scale: 0, rotate: -22, opacity: 0 }}
                 animate={{ scale: 1, rotate: 0, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 16 }}
-                className={`badge ${s.answered === 'right' ? 'bg-[#16a34a]' : 'bg-[#dc2626]'}`}
+                className="absolute -right-3 top-[14%] z-20 h-10 w-10"
               >
-                {s.answered === 'right' ? '✓' : '✗'}
+                <AnswerBadge type={s.answered} />
               </motion.div>
             )}
             <DeskGifts desk={s.desk} x={x} y={y} w={w} show={show} scale={scale} />
@@ -739,23 +746,26 @@ const WALK_GAIT = {
   left: [0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0, 0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0],
   right: [0, 7, 0, -7, 0, 7, 0, -7, 0, 7, 0, 0, -7, 0, 7, 0, -7, 0, 7, 0, -7, 0],
 };
-function FlowerWalk({ v }: { v: StageView }) {
+function StudentWalk({ v }: { v: StageView }) {
   const w = v.walk;
   if (!w) return null;
   const i = v.seats.findIndex((s) => s.username === w.username);
+  const standIndex = v.standing.findIndex((s) => s.username === w.username);
   const H = 210;
-  const from: [number, number] = i >= 0 ? [seatBox(i).x, seatBox(i).y - 40] : [990, 760];
+  const [standX, standFoot] = STAND[standIndex] ?? [990, 760];
+  const from: [number, number] = i >= 0 ? [seatBox(i).x, seatBox(i).y - 40] : [standX - (H * 0.47) / 2, standFoot - H];
   const g = w.girl ? 'nu' : 'nam';
-  return <FlowerWalker key={w.at} walk={w} from={from} gender={g} height={H} />;
+  return <StudentWalker key={w.at} walk={w} from={from} gender={g} height={H} />;
 }
 
-function FlowerWalker({ walk, from, gender, height }: { walk: NonNullable<StageView['walk']>; from: [number, number]; gender: 'nam' | 'nu'; height: number }) {
+function StudentWalker({ walk, from, gender, height }: { walk: NonNullable<StageView['walk']>; from: [number, number]; gender: 'nam' | 'nu'; height: number }) {
+  const target: [number, number] = walk.kind === 'answer' ? [430, 670] : PODIUM;
   const [path] = useState(() => ({
-    left: [from[0], PODIUM[0], PODIUM[0], from[0]],
-    top: [from[1], PODIUM[1], PODIUM[1], from[1]],
+    left: [from[0], target[0], target[0], from[0]],
+    top: [from[1], target[1], target[1], from[1]],
     opacity: [1, 1, 1, 0],
   }));
-  const sprite = `/assets/nv/${gender}/${POSE[gender].vui}.webp`;
+  const sprite = `/assets/nv/${gender}/${POSE[gender][walk.kind === 'answer' ? 'tay' : 'vui']}.webp`;
   return (
     <motion.div
       initial={{ left: from[0], top: from[1], opacity: 0 }}
@@ -786,7 +796,11 @@ function FlowerWalker({ walk, from, gender, height }: { walk: NonNullable<StageV
           transition={WALK_GAIT_TRANSITION}
         />
       </motion.div>
-      <div className="absolute -right-4 top-[70px] text-[44px]">💐</div>
+      {walk.kind === 'flower' ? (
+        <div className="absolute -right-6 top-[62px] drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"><BouquetIcon className="h-16 w-16" /></div>
+      ) : (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-3 py-1 text-[18px] font-bold text-white shadow">Đúng rồi!</div>
+      )}
       <div className="nametag" style={{ fontSize: 16, bottom: 'calc(100% - 4px)' }}>
         <span className="truncate">{walk.nickname}</span>
       </div>
@@ -839,7 +853,7 @@ function Vase({ v }: { v: StageView }) {
           className="absolute text-[30px]"
           style={{ left: dx, top: dy }}
         >
-          {['🌸', '🌷', '🌹', '🌼'][i % 4]}
+          <VaseFlower index={i} />
         </motion.div>
       ))}
     </div>
@@ -886,11 +900,12 @@ function Standing({ v, now }: { v: StageView; now: number }) {
         const w = H * 0.47;
         const g = s.girl ? 'nu' : 'nam';
         const pose = studentPose(s, v, GAME.seats + i, now);
+        const walking = v.walk?.username === s.username;
         return (
           <motion.div
             key={s.username}
             initial={{ opacity: 0, left: cx - w / 2, top: foot - H + 30 }}
-            animate={{ opacity: 1, left: cx - w / 2, top: foot - H }}
+            animate={{ opacity: walking ? 0 : 1, left: cx - w / 2, top: foot - H }}
             className="absolute"
             style={{ width: w, height: H, zIndex: Math.floor(foot / 20) }}
           >

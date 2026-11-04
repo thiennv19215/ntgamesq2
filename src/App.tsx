@@ -26,7 +26,7 @@ export default function App() {
       channelName={game.channelName}
       preview={
         <StageFrame maxHeight={window.innerHeight - 40}>
-          <GameStage game={game} />
+          <GameStage game={game} staticPreview />
         </StageFrame>
       }
       extra={<GameControls view={game.view} stageCount={game.stageCount} />}

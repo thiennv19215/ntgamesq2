@@ -30,7 +30,7 @@ export const GAME = {
   loveWindowMs: 15_000, // đếm ai gõ trong chừng này rồi cảm ơn / đọc kết quả
 
   // ---------- Học sinh tương tác trên màn hình ----------
-  walkMs: 6000, // tặng hoa: bạn nhỏ đi lên bục đưa hoa cho cô rồi về chỗ
+  walkMs: 6000, // học sinh đi lên bảng hoặc bục rồi trở về chỗ
   bubbleMs: 5000, // bong bóng chat trên đầu (không hiện câu trả lời, không hiện câu có từ cấm)
   sleepAfterMs: 5 * 60_000, // ngồi im chừng này thì ngủ gật 💤, thỉnh thoảng cô gọi dậy
   standChance: 0.3, // lúc trêu bạn trả lời sai: tỉ lệ cô phạt lên bục đứng (học sinh cá biệt)

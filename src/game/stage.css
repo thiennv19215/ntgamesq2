@@ -17,6 +17,33 @@
   animation: tile-float 3s ease-in-out infinite;
   will-change: transform;
 }
+.stage-preview .tile-float,
+.stage-preview.class-clap,
+.stage-preview .golden-board {
+  animation: none !important;
+}
+
+/* The dashboard preview keeps the scene still, but lets the characters stay alive. */
+.stage-preview .teacher-character {
+  animation: preview-teacher-idle 5.2s ease-in-out infinite;
+  will-change: transform;
+}
+.stage-preview .student-character {
+  animation: preview-student-idle 3.4s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes preview-teacher-idle {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(0, -3px) rotate(0.45deg); }
+  50% { transform: translate(0, -1px) rotate(0); }
+  75% { transform: translate(0, -2px) rotate(-0.45deg); }
+}
+@keyframes preview-student-idle {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(1.5px, -4px) rotate(0.45deg); }
+  50% { transform: translate(0, 0) rotate(0); }
+  75% { transform: translate(-1.5px, -2px) rotate(-0.45deg); }
+}
 @keyframes tile-float {
   0%,
   100% {
@@ -117,7 +144,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tile-float,
   .class-clap,
-  .golden-board {
+  .golden-board,
+  .teacher-character,
+  .student-character {
     animation: none !important;
   }
 }

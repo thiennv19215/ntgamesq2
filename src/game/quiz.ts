@@ -235,8 +235,8 @@ export class Classroom {
   poll: { at: number; opts: Poll['opts']; votes: Map<string, string> } | null = null;
   private lastLoveAt: number;
   private engageNo = 0;
-  /** bạn nhỏ đang đi lên bục tặng hoa cô (mỗi lúc 1 bạn) */
-  walk: { username: string; at: number } | null = null;
+  /** Học sinh đang đi lên bảng hoặc lên bục tặng hoa (mỗi lúc 1 bạn) */
+  walk: { username: string; at: number; kind: 'answer' | 'flower' } | null = null;
 
   readonly lines: LineBag;
 
@@ -590,9 +590,9 @@ export class Classroom {
     if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
-    // Comment tới trễ từ câu trước không được chấm theo câu hiện tại.
-    // createTime là timestamp TikTok lúc người xem gửi, khác với `now` lúc server nhận.
-    if (e.createTime < this.phaseStartedAt) return [];
+    // Dùng giờ máy nhận comment để tránh lệch đồng hồ giữa TikTok và máy chạy game.
+    // createTime của TikTok chỉ dùng xếp thứ tự người trả lời đúng bên dưới.
+    if (now < this.phaseStartedAt) return [];
     this.stats.received++;
     if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
     this.tried.add(e.username);
@@ -602,6 +602,9 @@ export class Classroom {
       return [];
     }
     this.correct.push({ username: e.username, nickname: e.nickname, avatar: e.avatar, createTime: e.createTime, seq: ++this.seq, points: 0 });
+    if (this.correct.length === 1 && (!this.walk || now - this.walk.at >= GAME.walkMs)) {
+      this.walk = { username: s.username, at: now, kind: 'answer' };
+    }
     // xếp theo giờ TikTok gắn, không theo lúc bot nhận (comment có thể tới lệch thứ tự)
     this.correct.sort((a, b) => a.createTime - b.createTime || a.seq - b.seq);
     const mult = this.golden ? 2 : 1;
@@ -661,7 +664,7 @@ export class Classroom {
     this.flowers++;
     this.lastFlowerAt = now;
     // bạn nhỏ đi lên bục đưa hoa cho cô (đang có bạn đi thì thôi, tránh combo quà chen nhau)
-    if (!this.walk || now - this.walk.at > GAME.walkMs) this.walk = { username: e.username, at: now };
+    if (!this.walk || now - this.walk.at >= GAME.walkMs) this.walk = { username: e.username, at: now, kind: 'flower' };
     const asking = this.phase === 'question' || this.phase === 'bonus';
     if (asking && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
       return this.mainOf([this.t(this.line('giftHint', e.spoken), true)]);
@@ -1082,10 +1085,10 @@ export class Classroom {
       },
       topic: topicName(this.topic), // chủ đề cả lớp chọn cho tiết này
       review: this.review, // tiết ôn bài (lớp vắng)
-      // bạn nhỏ đang đi lên bục tặng hoa
+      // học sinh đang đi lên bảng trả lời hoặc lên bục tặng hoa
       walk: (() => {
         const s = this.walk && now - this.walk.at < GAME.walkMs ? this.students.get(this.walk.username) : undefined;
-        return s ? { username: s.username, nickname: s.nickname, girl: s.girl, at: this.walk!.at } : null;
+        return s ? { username: s.username, nickname: s.nickname, girl: s.girl, at: this.walk!.at, kind: this.walk!.kind } : null;
       })(),
       // học sinh cá biệt đang đứng trên bục (kể cả bạn không có ghế)
       punished: [...this.students.values()].filter((s) => s.standUntil > now).map(({ username, nickname, girl }) => ({ username, nickname, girl })),
