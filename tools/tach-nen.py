@@ -44,13 +44,14 @@ def make_backs(folder: Path):
     Xoá hẳn phần đầu (game tự vẽ tóc nhiều kiểu bằng code), lật ngang, ghi khung đầu vào head.json."""
     base = np.array(Image.open(folder / '01-dung.webp').convert('RGBA'))
     H, W = base.shape[:2]
-    op = base[..., 3] > 0
+    # Ignore faint generated glow pixels when finding the hair/head silhouette.
+    op = base[..., 3] > 96
     widths = op.sum(axis=1)
     lo, hi = int(H * 0.12), int(H * 0.38)
     neck = lo + int(np.argmin(widths[lo:hi]))
     head = op.copy()
     head[neck - int(H * 0.012):] = False  # chừa cổ
-    head = ndimage.binary_fill_holes(ndimage.binary_dilation(head, iterations=4))
+    head = ndimage.binary_fill_holes(ndimage.binary_dilation(head, iterations=2))
     ys, xs = np.where(head)
     box = {'x': float(W - 1 - xs.max()) / W, 'y': float(ys.min()) / H, 'w': float(xs.max() - xs.min()) / W, 'h': float(ys.max() - ys.min()) / H}
     (folder / 'head.json').write_text(json.dumps(box))
@@ -65,9 +66,15 @@ def main():
         files = sorted((SRC / folder).glob('*.png'))
         imgs = []
         for f in files:
-            a = np.array(Image.open(f).convert('RGB'))
-            imgs.append((f, a, alpha_of(a)))
-        ys, xs = np.where(np.any([al > 0 for _, _, al in imgs], axis=0))
+            source = Image.open(f)
+            rgba = np.array(source.convert('RGBA'))
+            a = rgba[..., :3]
+            # Generated replacement sprites already have transparency; preserve it.
+            # Original gray-background source art still goes through alpha_of().
+            al = rgba[..., 3] if 'A' in source.getbands() and np.any(rgba[..., 3] < 255) else alpha_of(a)
+            imgs.append((f, a, al))
+        # Exclude barely visible fringe/glow from generated transparent sprites.
+        ys, xs = np.where(np.any([al > 32 for _, _, al in imgs], axis=0))
         box = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
         (OUT / 'nv' / key).mkdir(parents=True, exist_ok=True)
         for f, a, al in imgs:
