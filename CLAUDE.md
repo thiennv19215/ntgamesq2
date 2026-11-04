@@ -22,7 +22,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 ## File
 
 - `src/game/quiz.ts`: lõi game (pha, chấm điểm, chỗ ngồi). Test: `npx tsx src/game/quiz.check.ts`.
-- `src/game/cau-hoi/*.txt`: 2076 câu, 30 chủ đề (gồm 101 câu đố mẹo 23-do-meo.txt và 101 câu lịch sử 24-lich-su-su.txt; file tên đuôi -meo / -su chỉ hỏi ở vị trí meo / su trong roundPlan). Kiểm tra: `npx tsx src/game/bank.check.ts` (gợi ý lộ đáp án, trùng, đáp án quá 14 chữ, thiếu câu "Đây là").
+- `src/game/cau-hoi/*.txt`: 2099 câu, 31 chủ đề (gồm 101 câu đố mẹo 23-do-meo.txt, 23 câu đố dân gian vui 31-do-dan-gian-meo.txt và 101 câu lịch sử 24-lich-su-su.txt; file tên đuôi -meo / -su chỉ hỏi ở vị trí meo / su trong roundPlan). Kiểm tra: `npx tsx src/game/bank.check.ts` (gợi ý lộ đáp án, trùng, đáp án quá 14 chữ, thiếu câu "Đây là").
 - `src/game/math.ts`: sinh câu toán nhẩm 4 cấp (cộng trừ 1 chữ số, 2 chữ số, nhân chia, 2 bước). Tự sinh nên không hết câu, không ghi vào sổ lớp.
 - `src/game/loi-thoai.ts`: toàn bộ lời cô (khoảng 330 câu, bốc kiểu xáo bài nên ít lặp). `src/game/config.ts`: số liệu.
 - `src/game/sfx.ts`: hiệu ứng âm thanh tự tạo (ting, trống, tích tắc, chuông, bụp quà, vỗ tay, kèn). Bỏ file mp3 cùng tên vào `public/assets/sfx/` là dùng file thay.
@@ -60,6 +60,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Cứ 5 câu (sau câu 5, 10, 15) cô dừng lại điểm danh 3 bạn nhỏ điểm cao nhất, tặng mỗi bạn 1 món quà, mời cả lớp chào cô / thả tim; đọc xong chờ thêm 8 giây (praiseSec) rồi mới ra câu tiếp. Pha praise (2026-11-04).
 - Quà cô thưởng (kẹo, nơ, bánh, sữa, phiếu bé ngoan, gấu bông...: REWARDS trong loi-thoai.ts) bay từ tay cô xuống đặt trên bàn bạn nhỏ, tối đa 4 món/bàn, xoá khi sang tiết mới. Ngoài điểm danh, bạn đúng đầu tiên / đúng 3 câu liền có 40% được quà (giftChance), câu hỏi vàng 50% (2026-11-04).
 - Câu đố mẹo (2026-11-04): câu 7 và 13 mỗi tiết, bảng hiện nhãn "🤪 Đố mẹo", cô có lời riêng lúc hiện đáp án (riddleReveal), không ai đúng (riddleNobody: "bị cô lừa hết rồi"), trêu bạn sai (riddleWrong). Câu có nhiều đáp án hợp lý thì ghi thêm ở cột cách viết khác.
+- Đố dân gian vui (2026-11-04): 23 câu thêm trong `31-do-dan-gian-meo.txt`, trộn vào hai lượt đố mẹo mỗi tiết và có nhãn riêng trên bảng.
 - Câu lịch sử (2026-11-04): câu 9 và 17 mỗi tiết, nhãn "📜 Lịch sử". Chỉ lịch sử Việt Nam tới 1945, kiến thức sách giáo khoa. Chi tiết các nguồn ghi khác nhau thì KHÔNG đưa vào gợi ý (đã bỏ: lý do tên Hắc Đế, năm xây Chùa Cầu); không dùng nhân vật còn tranh cãi (vd Lê Văn Tám). Thêm câu mới thì phải tra lại.
 - Nút "🚫 Bỏ câu này" ở trang điều khiển (2026-11-04): bỏ câu đang hỏi, không ai được điểm, sang câu tiếp, không bao giờ hỏi lại (sổ lớp `banned`). Sửa đáp án trong file là thành câu mới. Câu toán không bỏ được.
 - Tự đổi nhịp (2026-11-04): dưới 5 bạn đang chơi (bình luận trong 2 phút) thì có người đúng là 8 giây sau chốt câu; đông thì chạy đủ 20 giây.

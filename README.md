@@ -4,7 +4,7 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 
 ## Tính năng
 
-- 2076 câu hỏi tiếng Việt, 30 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mỗi tiết 20 câu, xen câu toán nhẩm tự sinh, câu tiếng Anh, đố mẹo, lịch sử; câu 20 là câu hỏi vàng nhân đôi điểm.
+- 2099 câu hỏi tiếng Việt, 31 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mỗi tiết 20 câu, xen câu toán nhẩm tự sinh, câu tiếng Anh, đố mẹo dân gian vui, lịch sử; câu 20 là câu hỏi vàng nhân đôi điểm.
 - Chấm điểm theo giờ TikTok gắn lúc người xem gửi bình luận, nên phòng đông, bình luận tới lệch thứ tự vẫn xếp đúng ai nhanh nhất. Nhất 10 điểm, nhì 7, ba 5; chép đáp án trên khung chat chỉ được 1 điểm.
 - Phải gõ có dấu; kiểu bỏ dấu cũ và mới ("hóa" / "hoá") đều tính đúng. Nói chuyện thường không bị tính là trả lời sai.
 - Game nhớ câu nào đã hỏi (lưu ra file) để nhiều buổi live liền ít lặp.

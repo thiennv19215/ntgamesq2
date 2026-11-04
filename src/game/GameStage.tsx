@@ -142,7 +142,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
               <span className="rounded-full bg-[#ffd84a] px-4 text-[28px] font-bold text-[#7a2e0e]">⭐ CÂU HỎI VÀNG x2</span>
             ) : (
               <span className={`rounded-full border-2 px-4 text-[26px] ${v.slot ? 'border-[#ffe680] text-[#ffe680]' : 'border-[#f4f1e6]/60'}`}>
-                {v.slot === 'meo' ? '🤪 Đố mẹo' : v.slot === 'su' ? '📜 Lịch sử' : v.slot === 'anh' ? '🔤 Tiếng Anh' : v.category}
+                {v.slot === 'meo' ? (v.category === 'Đố dân gian vui' ? '😂 Đố dân gian' : '🤪 Đố mẹo') : v.slot === 'su' ? '📜 Lịch sử' : v.slot === 'anh' ? '🔤 Tiếng Anh' : v.category}
               </span>
             )}
             {v.phase !== 'reveal' ? <Timer left={left} duration={v.phase === 'bonus' ? GAME.bonusSec : GAME.questionSec} /> : <span className="text-[34px] text-[#9df29d]">Đáp án</span>}
