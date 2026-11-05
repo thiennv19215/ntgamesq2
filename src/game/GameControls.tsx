@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
 import { GAME } from './config';
@@ -14,6 +14,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
   const [sent, setSent] = useState(0);
   const [running, setRunning] = useState(false);
   const [bdName, setBdName] = useState('');
+  const testVisitor = useRef(0);
 
   /** Giả lập n người xem cùng bình luận trong 20 giây: 15% đúng, 20% đoán sai, còn lại nói chuyện */
   const flood = async (n: number) => {
@@ -95,7 +96,11 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => sendControl('custom', 'newRound')}>🔄 Ván mới</Btn>
         <Btn onClick={() => sendControl('custom', 'goodbye')}>👋 Chào tạm biệt (xuống live)</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: view?.answer.toLowerCase() ?? '' })}>✅ 1 bạn trả lời đúng</Btn>
-        <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'vào lớp' })}>🙋 1 bạn vào lớp</Btn>
+        <Btn onClick={() => {
+          const id = ++testVisitor.current;
+          emitTest('member', { username: `walk-test-${Date.now()}-${id}`, nickname: `Bạn mới ${id}`, avatar: '' });
+        }}>🚶 1 bạn mới đi vào lớp</Btn>
+        {import.meta.env.DEV && <a href="/tools/student-movement-preview.html" target="_blank" rel="noreferrer" className="rounded-lg bg-amber-700 px-3 py-2 text-sm text-white hover:bg-amber-600">🎬 Xem thử đi ra / vào</a>}
         <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to</Btn>
         <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>

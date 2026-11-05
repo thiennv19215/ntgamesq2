@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /**
  * Tóc nhìn từ sau lưng, vẽ bằng SVG để mỗi học sinh một kiểu (theo tên tài khoản, cố định).
  * Khung 100x100 = vùng đầu đã xoá khỏi ảnh thân (public/assets/nv/<nam|nu>/head.json); đuôi tóc được tràn ra ngoài.
@@ -15,7 +16,7 @@ export const hashName = (s: string) => {
   return Math.abs(h);
 };
 
-export function Hair({ username, girl }: { username: string; girl: boolean }) {
+function HairDrawing({ username, girl }: { username: string; girl: boolean }) {
   const h = hashName(username);
   const color = COLORS[h % COLORS.length];
   const style = girl ? GIRL[(h >> 4) % GIRL.length] : BOY[(h >> 4) % BOY.length];
@@ -151,3 +152,5 @@ export function Hair({ username, girl }: { username: string; girl: boolean }) {
     </svg>
   );
 }
+
+export const Hair = memo(HairDrawing);

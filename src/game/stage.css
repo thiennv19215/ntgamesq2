@@ -1,66 +1,163 @@
-/* Chữ phấn trên bảng đen */
+/* ========================================================
+   LỚP HỌC CHỮ - STAGE STYLING (2.5D CUTE CARTOON AESTHETIC)
+   ======================================================== */
+
+/* Font chữ phấn viết bảng */
 .chalk {
-  font-family: 'Patrick Hand', 'Be Vietnam Pro', sans-serif;
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.5), 1px 1px 0 rgba(255, 255, 255, 0.08);
+  font-family: 'Patrick Hand', 'Be Vietnam Pro', cursive, sans-serif;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.6), 1px 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Tiêu đề lớp học chính (Bảng gỗ treo phía trên) */
+.classroom-title {
+  border: 5px solid #8e3911;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #f09543 0%, #be511c 60%, #9c3c12 100%);
+  box-shadow: inset 0 2.5px 0 #ffd787, inset 0 -2.5px 0 #732a07, 0 5px 0 #632306, 0 8px 16px rgba(55, 20, 5, 0.4);
+}
+.classroom-title::before {
+  content: '🌸 🐱 🌿';
+  position: absolute;
+  top: -30px;
+  font-size: 36px;
+  letter-spacing: 8px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+.classroom-title-text {
+  text-align: center;
+  text-shadow: 0 3px 0 #6d240d, 2px 2px 0 #6d240d, -2px -1px 0 #6d240d;
+}
+
+/* Các bảng phụ: Học sinh xuất sắc, sự kiện, ruy băng hướng dẫn */
+.classroom-panel {
+  border: 3.5px solid #be5e20;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fffef7 0%, #fff3d4 100%);
+  box-shadow: inset 0 2px 0 #ffffff, 0 4px 0 #82380e, 0 7px 12px rgba(65, 26, 6, 0.25);
+}
+.classroom-ribbon {
+  border: 4px solid #c96b27;
+  border-radius: 22px;
+  background: linear-gradient(90deg, #fff7d6 0%, #ffebad 50%, #fff7d6 100%);
+  box-shadow: inset 0 2px 0 #ffffff, 0 4px 0 #8b4014, 0 6px 10px rgba(78, 33, 9, 0.22);
+}
+
+/* Khung bảng đen 2.5D gỗ ấm hoạt hình cao cấp */
+.classroom-board {
+  background: radial-gradient(ellipse at 50% 30%, #176642 0%, #0c452b 75%, #06311d 100%);
+  border: 8px solid #a8511a;
+  border-radius: 22px;
+  box-shadow:
+    inset 0 0 0 3px #fbd24e,
+    inset 0 0 32px rgba(0, 20, 12, 0.6),
+    0 6px 0 #692c0a,
+    0 12px 22px rgba(45, 18, 5, 0.42);
+}
+
+/* Đinh tán nẹp góc kim loại trên bảng */
+.board-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  z-index: 5;
+}
+.board-corner-tl { top: 2px; left: 2px; border-top: 4px solid #ffe58f; border-left: 4px solid #ffe58f; border-top-left-radius: 10px; }
+.board-corner-tr { top: 2px; right: 2px; border-top: 4px solid #ffe58f; border-right: 4px solid #ffe58f; border-top-right-radius: 10px; }
+.board-corner-bl { bottom: 2px; left: 2px; border-bottom: 4px solid #ffe58f; border-left: 4px solid #ffe58f; border-bottom-left-radius: 10px; }
+.board-corner-br { bottom: 2px; right: 2px; border-bottom: 4px solid #ffe58f; border-right: 4px solid #ffe58f; border-bottom-right-radius: 10px; }
+
+/* Bảng khẩu hiệu nền đỏ chữ vàng */
+.motto {
+  color: #fff282;
+  background: linear-gradient(180deg, #d82323 0%, #a21212 100%);
+  border: 3.5px solid #fbd24e;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 0 #ff9d9d, 0 4px 0 #660808, 0 7px 12px rgba(0, 0, 0, 0.32);
+  text-shadow: 0 2px 0 #680b0b, 1px 1px 0 #680b0b;
+  z-index: 10;
+}
+
+/* Nhân vật cô giáo */
+.teacher-character {
+  position: absolute;
+}
+.teacher-sprite {
+  clip-path: inset(0 0 8.7% 0);
+}
+/* Bóng chân cô giáo đổ thật trên sàn gỗ */
+.teacher-shadow {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 7.2%;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(55, 23, 7, 0.55) 0%, rgba(55, 23, 7, 0.25) 55%, transparent 75%);
+  filter: blur(3px);
+  pointer-events: none;
 }
 
 /* Miếng chữ gỗ xáo trộn */
 .tile {
   font-family: 'Be Vietnam Pro', sans-serif;
-  color: #5b3512;
-  background: linear-gradient(180deg, #fbe7b9 0%, #efc77a 100%);
-  border-radius: 12px;
-  box-shadow: 0 5px 0 #a8742f, 0 8px 10px rgba(0, 0, 0, 0.35);
+  color: #552d0a;
+  background: linear-gradient(180deg, #fff0cb 0%, #f6c975 100%);
+  border: 3px solid #b86e24;
+  border-radius: 14px;
+  box-shadow: inset 0 2px 0 #ffffff, 0 5px 0 #844510, 0 8px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Bảng tên trên đầu học sinh */
+/* Bảng tên học sinh dạng viên thuốc 2.5D */
 .nametag {
   position: absolute;
-  bottom: calc(100% - 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  max-width: 170px;
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #3b2410;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-.nametag .rank {
-  flex: none;
-  margin-right: 5px;
-  width: 1.3em;
-  height: 1.3em;
-  border-radius: 50%;
-  background: #f59e0b;
-  color: #fff;
-  font-size: 0.85em;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7e0 100%);
+  border: 2px solid #a85822;
+  color: #3f220a;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #7b380f, 0 4px 6px rgba(0, 0, 0, 0.22);
+}
+.nametag .rank {
+  flex: none;
+  margin-right: 4px;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.82em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
 }
 
 /* Dấu đúng / sai cạnh đầu */
 .badge {
   position: absolute;
-  top: 18%;
+  top: 14%;
   right: -6px;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   color: #fff;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.35);
+  z-index: 10;
 }
 
+/* Hiệu ứng vỗ tay cả lớp */
 .class-clap {
   animation: clap-glow 0.6s ease-in-out infinite alternate;
 }
@@ -69,31 +166,20 @@
     box-shadow: inset 0 0 0 0 rgba(250, 204, 21, 0);
   }
   to {
-    box-shadow: inset 0 0 200px 30px rgba(250, 204, 21, 0.45);
+    box-shadow: inset 0 0 220px 35px rgba(250, 204, 21, 0.45);
   }
 }
 
-/* Bảng khẩu hiệu nền đỏ chữ vàng */
-.motto {
-  color: #ffd84a;
-  background: linear-gradient(180deg, #c81e1e 0%, #a51515 100%);
-  border: 4px solid #f2c14e;
-  border-radius: 6px;
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-  text-shadow: 0 2px 0 #7a0e0e;
-  z-index: 2;
-}
-
-/* Câu hỏi vàng: viền vàng quanh vùng chữ trên bảng */
+/* Câu hỏi vàng: viền vàng quanh bảng */
 .golden-board {
   outline: 6px solid #ffd84a;
   outline-offset: 6px;
-  border-radius: 10px;
+  border-radius: 18px;
   animation: golden-pulse 1s ease-in-out infinite alternate;
 }
 @keyframes golden-pulse {
   from {
-    outline-color: rgba(255, 216, 74, 0.5);
+    outline-color: rgba(255, 216, 74, 0.4);
   }
   to {
     outline-color: rgba(255, 216, 74, 1);
@@ -104,3 +190,66 @@
 .called-up {
   filter: drop-shadow(0 0 10px #ffd84a) drop-shadow(0 0 4px #ffd84a);
 }
+
+
+/* Existing front/back sprites follow floor routes; the small cadence avoids a frozen glide. */
+.student-walker-step {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: student-walk-step 280ms ease-in-out infinite;
+}
+.student-walker-shadow {
+  position: absolute;
+  bottom: -2px;
+  left: 21%;
+  width: 58%;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #3d25144d, #3d251400 72%);
+}
+.student-walker-label {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 130px;
+  padding: 2px 8px;
+  border: 1px solid #e9c47e;
+  border-radius: 10px;
+  background: #fff8e9ed;
+  color: #653914;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  box-shadow: 0 2px 4px #44200c33;
+  text-align: center;
+  white-space: nowrap;
+}
+.student-walker-label span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.student-walker-label small { display: block; color: #a8632b; font-size: 12px; }
+@keyframes student-walk-step {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  25% { transform: translateY(-4px) rotate(0); }
+  50% { transform: translateY(0) rotate(1.2deg); }
+  75% { transform: translateY(-4px) rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .student-walker-step { animation: none; }
+}
+
+/* Large groups use one compositor animation per person, without a second bob layer. */
+.student-walker-compact .student-walker-step { animation: none; }
+
+/* Paint celebration glow once; animate opacity rather than repainting the whole stage. */
+.class-clap { animation: none; }
+.class-clap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  box-shadow: inset 0 0 160px 28px rgba(250, 204, 21, 0.4);
+  animation: clap-overlay-opacity 600ms ease-in-out infinite alternate;
+}
+@keyframes clap-overlay-opacity { from { opacity: 0.05; } to { opacity: 1; } }

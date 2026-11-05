@@ -77,7 +77,7 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.phase, 'reveal');
   assert.equal(c.students.get('u299')!.score, 10);
   assert.equal(c.students.get('u299')!.session, 10);
-  assert.equal(c.seats()[0].username, 'u299');
+  assert.equal(c.seats()[0].username, 'u299', 'điểm cao thay người thấp điểm hơn');
   assert.equal(c.weekDelta.get('u299')!.points, 10);
   assert.equal(c.slots(true).join(''), 'BẢNG ĐEN');
   // hết câu (bộ chỉ 1 câu chữ + 4 câu toán tự sinh) -> tổng kết -> ra chơi -> tiết mới xoá điểm tiết, giữ điểm buổi
@@ -348,7 +348,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.view(t).seats.find((s) => s.username === 'u1')!.title, 'lop-truong');
   playRound(2);
   assert.equal(c.view(t).seats.find((s) => s.username === 'u2')!.title, 'lop-truong', 'tiết 2: bạn thắng tiết 2 làm lớp trưởng');
-  assert.equal(c.view(t).seats.find((s) => s.username === 'u1')!.title, '', 'điểm tiết trước không còn tính');
+  assert.equal(c.view(t).seats.find((s) => s.username === 'u1')?.title ?? '', '', 'điểm tiết trước không còn tính');
   c.newRound(t);
   assert.ok(c.view(t).seats.every((s) => s.title === ''), 'đầu tiết: chưa ai là lớp trưởng');
   assert.deepEqual(
@@ -445,24 +445,21 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   chat(c, 1, 'cô ơi con đói', t, t);
   assert.equal(seat('u1').bubble, 'cô ơi con đói', 'bình luận thường hiện bong bóng');
   chat(c, 2, 'X'.repeat(c.answerLetters.length), t, t); // trả lời sai: không hiện (dài bằng đáp án)
-  assert.equal(seat('u2').bubble, '', 'câu trả lời không hiện bong bóng (lộ đáp án)');
+  assert.equal(seat('u2').bubble, '', 'câu trả lời không hiện bong bóng');
   c.chat({ ...who(3), comment: 'tục tĩu', createTime: t, safe: false }, t);
-  assert.equal(seat('u3').bubble, '', 'bình luận có từ cấm không hiện');
+  assert.equal(c.students.get('u3')!.bubble?.text ?? '', '', 'bình luận có từ cấm không hiện');
   assert.equal(c.view(t + GAME.bubbleMs).seats.find((s) => s.username === 'u1')!.bubble, '', 'bong bóng tự tắt');
   // tặng hoa: đi lên bục, đang đi thì bạn khác tặng không chen
   c.gift(who(1), 1, t);
   c.gift(who(3), 1, t + 500);
   assert.equal(c.view(t).walk!.username, 'u1');
   assert.equal(c.view(t + GAME.walkMs).walk, null);
-  // trả lời sai bị trêu + phạt lên bục đứng
-  const said = c.tick((t = c.phaseEndsAt));
-  for (let k = 0; k < 3 && c.phase !== 'reveal'; k++) said.push(...c.tick((t = c.phaseEndsAt)));
-  assert.ok(said.some((l) => LINES.roastStand.some((f) => f('Bạn 2') === l.text.slice(3))), 'cô phạt lên bục');
-  assert.ok(c.view(t).punished.some((p) => p.username === 'u2'), 'gõ sai lên đứng cạnh cô');
+  c.tick((t = c.phaseEndsAt));
+  for (let k = 0; k < 3 && c.phase !== 'reveal'; k++) c.tick((t = c.phaseEndsAt));
+  assert.ok(c.view(t).punished.some((s) => s.username === 'u2'), 'sai lên đứng cạnh bảng');
   assert.ok(seat('u2').standing);
-  assert.equal(c.view(t).punished[0].left, GAME.standQuestions, 'gõ sai đứng cạnh cô 3 câu');
   // ngồi im lâu: ngủ gật
-  assert.ok(c.view(t + GAME.sleepAfterMs + 1).seats.every((s) => s.sleeping));
+  assert.ok(c.view(t + GAME.sleepAfterMs + 1).seats.every((s) => !s.sleeping), 'không dùng mốc 5 phút để đuổi học sinh');
 }
 
 // ---------- xếp ghế: cùng điểm thì bạn đang tương tác ngồi trước bạn đã im lâu ----------
@@ -474,7 +471,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   t += GAME.seatActiveMs + 5000;
   chat(c, 2, 'cô ơi', t, t);
   c.tick(t);
-  assert.equal(c.seats()[0].username, 'u2', 'bạn im lâu nhường ghế cho bạn đang tương tác');
+  assert.equal(c.seats()[0].username, 'u1', 'bình luận không làm đổi chỗ khi bằng điểm');
 }
 
 // ---------- chào theo giờ ----------
@@ -1000,27 +997,25 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.slots().map((x) => x ?? '_').join(''), 'C_ C___ C___ L___');
 }
 
-// ---------- gõ sai: lên đứng cạnh cô 3 câu, tối đa 3 bạn, ai sai trước lên trước ----------
+// ---------- sai: lên đứng bảng ba câu, không ra hành lang ----------
 {
-  const c = new Classroom(Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i % 26] + (i >= 26 ? 'X' : ''))), t);
+  const c = new Classroom(BANK, t);
   c.newRound(t);
-  const ask = () => {
-    while (c.phase !== 'question') c.tick((t += 500));
-    c.showBoard();
-  };
-  const toReveal = () => {
-    while ((c.phase as string) !== 'reveal') c.tick((t += 500));
-  };
+  const ask = () => { while (c.phase !== 'question') c.tick((t += 500)); c.showBoard(); };
+  const reveal = () => { while ((c.phase as string) !== 'reveal') c.tick((t += 500)); };
   ask();
-  for (let i = 1; i <= 5; i++) chat(c, i, 'X'.repeat(c.answerLetters.length), t, (t += 10)); // 5 bạn sai
-  toReveal();
-  assert.deepEqual(c.view(t).punished.map((p) => p.username), ['u1', 'u2', 'u3', 'u4', 'u5'], 'ai gõ sai cũng lên đứng (tối đa 6)');
-  for (let q = 2; q <= 4; q++) {
+  for (let i = 1; i <= 5; i++) chat(c, i, 'X'.repeat(c.answerLetters.length), t, t);
+  assert.equal(c.view(t).seats.length, 5, 'sai không rời lớp');
+  reveal();
+  assert.equal(c.view(t).punished.length, 5);
+  assert.ok(c.view(t).seats.every((s) => s.standing));
+  for (let q = 2; q <= GAME.standQuestions + 1; q++) {
     ask();
-    toReveal();
-    if (q < 4) assert.equal(c.view(t).punished.length, 5, `còn đứng ở câu ${q}`);
+    for (let i = 1; i <= 5; i++) chat(c, i, 'xin chào '.repeat(40), t, t);
+    reveal();
+    if (q <= GAME.standQuestions) assert.equal(c.view(t).punished.length, 5);
   }
-  assert.equal(c.view(t).punished.length, 0, 'đứng đủ 3 câu thì về chỗ');
+  assert.equal(c.view(t).punished.length, 0, 'đủ lượt thì về chỗ');
 }
 
 // ---------- chế độ nhanh: đọc đề ngắn, đọc xong mới hiện bảng + nhận đáp án, đủ 5 bạn đúng thì chốt sớm, điểm danh 1 câu sau câu 10 ----------
@@ -1060,6 +1055,248 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
     rounds.push(r.phase);
   }
   assert.deepEqual(rounds, ['team', 'intro', 'intro', 'intro', 'team']);
+}
+
+// Một câu không tương tác thì ngủ và nhường ghế, không dùng bộ đếm 5 phút.
+{
+  const at = 9_000_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 3; i++) chat(c, i, 'hi', at, at);
+  c.students.get('u0')!.score = 999;
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  assert.equal(c.phase, 'question');
+  // Hầu hết học sinh có tương tác; u0 không tương tác.
+  for (let i = 1; i < GAME.seats; i++) chat(c, i, 'cô ơi', ask + 1, ask + 1);
+  assert.ok(c.view(ask + 1).seats.some((s) => s.username === 'u0'), 'chưa hết câu không đuổi');
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') {
+    chat(c, 2, 'con đang nghĩ', c.phaseEndsAt - 1, c.phaseEndsAt - 1);
+    c.tick(c.phaseEndsAt);
+  }
+  assert.equal(c.phase, 'reveal');
+  const done = c.phaseEndsAt - GAME.revealSec * 1000;
+  const v = c.view(done);
+  assert.ok(!v.seats.some((s) => s.username === 'u0'), 'im cả câu bị đuổi dù điểm cao');
+  assert.ok(v.seats.some((s) => s.username === 'u1'), 'bình luận bất kỳ trong câu được tính tương tác');
+  assert.ok(v.seats.some((s) => s.username === `u${GAME.seats}`), 'hàng chờ tự vào ghế');
+  assert.equal(v.roster.waiting, 2);
+  assert.equal(c.students.get('u0')!.score, 999);
+  chat(c, 0, 'cô ơi', done + 1, done + 1);
+  const finish = Math.max(done + 1, ...c.view(done + 1).movements.map((m) => m.startedAt + m.durationMs)) + 1;
+  assert.ok(c.view(finish).seats.some((s) => s.username === 'u0'), 'quay lại điểm cao được xét sau khi lượt di chuyển kết thúc');
+  assert.equal(c.view(done + 1).roster.waiting, 3);
+  GAME.teamPickSec = teamSec;
+}
+
+// Sự kiện vào phòng tự ghi danh/hàng chờ; không cần bình luận, không báo lặp.
+{
+  const at = 10_000_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats; i++) c.enter(who(i), at);
+  assert.equal(c.view(at).roster.seated, GAME.seats);
+  assert.ok(!c.tick(at).some((l) => l.text.includes('hành lang')));
+  c.enter(who(999), at + 1);
+  assert.equal(c.view(at + 1).roster.waiting, 1);
+  const lines = c.tick(at + 1);
+  assert.equal(lines.filter((l) => l.text.includes('hành lang')).length, 1);
+  assert.ok(lines.some((l) => l.text === 'F: Bạn 999 ơi, lớp đầy rồi, đứng hành lang chờ cô nhé.'));
+  c.enter(who(999), at + 2);
+  chat(c, 999, 'chào cô', at + 3, at + 3);
+  assert.ok(!c.tick(at + 3).some((l) => l.text.includes('hành lang')));
+  assert.equal(c.view(at + 3).roster.waiting, 1);
+}
+
+// Physical seats follow ranking; entry waits for departing students.
+{
+  const at = 11_000_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 1; i++) c.enter(who(i), at);
+  const initial = c.view(at);
+  assert.equal(initial.movements.length, 0, 'first hydration never replays entrances');
+  c.students.get('u1')!.score = 10;
+  const reordered = c.view(at + 1);
+  assert.equal(reordered.seats[0].username, 'u1', 'ranking still responds to score');
+  assert.equal(reordered.seats[0].seatIndex, 0, 'top điểm lên ghế đầu');
+  reordered.seats.forEach((s, rank) => assert.equal(s.seatIndex, rank));
+  assert.ok(reordered.movements.length > 0 && reordered.movements.every((m) => m.kind === 'reseat'), 'đổi thứ hạng chỉ đi đổi chỗ, không ra hành lang');
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  for (let i = 1; i < GAME.seats; i++) chat(c, i, 'cô ơi', ask + 1, ask + 1);
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  const end = c.phaseEndsAt - GAME.revealSec * 1000;
+  const swapped = c.view(end);
+  const leaving = swapped.movements.find((m) => m.kind === 'leave' && m.username === 'u0')!;
+  const entering = swapped.movements.find((m) => m.kind === 'enter' && m.username === `u${GAME.seats}`)!;
+  assert.ok(leaving && entering, 'sleep creates exit and queue entrance');
+  assert.equal(leaving.seatIndex, reordered.seats.find((s) => s.username === 'u0')!.seatIndex);
+  assert.equal(entering.seatIndex, swapped.seats.find((s) => s.username === entering.username)!.seatIndex, 'người vào tới ghế theo thứ hạng');
+  assert.ok(entering.startedAt >= leaving.startedAt + leaving.durationMs, 'wait until departure ends');
+  swapped.seats.forEach((s, rank) => assert.equal(s.seatIndex, rank));
+  assert.equal(new Set(swapped.seats.map((s) => s.seatIndex)).size, GAME.seats);
+  assert.deepEqual(c.view(end).movements, swapped.movements, 'repeat snapshots do not duplicate motion');
+  assert.equal(c.view(entering.startedAt + entering.durationMs + 1001).movements.length, 0, 'old motion events expire');
+  GAME.teamPickSec = teamSec;
+}
+
+// Real member events after an empty stage snapshot trigger an entrance without any chat.
+{
+  const at = 12_000_000;
+  const c = new Classroom(BANK, at);
+  assert.equal(c.view(at).seats.length, 0);
+  c.enter(who(501), at + 200);
+  const v = c.view(at + 400);
+  assert.equal(v.seats.length, 1);
+  assert.equal(v.movements.length, 1);
+  assert.equal(v.movements[0].kind, 'enter');
+  assert.equal(v.movements[0].username, 'u501');
+  assert.equal(v.movements[0].seatIndex, v.seats[0].seatIndex);
+  assert.ok(v.movements[0].startedAt + v.movements[0].durationMs > at + 400);
+}
+
+// Hàng chờ: cao điểm hơn thay người thấp điểm; bằng điểm không đổi ghế.
+{
+  let now = 13_000_000;
+  const c = new Classroom(BANK, now);
+  const team = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(now);
+  for (let i = 0; i < GAME.seats + 2; i++) c.enter(who(i), now);
+  const before = c.view(now);
+  assert.ok(!before.seats.some((s) => s.username === `u${GAME.seats}`));
+  c.students.get(`u${GAME.seats}`)!.score = 10;
+  const swapped = c.view(now + 1);
+  assert.ok(swapped.seats.some((s) => s.username === `u${GAME.seats}`));
+  assert.equal(swapped.seats.length, GAME.seats);
+  const out = swapped.movements.find((m) => m.kind === 'leave')!;
+  const incoming = swapped.movements.find((m) => m.kind === 'enter')!;
+  assert.equal(out.reason, 'rank');
+  assert.equal(incoming.seatIndex, 0, 'bạn điểm cao nhất vào ghế đầu');
+  swapped.seats.forEach((s, rank) => assert.equal(s.seatIndex, rank));
+  assert.ok(incoming.startedAt >= out.startedAt + out.durationMs);
+  const stable = c.view(now + 2);
+  assert.deepEqual(stable.seats.map((s) => s.username), swapped.seats.map((s) => s.username), 'bằng điểm giữ người đang ngồi');
+  now += GAME.introSec * 1000;
+  c.tick(now);
+  c.showBoard();
+  const said = chat(c, GAME.seats, 'X'.repeat(c.answerLetters.length), now, now);
+  assert.ok(!said.some((l) => l.text.includes('hành lang')));
+  assert.ok(c.view(now).seats.some((s) => s.username === `u${GAME.seats}`), 'điểm cao trả lời sai không bị loại');
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  assert.ok(c.view(c.phaseEndsAt).punished.some((s) => s.username === `u${GAME.seats}`));
+  assert.equal(c.students.get(`u${GAME.seats}`)!.score, 10);
+  GAME.teamPickSec = team;
+}
+
+// Người ngoài lớp có hình ở hành lang, kể cả người ngủ; không nằm trùng trong ghế.
+{
+  const at = 14_000_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats + 10; i++) c.enter(who(i), at);
+  const v = c.view(at);
+  assert.equal(v.hallwayTotal, 10);
+  assert.equal(v.hallway.length, 8, 'giới hạn sprite để giữ nhẹ');
+  assert.ok(v.hallway.every((s) => !v.seats.some((p) => p.username === s.username)));
+  c.students.get('u40')!.score = 100;
+  const promoted = c.view(at + 1);
+  assert.ok(!promoted.hallway.some((s) => s.username === 'u40'));
+  assert.ok(promoted.movements.some((m) => m.kind === 'enter' && m.username === 'u40' && m.hallwayIndex === 0));
+}
+
+// Lên bảng và về ghế theo thứ hạng mới, không nhân đôi hoặc đổi chỗ đứng phạt.
+{
+  let now = 15_000_000;
+  const c = new Classroom(BANK, now);
+  const team = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(now);
+  for (let i = 0; i < GAME.seats; i++) c.enter(who(i), now);
+  c.students.get('u0')!.score = 5;
+  c.view(now);
+  c.tick((now += GAME.introSec * 1000));
+  c.showBoard();
+  chat(c, 0, 'X'.repeat(c.answerLetters.length), now, now);
+  for (let i = 1; i < GAME.seats; i++) chat(c, i, 'xin chào '.repeat(40), now, now);
+  for (let n = 0; n < 300 && c.phase !== 'reveal'; n++) c.tick((now += 500));
+  const up = c.view(now);
+  const toBoard = up.movements.find((m) => m.username === 'u0' && m.kind === 'to-board')!;
+  assert.ok(toBoard);
+  assert.equal(toBoard.fromSeatIndex, 0);
+  const slot = up.punished.find((s) => s.username === 'u0')!.standIndex;
+  assert.equal(toBoard.standIndex, slot);
+  c.students.get('u1')!.score = 50;
+  assert.equal(c.view(now + 1).punished.find((s) => s.username === 'u0')!.standIndex, slot);
+  for (let n = 0; n < 1000 && c.students.get('u0')!.standLeft > 0; n++) {
+    c.tick((now += 500));
+    if (c.phase === 'question' || c.phase === 'bonus') {
+      for (let i = 0; i < GAME.seats; i++) chat(c, i, 'xin chào '.repeat(40), now, now);
+    }
+    c.view(now);
+  }
+  const back = c.view(now);
+  const returning = back.movements.find((m) => m.username === 'u0' && m.kind === 'from-board')!;
+  assert.ok(returning, 'hết phạt tạo đường đi về ghế');
+  assert.equal(returning.standIndex, slot);
+  assert.equal(returning.seatIndex, back.seats.find((s) => s.username === 'u0')!.seatIndex);
+  assert.equal(returning.seatIndex, 1, 'về ghế theo điểm mới');
+  assert.equal(back.punished.length, 0);
+  assert.equal(back.movements.filter((m) => m.username === 'u0').length, 1);
+  GAME.teamPickSec = team;
+}
+
+// Mass rank changes keep at most twelve walking sprites active at any instant.
+{
+  const at = 16_000_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats; i++) c.enter(who(i), at);
+  c.view(at);
+  for (let i = 0; i < GAME.seats; i++) c.students.get(`u${i}`)!.score = (i + 1) * 10;
+  const v = c.view(at + 1);
+  const moves = v.movements;
+  assert.equal(moves.length, GAME.seats);
+  for (const m of moves) {
+    const count = moves.filter((p) => p.startedAt <= m.startedAt && p.startedAt + p.durationMs > m.startedAt).length;
+    assert.ok(count <= 12, `too many active walkers: ${count}`);
+  }
+  assert.equal(new Set(v.seats.map((s) => s.seatIndex)).size, GAME.seats);
+}
+
+// Equal scores keep seats; running routes cannot be retargeted by later score updates.
+{
+  const at = 17_000_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < 4; i++) c.enter(who(i), at + i);
+  const first = c.view(at + 10);
+  const positions = first.seats.map((s) => [s.username, s.seatIndex]);
+  c.students.get('u2')!.session = 999;
+  c.students.get('u1')!.reachedAt = -999;
+  chat(c, 3, 'xin chào '.repeat(40), at + GAME.seatActiveMs + 100, at + GAME.seatActiveMs + 100);
+  const equal = c.view(at + GAME.seatActiveMs + 100);
+  assert.deepEqual(equal.seats.map((s) => [s.username, s.seatIndex]), positions, 'comment/session/activity do not reshuffle equal scores');
+  assert.equal(equal.movements.length, 0);
+  const now = at + GAME.seatActiveMs + 200;
+  c.students.get('u3')!.score = 100;
+  const batch = c.view(now);
+  assert.ok(batch.movements.some((m) => m.kind === 'reseat'));
+  c.students.get('u2')!.score = 200;
+  const halfway = c.view(now + 500);
+  assert.deepEqual(halfway.movements, batch.movements, 'active routes stay frozen despite new leader');
+  assert.deepEqual(halfway.seats.map((s) => [s.username, s.seatIndex]).sort(), batch.seats.map((s) => [s.username, s.seatIndex]).sort());
+  const end = Math.max(...batch.movements.map((m) => m.startedAt + m.durationMs));
+  const next = c.view(end + 1);
+  assert.equal(next.seats[0].username, 'u2');
+  assert.equal(next.seats[0].seatIndex, 0, 'new ranking applied once previous batch finishes');
+  assert.equal(new Set(next.seats.map((s) => s.seatIndex)).size, 4);
+  const settled = Math.max(...next.movements.map((m) => m.startedAt + m.durationMs)) + 1001;
+  assert.equal(c.view(settled).movements.length, 0, 'stable scores do not loop movement');
 }
 
 console.log('quiz.check: tất cả đều đúng');

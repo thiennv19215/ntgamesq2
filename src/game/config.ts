@@ -153,8 +153,8 @@ export const GAME = {
   forgetAfterMs: 2 * 60 * 60_000,
 
   // ---------- Lớp ----------
-  seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
-  rowSeats: [7, 7, 8, 8], // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại)
+  seats: 40, // bốn dãy bàn riêng, mỗi dãy 10 chỗ
+  rowSeats: [10, 10, 10, 10], // tổng bằng seats
   // hết ghế: không vẽ đám đông đứng 2 bên cửa nữa (chủ kênh bỏ 2026-11-04), các bạn vẫn chơi, tính điểm,
   // hiện ở bảng "Sĩ số · Đang chờ vào lớp"
   standing: 0,

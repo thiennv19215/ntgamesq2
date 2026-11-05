@@ -88,12 +88,12 @@ export const LINES = {
     'Sắp hết giờ, nhanh lên nào!',
   ] as L0,
 
-  // trêu bạn sai + phạt lên bục đứng thật (nhân vật lên đứng cạnh bảng, đeo bảng "học sinh cá biệt")
+  // Trả lời sai: cô mời lên đứng bảng, vẫn giữ điểm và chỗ trong lớp.
   roastStand: [
-    (n) => `${n} sai mà tự tin quá, lên bục đứng cạnh cô một chút cho cả lớp chiêm ngưỡng. Học sinh cá biệt đây rồi!`,
-    (n) => `Ối ${n} sai nữa rồi! Lên bục đứng nha, coi như họp kiểm điểm cuối tuần.`,
-    (n) => `Cô phạt ${n} lên bục đứng một lát. Đứng xong nhớ trả lời đúng để cô còn có cớ tha.`,
-    (n) => `${n} ơi, lên đứng góc lớp cạnh bảng nha. Cô đùa thôi... mà thôi cứ đứng đi cho vui.`,
+    (n) => `${n} trả lời chưa đúng, lên đứng cạnh bảng với cô một chút nhé.`,
+    (n) => `${n} ơi, lên bảng đứng cùng cô ba câu rồi về chỗ nhé.`,
+    (n) => `Cô mời ${n} lên đứng cạnh bảng, điểm của bạn cô vẫn giữ nguyên nhé.`,
+    (n) => `${n} lên bảng cùng cô nào, đứng hết lượt cô cho về chỗ nhé.`,
   ] as L1,
   // gọi bạn ngủ gật (ngồi im lâu) dậy
   wakeUp: [

@@ -47,6 +47,7 @@ export function useGame() {
   const talkTop = useRef<WeekRow[]>([]); // tương tác cả ngày (server), cho bảng Top tương tác
   const likeBase = useRef<number | null>(null);
   const dirty = useRef(true);
+  const firstChats = useRef(new Set<string>());
 
   const [talk] = useState(() => ({
     greeter: new NameBatcher(
@@ -121,11 +122,19 @@ export function useGame() {
       if (!IS_STAGE) setView(s as StageView);
     },
 
+    onMember: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      room.enter(person(e), Date.now());
+      dirty.current = true;
+    },
+
     onChat: (e) => {
       const room = roomRef.current;
       if (!room) return;
       const p = person(e);
-      const isNew = !room.students.has(e.username);
+      const isNew = !firstChats.current.has(e.username);
+      firstChats.current.add(e.username);
       say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, safe: !containsBanned(e.comment) }, Date.now()));
       if (isNew && p.spoken !== 'bạn' && GAME.joinKeywords.includes(plain(e.comment))) talk.greeter.add(e.username, p.spoken);
       // chuyên cần: lần đầu bình luận trong buổi thì báo server, server trả về số ngày đi học liền

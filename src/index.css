@@ -11,9 +11,9 @@ body,
   height: 100%;
 }
 
-/* Nền stage. Đổi ảnh: bỏ ảnh vào public/assets/bg/ rồi thay dòng background */
+/* Nền trống bàn ghế; bàn dài và ghế được vẽ trong GameStage. */
 .stage-bg {
-  background: #c8642a url('/assets/bg/lop.webp?v=goc') top center / 1080px auto no-repeat;
+  background: #c8642a url('/assets/generated/classroom-blossom-clean-v5.png') top center / 1080px auto no-repeat;
 }
 
 /* Hiệu ứng khi đủ tim */
