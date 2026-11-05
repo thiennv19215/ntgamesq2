@@ -8,13 +8,13 @@ export const GAME = {
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,
-  // 14 câu chữ (4 dễ, 4 vừa, 6 khó) + 2 câu tiếng Anh + 2 câu đố mẹo + 2 câu lịch sử.
-  // Chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi trong ngân hàng; câu 20 là câu hỏi vàng.
+  // Mỗi phiên live học một chủ đề; chủ kênh chọn chủ đề ở trang điều khiển.
+  // Mỗi tiết có 4 câu dễ, 6 câu vừa, 10 câu khó; câu 20 là câu hỏi vàng.
+  // Câu tiếng Anh, lịch sử, đố mẹo vẫn thuộc chủ đề riêng khi chủ kênh chọn các nhóm đó.
   roundPlan: [
-    'easy', 'easy', 'anh', 'easy', 'medium',
-    'easy', 'meo', 'medium', 'su', 'medium',
-    'medium', 'anh', 'meo', 'hard', 'hard',
-    'hard', 'su', 'hard', 'hard', 'hard',
+    'easy', 'easy', 'easy', 'easy',
+    'medium', 'medium', 'medium', 'medium', 'medium', 'medium',
+    'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard',
   ] as const,
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
@@ -25,7 +25,7 @@ export const GAME = {
   timeGreetEvery: 4, // ngoài lúc đổi buổi, cứ chừng này tiết cô chào theo giờ một lần
   // Lấp khoảng im lặng lúc chờ trả lời câu chữ: cứ chừng này cô làm 1 việc, xoay vòng
   // rủ "ai yêu cô gõ số 1" -> kể chuyện vui / mẹo tiếng Anh -> hỏi bình chọn (miền Bắc gõ B...) -> kể chuyện
-  engageEveryMs: 100_000,
+  engageEveryMs: 20_000,
   engageOrder: ['love', 'story', 'poll', 'sleep'] as const, // 'sleep': gọi 1 bạn ngủ gật dậy (không ai ngủ thì kể chuyện)
   loveWindowMs: 15_000, // đếm ai gõ trong chừng này rồi cảm ơn / đọc kết quả
 
@@ -61,10 +61,6 @@ export const GAME = {
   rollWinners: 10,
   heartTarget: 300, // thử thách thả tim trong 30 giây
   heartBoost: 5, // mỗi tim thật tính thành 5 tim (300 tim chỉ cần 60 tim thật) cho cả lớp dễ thắng; cũng áp cho vỗ tay
-
-  // ---------- Sau giờ ra chơi: cả lớp chọn chủ đề tiết sau ----------
-  voteSec: 12, // gõ 1 hoặc 2
-  voteTopicQuestions: 5, // chủ đề thắng chiếm chừng này câu chữ thường của tiết sau
 
   // ---------- Chuyên cần, sinh nhật ----------
   attendMilestones: [3, 5, 7, 10, 14, 21, 30], // đi học liền đủ chừng này ngày thì cô khen to + tặng quà

@@ -67,3 +67,6 @@ XE TỰ LÁI | Ô tô không cần người cầm lái. | 3
 THỰC TẾ ẢO | Đeo kính vào như đang ở thế giới khác. | 3 | VR
 NHÀ PHÁT MINH | Edison là một người như vậy. | 3
 BÓNG ĐÈN SỢI ĐỐT | Phát minh nổi tiếng của Edison. | 3
+QUỸ ĐẠO | Đường đi của một thiên thể khi chuyển động quanh thiên thể khác trong không gian. | 3
+LỰC MA SÁT | Lực xuất hiện giữa hai bề mặt tiếp xúc, cản sự trượt tương đối giữa chúng. | 3
+HỆ MẶT TRỜI | Trái Đất cùng bảy hành tinh khác, các vệ tinh, tiểu hành tinh và sao chổi thuộc hệ hành tinh nào? | 3

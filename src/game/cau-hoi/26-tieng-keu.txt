@@ -23,6 +23,7 @@ CON KHỈ | Khọt khẹt, chuyền cành thoăn thoắt. | 2 | KHỈ
 CON CHIM SẺ | Chích chích, nhỏ xíu hay đậu mái nhà. | 2 | CHIM SẺ, SẺ
 CON VE SẦU | Kêu ra rả suốt mùa hè. | 2 | VE SẦU, CON VE, VE
 CON SÓI | Hú thật dài dưới ánh trăng. | 2 | SÓI, CHÓ SÓI
+CHIM CU GÁY | Loài chim đồng quê gọi trầm, đều như tiếng “cúc cu cu”. | 3
 > Đây là đồ vật có tiếng kêu như vậy.
 ĐỒNG HỒ | Tích tắc tích tắc, chạy cả ngày. | 1 | CÁI ĐỒNG HỒ
 CÁI TRỐNG | Tùng tùng tùng, báo giờ vào lớp. | 1 | TRỐNG, TRỐNG TRƯỜNG
@@ -30,8 +31,22 @@ CÁI CHUÔNG | Reng reng reng, có khách tới nhà. | 1 | CHUÔNG, CHUÔNG C�
 TÀU HỎA | Xình xịch xình xịch trên đường ray. | 1 | TÀU LỬA, XE LỬA
 CÁI CÒI | Tuýt tuýt, chú cảnh sát giao thông thổi. | 2 | CÒI
 XE CỨU THƯƠNG | Tò te tò te chạy thật nhanh tới bệnh viện. | 2 | XE CẤP CỨU
+CHUÔNG GIÓ | Những ống nhỏ va nhẹ vào nhau, kêu leng keng khi gió thổi. | 3
+MÕ | Khối gỗ được gõ theo nhịp ở chùa, phát tiếng cốc cốc trầm vang. | 3
 > Đây là âm thanh của thiên nhiên.
 SẤM | Ầm ầm vang trên trời lúc sắp mưa to. | 2 | TIẾNG SẤM, SẤM SÉT
 MƯA | Lộp độp trên mái tôn. | 1 | CƠN MƯA, TIẾNG MƯA
 GIÓ | Vi vu thổi qua rặng tre. | 2 | CƠN GIÓ, TIẾNG GIÓ
 SÓNG BIỂN | Rì rào vỗ vào bờ cát. | 2 | SÓNG, TIẾNG SÓNG
+> Đây là âm thanh phát ra từ vật hoặc hoạt động quen thuộc.
+CÒI TÀU | Tiếng còi dài vang từ đầu máy ở sân ga, báo đoàn tàu sắp khởi hành. | 3
+SÁO DIỀU | Tiếng vi vu từ trên cao, do gió lùa qua ống sáo buộc vào diều. | 3
+ĐÀN ĐÁ | Gõ lên những thanh đá dài ngắn khác nhau, mỗi thanh vang một nốt. | 3
+TIẾNG RAO | Giọng người bán hàng ngân dài trên phố để gọi khách mua món mình bán. | 3
+TIẾNG BƯỚC CHÂN | Âm cộp cộp theo nhịp vang lên khi một người đi trên nền cứng. | 3
+MÁY KHOAN | Tiếng rè rè vang lên khi mũi máy xoay nhanh để khoét lỗ trên tường. | 3
+MÁY HÚT BỤI | Tiếng ù ù chạy dưới sàn, vừa ồn vừa hút bụi vào túi chứa. | 3
+TIẾNG NGÁY | Âm khò khè đều đều thường vang lên khi một người ngủ say. | 3
+TIẾNG HẮT HƠI | Âm bật ra khi ai đó hắt hơi thật mạnh; người bên cạnh thường chúc “sức khỏe”. | 3 | TIẾNG HẮT XÌ
+TIẾNG HUÝT SÁO | Âm cao, ngân bằng hơi thổi qua đôi môi khép tròn; không cần dùng sáo làm nhạc cụ. | 3
+> Đây là âm thanh phát ra từ vật hoặc hoạt động quen thuộc.

@@ -4,8 +4,9 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 
 ## Tính năng
 
-- 2099 câu hỏi tiếng Việt, 31 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mỗi tiết ưu tiên 20 câu chưa hỏi trong ngân hàng (câu tiếng Anh, đố mẹo, lịch sử được xếp lịch riêng); chỉ sinh toán nhẩm khi đã dùng hết câu chưa hỏi. Câu 20 là câu hỏi vàng nhân đôi điểm.
+- 2292 câu hỏi tiếng Việt, 32 chủ đề, mỗi câu là một dòng trong file text (`src/game/cau-hoi/`). Mặc định, một phiên live giữ một chủ đề; chủ kênh có thể xếp chủ đề mới để đổi từ đầu ván kế tiếp. Mỗi ván có 20 câu cùng chủ đề (4 dễ, 6 vừa, 10 khó); khi chủ đề thiếu câu đúng mức, game ưu tiên mức gần nhất theo hướng khó hơn. Câu 20 là câu hỏi vàng nhân đôi điểm.
 - Chấm điểm theo giờ TikTok gắn lúc người xem gửi bình luận, nên phòng đông, bình luận tới lệch thứ tự vẫn xếp đúng ai nhanh nhất. Nhất 10 điểm, nhì 7, ba 5; chép đáp án trên khung chat chỉ được 1 điểm.
+- Sau mỗi câu, màn kết quả nổi trên lớp học hiển thị đáp án, top 3 nhanh nhất kèm thời gian và điểm, cùng tổng số bạn trả lời đúng.
 - Phải gõ có dấu; kiểu bỏ dấu cũ và mới ("hóa" / "hoá") đều tính đúng. Nói chuyện thường không bị tính là trả lời sai.
 - Game nhớ câu nào đã hỏi (lưu ra file) để nhiều buổi live liền ít lặp.
 - Cô giáo nói bằng giọng Edge TTS tiếng Việt, vài trăm câu thoại để khen, trêu, cảm ơn quà. Bảng câu mới hiện ngay khi chuyển câu; đồng hồ dừng trong lúc cô đọc đề và chỉ chạy sau khi cô hô bắt đầu. Câu chào, câu cảm ơn chỉ chen vào lúc đang chờ người xem trả lời.
@@ -52,13 +53,14 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
 - **Giọng đọc trên stage**: gõ câu cho cô đọc ngay. Thêm `F: ` ở đầu câu để dùng giọng nữ.
 - **Tốc độ giọng**: kéo thanh trượt, có tác dụng ngay khi đang live.
 - **Nền sân khấu dọc**: chọn lớp hiện tại, nắng sớm hoặc mưa chiều; đổi ngay ở preview và stage đang mở.
+- **Chủ đề phiên live**: chọn một chủ đề hoặc để game chọn ngẫu nhiên trước khi live. Khi đang live, có thể xếp thêm chủ đề; hàng chờ được áp dụng lần lượt từ đầu mỗi ván kế tiếp, không đổi câu đang phát.
 - **⏭ Qua phần tiếp / 🔄 Ván mới / 🚫 Bỏ câu này**: điều khiển lớp bằng tay. Câu bị bỏ sẽ không bao giờ hỏi lại.
 - Các nút giả lập để thử khi chưa live.
 - **📊 Báo cáo hôm nay** sau buổi live, hoặc mở thẳng `http://localhost:3006/bao-cao`.
 
 ## Thêm hoặc sửa câu hỏi
 
-Mỗi file trong `src/game/cau-hoi/` là một chủ đề:
+Mỗi file trong `src/game/cau-hoi/` là một chủ đề. Mỗi ván chỉ lấy câu từ chủ đề đã chọn; các nhóm tiếng Anh, lịch sử và đố mẹo cũng có thể được chọn làm chủ đề riêng:
 
 ```text
 # Món ăn Việt

@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
+import { QUESTION_TOPIC_COUNTS, QUESTION_TOPICS } from './bank';
+import { topicName, type QueuedTopic } from './quiz';
+
+const TOPIC_PICKER_PROMPT = '__choose_topic__';
+const RANDOM_TOPIC = '__random_topic__';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -9,10 +14,89 @@ const CHAT = ['khó quá cô ơi', 'chữ gì vậy trời', 'hay quá', 'vào l
 const fake = (i: number) => ({ username: `hs${i}`, nickname: `${HO[i % HO.length]} ${TEN[i % TEN.length]}`, avatar: '' });
 const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('');
 
-export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
+export function GameControls({ view, stageCount = 0, isLive = false }: { view: StageView | null; stageCount?: number; isLive?: boolean }) {
   const [sent, setSent] = useState(0);
   const [running, setRunning] = useState(false);
   const [bdName, setBdName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [topicLoading, setTopicLoading] = useState(true);
+  const [topicSaving, setTopicSaving] = useState(false);
+  const [topicMessage, setTopicMessage] = useState('');
+  const [topicQueue, setTopicQueue] = useState<QueuedTopic[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/game/topic')
+      .then((response) => {
+        if (!response.ok) throw new Error('request failed');
+        return response.json();
+      })
+      .then((data) => {
+        if (active) {
+          setTopicQueue(Array.isArray(data.topicQueue) ? data.topicQueue : []);
+          setTopic(isLive ? TOPIC_PICKER_PROMPT : typeof data.topic === 'string' ? data.topic : '');
+        }
+      })
+      .catch(() => {
+        if (active) setTopicMessage('Không tải được chủ đề đã lưu.');
+      })
+      .finally(() => {
+        if (active) setTopicLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isLive]);
+
+  useEffect(() => {
+    if (!isLive) return;
+    let active = true;
+    const refreshQueue = () => {
+      fetch('/api/game/topic')
+        .then((response) => response.json())
+        .then((data) => {
+          if (active) setTopicQueue(Array.isArray(data.topicQueue) ? data.topicQueue : []);
+        })
+        .catch(() => {});
+    };
+    refreshQueue();
+    const timer = setInterval(refreshQueue, 2500);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [isLive]);
+
+  const saveTopic = async () => {
+    if (topic === TOPIC_PICKER_PROMPT) return;
+    const selectedTopic = topic === RANDOM_TOPIC ? '' : topic;
+    setTopicSaving(true);
+    setTopicMessage('');
+    try {
+      const response = await fetch('/api/game/topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: selectedTopic }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Không lưu được chủ đề.');
+      if (Array.isArray(data.topicQueue)) setTopicQueue(data.topicQueue);
+      if (data.queued) {
+        setTopicMessage(`Đã xếp ${data.queued.topic ? topicName(data.queued.topic) : 'chủ đề ngẫu nhiên'} vào hàng chờ; áp dụng từ ván kế tiếp.`);
+        setTopic(TOPIC_PICKER_PROMPT);
+      } else {
+        setTopicMessage(
+          selectedTopic
+            ? `Đã lưu chủ đề ${topicName(selectedTopic)} cho phiên live tiếp theo.`
+            : 'Đã lưu chế độ chọn ngẫu nhiên một chủ đề cho phiên live tiếp theo.',
+        );
+      }
+    } catch (error) {
+      setTopicMessage(error instanceof Error ? error.message : 'Không lưu được chủ đề.');
+    } finally {
+      setTopicSaving(false);
+    }
+  };
 
   /** Giả lập n người xem cùng bình luận trong 20 giây: 15% đúng, 20% đoán sai, còn lại nói chuyện */
   const flood = async (n: number) => {
@@ -42,6 +126,49 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
 
   return (
     <div className="space-y-3">
+      <section aria-labelledby="live-topic-heading" className="rounded-xl bg-slate-900 p-3 ring-1 ring-slate-800">
+        <h3 id="live-topic-heading" className="mb-1 text-sm font-semibold text-slate-100">📚 Chủ đề phiên live</h3>
+        <p className="mb-2 text-xs text-slate-400">Chọn trước phiên live, hoặc xếp thêm chủ đề khi đang live. Chủ đề mới chỉ áp dụng từ ván kế tiếp.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Chọn chủ đề cho phiên live"
+            value={topic}
+            onChange={(event) => setTopic(event.target.value)}
+            disabled={topicLoading || topicSaving}
+            className="min-w-0 flex-1 rounded-lg bg-slate-800 px-3 py-2 text-sm text-white disabled:opacity-60"
+          >
+            {isLive ? (
+              <>
+                <option value={TOPIC_PICKER_PROMPT} disabled>Chọn chủ đề để xếp hàng…</option>
+                <option value={RANDOM_TOPIC}>Ngẫu nhiên · bốc một chủ đề ở ván sau</option>
+              </>
+            ) : (
+              <option value="">Ngẫu nhiên · chốt một chủ đề cho cả phiên</option>
+            )}
+            {QUESTION_TOPICS.map((item) => (
+              <option key={item} value={item}>
+                {topicName(item)} · {QUESTION_TOPIC_COUNTS.get(item) ?? 0} câu
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={saveTopic}
+            disabled={topicLoading || topicSaving || topic === TOPIC_PICKER_PROMPT}
+            className="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-40"
+          >
+            {topicSaving ? 'Đang lưu…' : isLive ? 'Xếp vào hàng chờ' : 'Lưu chủ đề'}
+          </button>
+        </div>
+        {isLive && view?.topic && <p className="mt-2 text-xs text-emerald-300">Đang học: {view.topic}</p>}
+        {isLive && <div className="mt-2 text-xs text-amber-300">
+          <div>Hàng chờ ({topicQueue.length})</div>
+          {topicQueue.length > 0 && <ol className="mt-1 list-inside list-decimal text-slate-300">
+            {topicQueue.map((item) => <li key={item.id}>{item.topic ? topicName(item.topic) : 'Ngẫu nhiên'}</li>)}
+          </ol>}
+        </div>}
+        {topicMessage && <p role="status" className="mt-2 text-xs text-slate-300">{topicMessage}</p>}
+      </section>
       {stageCount > 1 && <div className="rounded-lg bg-red-600 p-2 text-white">Đang mở {stageCount} trang stage, sẽ có 2 giọng. Đóng bớt đi.</div>}
       {view && (
         <div className="rounded-lg bg-slate-800 p-3 text-sm leading-6">

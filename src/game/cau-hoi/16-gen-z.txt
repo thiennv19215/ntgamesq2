@@ -74,3 +74,9 @@ CUNG HOÀNG ĐẠO | Bạch Dương, Kim Ngưu, Song Tử... | 2
 TAROT | Bói bài vẽ hình phương Tây. | 2
 FAN CỨNG | Người theo dõi lâu năm, trung thành. | 2
 GEN Z | Thế hệ sinh khoảng năm 1997 tới 2012. | 2
+CLICKBAIT | Tiêu đề cố tình giật gân để dụ người đọc bấm vào nội dung. | 3
+DEEPFAKE | Hình hoặc tiếng bị AI làm giả khiến ai đó trông như đã nói hay làm điều chưa xảy ra. | 3
+THUẬT TOÁN | Bộ quy tắc nền tảng dùng để sắp xếp nội dung gợi ý riêng cho từng người. | 3
+DUET | Tính năng TikTok cho phép đăng video của mình đặt cạnh video của một nhà sáng tạo khác. | 3
+STITCH | Tính năng TikTok ghép một đoạn video của người khác vào video mình đang tạo. | 3
+REPOST | Tính năng TikTok cho phép chia sẻ lại video mình thấy thú vị. | 3

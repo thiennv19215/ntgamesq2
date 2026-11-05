@@ -13,8 +13,7 @@ export interface Question {
   difficulty: 'easy' | 'medium' | 'hard';
   /** câu toán nhẩm (math.ts): phép tính hiện trên bảng và cách cô đọc, không có trong file câu hỏi */
   math?: { show: string; say: string };
-  /** câu có chỗ riêng trong tiết, theo đuôi tên file: "-meo" câu đố mẹo, "-su" câu lịch sử.
-   *  Chỉ hỏi ở đúng vị trí đó trong GAME.roundPlan, không lẫn vào câu chữ thường */
+  /** Nhãn câu theo đuôi tên file: "-meo" đố mẹo, "-su" lịch sử, "-anh" tiếng Anh. */
   slot?: Slot;
 }
 

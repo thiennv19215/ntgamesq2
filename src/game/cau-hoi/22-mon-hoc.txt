@@ -31,3 +31,8 @@ THỦ CÔNG | Môn cắt dán giấy màu. | 2
 HÁT NHẠC | Tiết cả lớp vỗ tay hát theo cô. | 2
 LÝ THUYẾT | Phần học trên sách, chưa thực hành. | 3
 THỰC HÀNH | Phần làm thật trong phòng thí nghiệm. | 3
+XÁC SUẤT | Phần toán giúp so sánh khả năng xảy ra của việc rút bi đỏ hay bi xanh trong túi. | 3
+THỐNG KÊ | Phần toán thu thập, đếm dữ liệu rồi trình bày kết quả bằng bảng hoặc biểu đồ. | 3
+TIẾNG PHÁP | Môn ngoại ngữ có lời chào “bonjour” và lời cảm ơn “merci”. | 3
+TIẾNG TRUNG | Ngoại ngữ có tên tiếng Anh là Chinese; hệ chữ thường dùng chữ Hán giản thể hoặc phồn thể. | 3
+TIẾNG HÀN | Môn ngoại ngữ có bảng chữ cái gọi là Hangul. | 3

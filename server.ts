@@ -82,11 +82,16 @@ let settings: {
   stageBackground?: StageBackgroundId;
   stageStudent?: StageStudentSetId;
   stageTeacher?: StageTeacherSetId;
+  gameTopic?: string;
+  gameTopicQueue?: { id: string; topic: string }[];
 } = {};
 let stageBackground: StageBackgroundId = 'classic';
 let stageCharacters = DEFAULT_STAGE_CHARACTERS;
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+  settings.gameTopicQueue = Array.isArray(settings.gameTopicQueue)
+    ? settings.gameTopicQueue.filter((item) => typeof item?.id === 'string' && typeof item?.topic === 'string')
+    : [];
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
     lastNameControl = { action: 'setName', text: settings.channelName.trim() };
   }
@@ -452,12 +457,92 @@ async function edgeTts(text: string, rate: number, hype = false, voiceName = TTS
     const read = (async () => {
       for await (const c of audioStream) chunks.push(c as Buffer);
     })();
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Edge TTS timeout')), 20000));
-    await Promise.race([read, timeout]);
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => reject(new Error('Edge TTS timeout')), 20000);
+    });
+    try {
+      await Promise.race([read, timeout]);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
     if (chunks.length === 0) throw new Error('Edge TTS không trả âm thanh');
     return Buffer.concat(chunks);
   } finally {
     tts.close();
+  }
+}
+
+// Priority lines are prefetched by the browser, which can otherwise open many
+// Edge WebSockets at once. Bound concurrency while allowing a small overlap,
+// and cool Edge down after a 429 so Google can carry speech for a while.
+const EDGE_TTS_MAX_CONCURRENCY = 2;
+const EDGE_TTS_MIN_INTERVAL_MS = 120;
+const EDGE_TTS_COOLDOWN_MS = 60_000;
+let activeEdgeTtsRequests = 0;
+let lastEdgeTtsStartedAt = 0;
+let edgeTtsUnavailableUntil = 0;
+let consecutiveEdgeTtsFailures = 0;
+let edgeTtsStartTimer: ReturnType<typeof setTimeout> | undefined;
+const edgeTtsWaiters: Array<{ urgent: boolean; grant: (release: () => void) => void }> = [];
+
+function drainEdgeTtsQueue() {
+  if (activeEdgeTtsRequests >= EDGE_TTS_MAX_CONCURRENCY || edgeTtsWaiters.length === 0) return;
+  const urgentIndex = edgeTtsWaiters.findIndex((waiter) => waiter.urgent);
+  const waitMs = lastEdgeTtsStartedAt + EDGE_TTS_MIN_INTERVAL_MS - Date.now();
+  if (waitMs > 0 && urgentIndex < 0) {
+    if (!edgeTtsStartTimer) {
+      edgeTtsStartTimer = setTimeout(() => {
+        edgeTtsStartTimer = undefined;
+        drainEdgeTtsQueue();
+      }, waitMs);
+    }
+    return;
+  }
+
+  if (urgentIndex >= 0 && edgeTtsStartTimer) {
+    clearTimeout(edgeTtsStartTimer);
+    edgeTtsStartTimer = undefined;
+  }
+  const [waiter] = edgeTtsWaiters.splice(urgentIndex >= 0 ? urgentIndex : 0, 1);
+  if (!waiter) return;
+  activeEdgeTtsRequests++;
+  lastEdgeTtsStartedAt = Date.now();
+  waiter.grant(() => {
+    activeEdgeTtsRequests--;
+    drainEdgeTtsQueue();
+  });
+  drainEdgeTtsQueue();
+}
+
+function acquireEdgeTtsSlot(urgent: boolean): Promise<() => void> {
+  return new Promise((resolve) => {
+    edgeTtsWaiters.push({ urgent, grant: resolve });
+    drainEdgeTtsQueue();
+  });
+}
+
+async function protectedEdgeTts(text: string, rate: number, hype: boolean, voiceName: string, urgent: boolean): Promise<Buffer | null> {
+  if (Date.now() < edgeTtsUnavailableUntil) return null;
+  const release = await acquireEdgeTtsSlot(urgent);
+
+  try {
+    if (Date.now() < edgeTtsUnavailableUntil) return null;
+    try {
+      const audio = await edgeTts(text, rate, hype, voiceName);
+      consecutiveEdgeTtsFailures = 0;
+      return audio;
+    } catch (err) {
+      consecutiveEdgeTtsFailures++;
+      const message = err instanceof Error ? err.message : String(err);
+      if (/\b429\b|too many requests/i.test(message) || consecutiveEdgeTtsFailures >= 2) {
+        edgeTtsUnavailableUntil = Date.now() + EDGE_TTS_COOLDOWN_MS;
+        consecutiveEdgeTtsFailures = 0;
+      }
+      throw err;
+    }
+  } finally {
+    release();
   }
 }
 
@@ -485,6 +570,7 @@ app.get('/api/tts', async (req, res) => {
     if (!text) return res.status(400).send('Thiếu text');
     const rate = Math.min(1.5, Math.max(0.5, Number(req.query.rate) || 1));
     const hype = req.query.hype === '1';
+    const urgent = req.query.urgent === '1';
     // 2 MC: nam (mặc định) và nữ, thêm giọng tiếng Anh để đọc từ tiếng Anh cho chuẩn.
     // Chỉ nhận các giọng này, không cho truyền tên giọng tuỳ ý.
     const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : TTS_VOICE;
@@ -495,7 +581,9 @@ app.get('/api/tts', async (req, res) => {
       if (!pending) {
         pending = (async () => {
           try {
-            return await edgeTts(text, rate, hype, voiceName);
+            const edgeAudio = await protectedEdgeTts(text, rate, hype, voiceName, urgent);
+            if (edgeAudio) return edgeAudio;
+            return googleTts(text);
           } catch (err) {
             console.warn('Edge TTS lỗi, chuyển Google:', err instanceof Error ? err.message : err);
             return googleTts(text);
@@ -521,6 +609,34 @@ app.get('/api/tts', async (req, res) => {
 });
 
 // ---------- API riêng của game: thêm bên dưới ----------
+
+// Ngoài live, chủ đề là cấu hình cho phiên sau. Trong live, lựa chọn mới được xếp hàng và chỉ áp dụng ở ván kế tiếp.
+app.get('/api/game/topic', (_req, res) => res.json({ topic: settings.gameTopic ?? '', topicQueue: settings.gameTopicQueue ?? [] }));
+app.post('/api/game/topic', (req, res) => {
+  const raw = req.body?.topic;
+  if (typeof raw !== 'string' || raw.length > 100 || /[\x00-\x1f\x7f]/.test(raw)) {
+    return res.status(400).json({ success: false, error: 'Chủ đề không hợp lệ' });
+  }
+  const topic = raw.trim();
+  if (liveStats.isConnected || liveStats.isConnecting) {
+    const queued = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`, topic };
+    const topicQueue = [...(settings.gameTopicQueue ?? []), queued];
+    saveSettings({ gameTopicQueue: topicQueue });
+    broadcast('control', { action: 'custom', text: `queueTopic:${JSON.stringify(queued)}` });
+    return res.json({ success: true, queued, topicQueue });
+  }
+  saveSettings({ gameTopic: topic });
+  broadcast('control', { action: 'custom', text: `setTopic:${topic}` });
+  res.json({ success: true, topic, topicQueue: settings.gameTopicQueue ?? [], appliesNextRound: true });
+});
+app.post('/api/game/topic/consume', (req, res) => {
+  const id = req.body?.id;
+  if (typeof id !== 'string' || !id) return res.status(400).json({ success: false, error: 'Mã chủ đề không hợp lệ' });
+  const topicQueue = settings.gameTopicQueue ?? [];
+  const remaining = topicQueue.filter((item) => item.id !== id);
+  if (remaining.length !== topicQueue.length) saveSettings({ gameTopicQueue: remaining });
+  res.json({ success: true, topicQueue: settings.gameTopicQueue ?? [] });
+});
 
 // Trang stage (nơi chạy game thật) gửi ảnh chụp trạng thái lên; trang điều khiển xem trước đúng y như vậy
 app.post('/api/game/state', (req, res) => {

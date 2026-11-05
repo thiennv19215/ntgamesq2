@@ -8,13 +8,29 @@ import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
 import { QUESTIONS } from './bank';
-import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
+import { Classroom, plain, type ClassView, type QueuedTopic, type RecessGame, type Say } from './quiz';
 import { sfx } from './sfx';
 import { getStageBackground, STAGE_BACKGROUND_EVENT, STAGE_BACKGROUND_STORAGE_KEY } from '../live/stage-backgrounds';
 import { normalizeStageCharacters, saveStageCharacters } from '../live/stage-characters';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
+
+function acknowledgeConsumedTopic(room: Classroom) {
+  const item = room.takeConsumedTopic();
+  if (!item) return;
+  fetch('/api/game/topic/consume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: item.id }),
+  }).catch(() => {});
+}
+
+function startNewRound(room: Classroom, now: number) {
+  const lines = room.newRound(now);
+  acknowledgeConsumedTopic(room);
+  return lines;
+}
 
 export type WeekRow = { username: string; nickname: string; points: number };
 export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[] };
@@ -76,7 +92,7 @@ export function useGame() {
               dirty.current = true;
             }
           : undefined;
-        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart, undefined, l.rateBoost ? Math.min(1.5, voice.rate + l.rateBoost) : undefined);
+        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart, undefined, l.rateBoost ? Math.min(1.5, voice.rate + l.rateBoost) : undefined, true);
       } else if (l.warn) {
         voice.say(l.text, true); // nhắc sắp hết giờ: chen lên đọc liền, đồng hồ vẫn chạy
       } else {
@@ -174,10 +190,21 @@ export function useGame() {
       if (c.action === 'reset' || (c.action === 'custom' && c.text === 'newRound')) {
         voice.stop();
         chatter.current = [];
-        say(room.newRound(Date.now()));
+        say(startNewRound(room, Date.now()));
       }
-      if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
+      if (c.action === 'custom' && c.text === 'skip') {
+        say(room.skip(Date.now()));
+        acknowledgeConsumedTopic(room);
+      }
       if (c.action === 'custom' && c.text === 'ban') say(room.banCurrent(Date.now()));
+      if (c.action === 'custom' && c.text?.startsWith('setTopic:')) room.setTopic(c.text.slice(9));
+      if (c.action === 'custom' && c.text?.startsWith('queueTopic:')) {
+        try {
+          room.queueTopic(JSON.parse(c.text.slice(11)) as QueuedTopic);
+        } catch {
+          // Bỏ qua lệnh xếp hàng hỏng; chủ đề hiện tại vẫn giữ nguyên.
+        }
+      }
       // chủ kênh tự bấm chúc sinh nhật: tên trùng bạn đang trong lớp thì bánh kem đặt lên bàn bạn đó
       if (c.action === 'custom' && c.text?.startsWith('birthday:')) {
         const name = c.text.slice(9).trim().slice(0, 40);
@@ -225,6 +252,8 @@ export function useGame() {
     (async () => {
       let used: Record<string, number> = {};
       let banned: string[] = [];
+      let topic = '';
+      let topicQueue: QueuedTopic[] = [];
       try {
         const d = await (await fetch('/api/game/save')).json();
         used = d.used ?? {};
@@ -234,11 +263,18 @@ export function useGame() {
       } catch {
         // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
       }
+      try {
+        const d = await (await fetch('/api/game/topic')).json();
+        topic = typeof d.topic === 'string' ? d.topic : '';
+        topicQueue = Array.isArray(d.topicQueue) ? d.topicQueue : [];
+      } catch {
+        // nếu server cũ chưa có cấu hình chủ đề thì game tự chốt một chủ đề ngẫu nhiên
+      }
       if (stop) return;
-      const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
+      const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned, topic, topicQueue);
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
-      say(room.newRound(Date.now()));
+      say(startNewRound(room, Date.now()));
 
       // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
       let lastSent = 0;
@@ -253,6 +289,7 @@ export function useGame() {
           }
           lastTick = now;
           say(room.tick(now));
+          acknowledgeConsumedTopic(room);
           flushChatter(room, now);
           sfx.clock(room.phase, room.boardShown, room.phaseEndsAt, now);
           if (!dirty.current && now - lastSent < 1000) return;

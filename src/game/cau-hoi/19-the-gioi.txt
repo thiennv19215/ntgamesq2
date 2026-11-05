@@ -75,3 +75,6 @@ MÌ Ý | Spaghetti sốt cà chua. | 2 | SPAGHETTI
 TACO | Bánh kẹp của Mexico. | 3
 KANGAROO | Thú có túi của Úc. | 2
 KOALA | Gấu ôm cây ở Úc. | 3 | GẤU KOALA
+RÃNH MARIANA | Rãnh đại dương sâu nhất thế giới đã biết, nằm ở tây Thái Bình Dương gần Guam. | 3 | VỰC MARIANA
+GREENLAND | Hòn đảo lớn nhất thế giới nếu không tính các lục địa. | 3
+ĐẢO PHỤC SINH | Hòn đảo ở Thái Bình Dương nổi tiếng với những tượng đá moai khổng lồ. | 3 | RAPA NUI, EASTER ISLAND

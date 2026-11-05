@@ -23,14 +23,10 @@
   animation: none !important;
 }
 
-/* One shared clock keeps the teacher and class moving together in the live stage and preview. */
-.teacher-character,
+/* Crowd idle motion uses one shared clock in the live stage and preview. */
 .crowd-character {
   animation: idle-teacher 4.8s ease-in-out infinite;
   transform-origin: 50% 100%;
-}
-.teacher-character {
-  will-change: transform;
 }
 .student-character {
   animation: idle-student 4.8s ease-in-out infinite;
@@ -149,7 +145,6 @@
   .tile-float,
   .class-clap,
   .golden-board,
-  .teacher-character,
   .student-character,
   .crowd-character {
     animation: none !important;

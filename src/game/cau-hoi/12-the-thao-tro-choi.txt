@@ -74,3 +74,6 @@ TRƯỢT PATIN | Đi giày có bánh xe. | 3 | PATIN
 ĐUA THUYỀN | Cả đội cùng chèo về đích. | 3
 BOXING | Đấm bốc đeo găng. | 2 | ĐẤM BỐC, QUYỀN ANH
 PICKLEBALL | Môn vợt đang hot, sân nhỏ, bóng nhựa có lỗ. | 3
+BÓNG NÉM | Môn đồng đội 7 người mỗi bên, chuyền bóng bằng tay rồi ném vào khung thành. | 3
+BÓNG CHÀY | Môn dùng gậy đánh bóng; người đánh chạy qua các gôn để ghi điểm. | 3
+GOLF | Môn dùng gậy đưa bóng vào lỗ với số lần đánh ít nhất. | 3

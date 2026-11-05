@@ -216,23 +216,7 @@ export const LINES = {
     'Thôi câu này bỏ, cô ra câu khác dễ thương hơn nè.',
   ] as L0,
 
-  // ---------- Cả lớp chọn chủ đề tiết sau (a, b = 2 chủ đề) ----------
-  voteIntro: [
-    (a, b) => `Tiết sau học gì đây các bạn nhỏ? Gõ số một nếu chọn ${a}, gõ số hai nếu chọn ${b}.`,
-    (a, b) => `Cả lớp quyết định nha! Một là ${a}, hai là ${b}. Gõ số vào bình luận đi nào.`,
-    (a, b) => `Cô cho các bạn nhỏ chọn chủ đề tiết sau: một, ${a}. Hai, ${b}. Bên nào nhiều phiếu hơn thì học bên đó.`,
-  ] as L2,
-  voteResult: [
-    (t) => `Cả lớp đã chọn rồi! Tiết này mình học chủ đề ${t} nha.`,
-    (t) => `Chủ đề ${t} thắng rồi! Cô ra nhiều câu về ${t} cho các bạn nhỏ nè.`,
-    (t) => `Theo ý cả lớp, tiết này có nhiều câu về ${t}. Chuẩn bị nha!`,
-  ] as L1,
-  voteNobody: [
-    'Chưa ai chọn hết, vậy cô tự chọn câu hỏi nha.',
-    'Không ai bình chọn hả? Thôi cô trộn đủ chủ đề luôn.',
-  ] as L0,
-
-  // ---------- Câu đố mẹo (câu 7, 13) ----------
+  // ---------- Câu đố mẹo ----------
   riddleReveal: [
     (answer, rest) => `Đáp án là ${answer}! Hihi, có bạn nhỏ nào bị cô lừa không? ${rest}`,
     (answer, rest) => `${answer} nha các bạn nhỏ! Câu đố mẹo đó, nghĩ thẳng là trật liền. ${rest}`,
@@ -251,7 +235,7 @@ export const LINES = {
     (n) => `Ối ${n} sập bẫy rồi! Câu đố mẹo phải nghĩ khác đi một chút nha.`,
   ] as L1,
 
-  // ---------- Câu tiếng Anh (câu 3, 12) ----------
+  // ---------- Câu tiếng Anh ----------
   // "| E: từ | F:" = đọc từ tiếng Anh bằng giọng tiếng Anh rồi cô nói tiếp giọng mình
   englishReveal: [
     (answer, rest) => `Đáp án là | E: ${answer} | F: Các bạn nhỏ đọc theo cô nha. ${rest}`,
@@ -265,7 +249,7 @@ export const LINES = {
     (a) => `Đáp án là | E: ${a} | F: Về nhà học thêm tiếng Anh với cô nha.`,
   ] as L1,
 
-  // ---------- Câu lịch sử (câu 9, 17) ----------
+  // ---------- Câu lịch sử ----------
   historyReveal: [
     (answer, rest) => `Đáp án là ${answer}! Các bạn nhỏ nhớ bài lịch sử giỏi ghê. ${rest}`,
     (answer, rest) => `Là ${answer} nha các bạn nhỏ. Lịch sử nước mình hay lắm đó. ${rest}`,
@@ -355,6 +339,28 @@ export const LINES = {
     'Lớp mình học giỏi lắm mà, sao câu này ai cũng im?',
     'Mấy bạn nhỏ bàn cuối đâu rồi, nói chuyện riêng giỏi lắm mà, trả lời đi!',
     'Còn nửa thời gian. Cô ngồi chờ mà nóng ruột quá.',
+    'Cả lớp đang tải đáp án hả? Cô chờ thanh loading chạy xong nha!',
+    'Ủa, câu này làm cả lớp bật chế độ tàng hình luôn rồi hả? Cô vẫn thấy nha!',
+    'Não cả lớp đang họp khẩn hả? Họp nhanh thôi, sắp hết giờ rồi đó!',
+    'Không khí căng như dây đàn luôn. Bạn nào ra đáp án thì flex nhẹ cho cô xem nào!',
+    'Cô chờ lâu quá tưởng lớp đang thi xem ai im lâu nhất á!',
+    'Cứ gõ thử đi, sai thì mình gọi là bản nháp. Cô không phán xét đâu nha!',
+    'Cả lớp bật chế độ tiết kiệm pin rồi hả? Chạm nhẹ bàn phím cho cô biết còn online nha!',
+    'Bạn nào đang nghĩ thì cứ bình tĩnh, cô không giục đâu... cô chỉ nhắc đồng hồ đang giục thôi!',
+    'Đáp án trốn kỹ ghê ha. Cả lớp soi bảng như săn đồ giảm giá giúp cô với!',
+    'Cô nói một mình sắp thành podcast rồi nè. Cho cô nghe tiếng bàn phím với cả lớp ơi!',
+    'Não đang chạy deadline hả? Cô hiểu, nhưng deadline câu này còn có mấy giây thôi nha!',
+    'Cô thấy cả lớp suy nghĩ bằng ánh mắt rồi đó. Giờ cho bàn phím tham gia chung nha!',
+    'Đang nghĩ đáp án hay lỡ tay deep scroll vậy cả lớp? Quay lại bảng cứu cô nào!',
+    'Lớp im dữ, cô tưởng mạng đứng hình. Ai còn online thả đáp án cho cô hết lo nha!',
+    'Cả lớp đang brainstorm hay chờ đáp án tự hiện lên vậy? Bàn phím cũng cần được giao việc nha!',
+    'Đồng hồ nhìn cô, cô nhìn đồng hồ, hai cô trò đang chờ lớp mình đó!',
+    'Bạn nào thấy đáp án ló đầu thì bắt liền nha, đừng để nó chạy mất!',
+    'Mấy cái đầu quay như chong chóng rồi ha? Giờ cho ngón tay gõ đáp án nè!',
+    'Cô biết đáp án đang ở đâu đó trong não. Gửi định vị xuống bàn phím giúp cô nha!',
+    'Ai đang chờ bạn khác trả lời trước thì coi chừng bạn đó cũng đang chờ mình đó nha!',
+    'Hít thở, nhìn bảng, nghĩ một chút rồi gõ. Cô hướng dẫn như huấn luyện viên luôn rồi!',
+    'Lớp im tới mức cô tưởng mình đang thu âm chương trình độc thoại đó nha!',
   ] as L0,
 
   bonus: [

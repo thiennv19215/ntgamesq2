@@ -18,6 +18,7 @@ interface Line {
   valid?: () => boolean; // tới lượt đọc mà trả về false thì bỏ câu (chuyện đã cũ, vd. đã bị cướp mà vẫn "sắp trả lời")
   rate?: number;
   keep?: boolean; // không bỏ dù chờ lâu (lời dẫn khai mạc dài)
+  main?: boolean; // câu hỏi và lời dẫn cần vượt qua các câu phụ đang chờ
 }
 
 // M nam, F nữ, E tiếng Anh (cô đọc từ tiếng Anh)
@@ -29,6 +30,7 @@ const MAX_QUEUE = 30;
 class Voice {
   private normal: Line[] = [];
   private priority: Line[] = [];
+  private main: Line[] = [];
   private playing = false;
   private current: HTMLAudioElement | null = null;
   private lastSpokeAt = Date.now();
@@ -39,31 +41,32 @@ class Voice {
   onSpeaker?: (who: 'M' | 'F' | null) => void;
 
   /** `done`: gọi khi câu đọc xong, bị bỏ, hoặc trang này không phát tiếng */
-  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean, rate?: number) {
+  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean, rate?: number, main = false) {
     if (!this.enabled || !text.trim()) {
       if (start) setTimeout(start, 0);
       if (done) setTimeout(done, 0);
       return;
     }
-    const q = priority ? this.priority : this.normal;
-    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid, rate });
+    const q = main ? this.main : priority ? this.priority : this.normal;
+    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid, rate, main });
     // câu ưu tiên: tạo giọng sẵn ngay lúc xếp hàng, tới lượt là phát liền không phải chờ server
-    if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p, rate)).catch(() => {});
+    if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p, rate, main)).catch(() => {});
     if (q.length > MAX_QUEUE) q.shift()?.done?.();
     void this.next();
   }
 
   stop() {
-    for (const l of [...this.normal, ...this.priority]) l.done?.();
+    for (const l of [...this.normal, ...this.priority, ...this.main]) l.done?.();
     this.normal = [];
     this.priority = [];
+    this.main = [];
     this.current?.pause();
     this.current = null;
     this.playing = false;
   }
 
   get busy() {
-    return this.playing || this.normal.length + this.priority.length > 0;
+    return this.playing || this.normal.length + this.priority.length + this.main.length > 0;
   }
 
   /** Số câu thường đang chờ (không tính câu đang đọc) */
@@ -73,7 +76,7 @@ class Voice {
 
   /** Số câu ưu tiên (quà) đang chờ */
   get waitingPriority() {
-    return this.priority.length;
+    return this.priority.length + this.main.length;
   }
 
   /** Giọng đã im bao lâu (0 khi đang đọc hoặc còn câu chờ) */
@@ -98,16 +101,17 @@ class Voice {
     return out;
   }
 
-  private urlOf(p: { who: Who; hype: boolean; text: string }, rate = this.rate) {
+  private urlOf(p: { who: Who; hype: boolean; text: string }, rate = this.rate, main = false) {
     const v = p.who === 'F' ? '&v=f' : p.who === 'E' ? '&v=en' : '';
-    return `/api/tts?rate=${rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
+    const urgent = main ? '&urgent=1' : '';
+    return `/api/tts?rate=${rate}${p.hype ? '&hype=1' : ''}${urgent}${v}&text=${encodeURIComponent(p.text)}`;
   }
 
   private async next() {
     if (this.playing) return;
     const now = Date.now();
     let line: Line | undefined;
-    while ((line = this.priority.shift() ?? this.normal.shift())) {
+    while ((line = this.main.shift() ?? this.priority.shift() ?? this.normal.shift())) {
       if (line.valid && !line.valid()) {
         line.done?.();
         continue;
@@ -120,8 +124,8 @@ class Voice {
     line.start?.();
     try {
       for (const part of this.parts(line.text)) {
-        this.onSpeaker?.(part.who === 'E' ? 'F' : part.who); // giọng tiếng Anh là cô đọc
-        const audio = new Audio(this.urlOf(part, line.rate));
+        const speaker = part.who === 'E' ? 'F' : part.who; // giọng tiếng Anh là cô đọc
+        const audio = new Audio(this.urlOf(part, line.rate, line.main));
         audio.volume = this.volume;
         this.current = audio;
         await new Promise<void>((resolve) => {
@@ -134,6 +138,7 @@ class Voice {
             resolve();
           }
           audio.onplaying = () => {
+            this.setSpeaker(speaker);
             clearTimeout(guard);
             const ms = Number.isFinite(audio.duration) ? audio.duration * 1000 + 4000 : 40_000;
             guard = setTimeout(finish, ms);
@@ -148,13 +153,18 @@ class Voice {
         if (this.current !== audio) break; // stop() giữa chừng
       }
     } finally {
-      this.onSpeaker?.(null);
+      this.setSpeaker(null);
       line.done?.();
       this.current = null;
       this.playing = false;
       this.lastSpokeAt = Date.now();
       void this.next();
     }
+  }
+
+  private setSpeaker(who: 'M' | 'F' | null) {
+    this.onSpeaker?.(who);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('voice-speaker', { detail: who }));
   }
 }
 

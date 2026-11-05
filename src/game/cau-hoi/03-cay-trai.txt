@@ -82,3 +82,6 @@ HẠT SEN | Nấu chè, giúp ngủ ngon. | 3
 CỦ SẮN | Luộc chấm đường, còn gọi khoai mì. | 3 | SẮN, KHOAI MÌ
 > Đây là một loại quả.
 QUẢ BƠ | Xay sinh tố béo ngậy. | 2 | BƠ
+QUẢ GẤC | Quả có gai, phần màng đỏ cam bọc hạt được dùng để nhuộm nếp làm xôi đỏ. | 3
+QUẢ SẤU | Quả chua được người Hà Nội ngâm đường làm nước giải khát mùa hè, cũng có thể dầm vào canh rau. | 3
+QUẢ LỰU | Dưới lớp vỏ dai là nhiều ngăn chứa các hạt mọng nước màu đỏ hồng. | 3

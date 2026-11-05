@@ -71,3 +71,6 @@ CANH CUA | Nấu với rau đay, mồng tơi, ăn với cà pháo. | 3
 CÀ PHÁO | Quả nhỏ tròn muối chua giòn tan. | 3
 BÁNH TÔM | Đặc sản Hồ Tây, chiên giòn với khoai lang. | 3
 BÚN CÁ | Bún nấu với cá rán, thì là, đặc sản Hải Phòng. | 3
+BÁNH KHÚC | Bánh nếp trộn lá rau khúc, thường có nhân đậu xanh và thịt lợn. | 3
+BÁNH GAI | Bánh nếp màu đen nhờ lá gai, thường có nhân đậu xanh và dừa. | 3
+BÁNH BỘT LỌC | Bánh Huế có lớp vỏ trong dai từ bột sắn, thường gói lá chuối với nhân tôm thịt. | 3

@@ -1,8 +1,6 @@
 # Tỉnh thành Việt Nam
-# Từ 1/7/2025 cả nước còn 34 tỉnh, thành sau sáp nhập. Chỉ hỏi tỉnh, thành GIỮ NGUYÊN tên
-# (11 nơi không sáp nhập: Hà Nội, Huế, Quảng Ninh, Thanh Hóa, Nghệ An, Hà Tĩnh, Cao Bằng, Lạng Sơn, Điện Biên, Sơn La, Lai Châu)
-# và các thành phố lớn vẫn giữ tên (TP Hồ Chí Minh, Đà Nẵng, Hải Phòng, Cần Thơ). Địa danh trong gợi ý vẫn thuộc nơi đó sau sáp nhập.
-# Muốn thêm tỉnh đã sáp nhập thì tra Nghị quyết 202/2025/QH15 trước.
+# Từ 1/7/2025 cả nước có 34 tỉnh, thành sau sáp nhập. Chỉ hỏi tên tỉnh/thành hiện hành.
+# Câu mới về các tỉnh hình thành sau sáp nhập phải đối chiếu Nghị quyết 202/2025/QH15 và địa danh hiện thuộc tỉnh nào.
 # Mỗi dòng: ĐÁP ÁN | gợi ý | độ khó (1 dễ, 2 vừa, 3 khó) | cách viết khác cũng tính đúng
 > Đây là một tỉnh, thành phố của Việt Nam.
 HÀ NỘI | Thủ đô của nước ta, có Hồ Gươm và Văn Miếu. | 1 | THỦ ĐÔ HÀ NỘI
@@ -19,3 +17,18 @@ HỒ CHÍ MINH | Thành phố lớn nhất nước, có chợ Bến Thành. | 1 
 ĐÀ NẴNG | Thành phố có cầu Rồng biết phun lửa. | 1
 HẢI PHÒNG | Thành phố cảng, có đảo Cát Bà. | 2
 CẦN THƠ | Thành phố miền Tây có chợ nổi Cái Răng. | 2
+LAI CHÂU | Tỉnh Tây Bắc có đỉnh Pu Ta Leng và đèo Ô Quy Hồ. | 3
+BẮC NINH | Tỉnh có dân ca quan họ và tranh dân gian Đông Hồ. | 2
+NINH BÌNH | Tỉnh có Cố đô Hoa Lư và quần thể danh thắng Tràng An. | 2
+PHÚ THỌ | Tỉnh có Đền Hùng, nơi tổ chức Giỗ Tổ mùng mười tháng ba. | 2
+HƯNG YÊN | Tỉnh nổi tiếng với nhãn lồng, được hợp nhất với vùng Thái Bình cũ năm 2025. | 2
+KHÁNH HÒA | Tỉnh ven biển có thành phố Nha Trang và vịnh Vĩnh Hy. | 2
+QUẢNG TRỊ | Tỉnh có động Phong Nha và địa đạo Vịnh Mốc. | 3
+GIA LAI | Tỉnh có hai vùng nổi tiếng: phố núi Pleiku và biển Quy Nhơn. | 3
+ĐẮK LẮK | Tỉnh có Buôn Ma Thuột ở phía tây và vùng biển Tuy Hòa ở phía đông. | 3
+ĐỒNG THÁP | Tỉnh có Vườn quốc gia Tràm Chim và vùng đất Mỹ Tho. | 3
+QUẢNG NGÃI | Tỉnh có đảo Lý Sơn ngoài khơi và vùng cao nguyên Măng Đen. | 3
+VĨNH LONG | Tỉnh mới gồm xứ dừa Bến Tre và điểm du lịch Ao Bà Om ở Trà Vinh. | 3
+TUYÊN QUANG | Tỉnh nhận cả địa bàn Hà Giang cũ trong đợt sắp xếp đơn vị cấp tỉnh năm 2025. | 3
+THÁI NGUYÊN | Tỉnh nhận cả địa bàn Bắc Kạn cũ trong đợt sắp xếp đơn vị cấp tỉnh năm 2025. | 3
+LÀO CAI | Tỉnh nhận cả địa bàn Yên Bái cũ trong đợt sắp xếp đơn vị cấp tỉnh năm 2025. | 3

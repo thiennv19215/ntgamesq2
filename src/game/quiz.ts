@@ -1,16 +1,35 @@
 import { GAME } from './config';
 import { LINES, PICK_TOPICS, POLLS, REWARDS, type Poll } from './loi-thoai';
-import { SLOTS, type Question, type Slot } from './questions';
+import type { Question } from './questions';
 import { makeMath, type MathLevel } from './math';
+
+const DIFFICULTY_FALLBACK: Record<Question['difficulty'], Question['difficulty'][]> = {
+  easy: ['easy', 'medium', 'hard'],
+  medium: ['medium', 'hard', 'easy'],
+  hard: ['hard', 'medium', 'easy'],
+};
+
+function preferDifficulty(pool: Question[], target: Question['difficulty']): Question[] {
+  for (const difficulty of DIFFICULTY_FALLBACK[target]) {
+    const atLevel = pool.filter((question) => question.difficulty === difficulty);
+    if (atLevel.length) return atLevel;
+  }
+  return pool;
+}
 
 /**
  * Lõi game Lớp Học Chữ: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
  * Trang stage gọi chat/gift/like/tick rồi đọc các câu trả về; test ở quiz.check.ts.
  *
- * Một vòng: intro → 20 câu từ ngân hàng; hết câu chưa hỏi mới dùng toán dự phòng → results → recess → intro ...
+ * Mỗi ván giữ một chủ đề; chủ đề xếp hàng chỉ đổi ở đầu ván tiếp theo.
  */
 
-export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'results' | 'recess' | 'vote';
+export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'results' | 'recess';
+
+export interface QueuedTopic {
+  id: string;
+  topic: string;
+}
 
 /** 1 dòng báo cáo sau buổi live: câu nào khó quá / dễ quá */
 export interface ReportRow {
@@ -53,6 +72,7 @@ export interface Answerer {
   avatar: string;
   createTime: number; // giờ TikTok gắn lúc người xem gửi comment
   seq: number; // thứ tự bot nhận (phụ khi trùng giờ)
+  elapsedMs: number; // thời gian trả lời tính từ lúc đồng hồ câu hỏi bắt đầu
   points: number;
 }
 
@@ -188,6 +208,7 @@ export class Classroom {
   revealed = new Set<number>(); // vị trí chữ đã mở (tính trên đáp án bỏ khoảng trắng)
   private bonusUsed = false;
   private quietSaid = false;
+  private engagedThisQuestion = false;
   private firstCorrectGift = false;
   correct: Answerer[] = [];
   private tried = new Set<string>(); // ai đã trả lời câu này (đúng hay sai)
@@ -221,10 +242,12 @@ export class Classroom {
   banLog: { id: string; answer: string; clue: string }[] = [];
   /** báo cáo từng câu đã hỏi, gửi lên server rồi xoá */
   reportLog: ReportRow[] = [];
-  /** bình chọn chủ đề tiết sau (pha 'vote') và chủ đề cả lớp đã chọn cho tiết này */
-  vote: { topics: [string, string]; votes: Map<string, 1 | 2> } | null = null;
+  /** Chủ đề giữ xuyên suốt ván hiện tại. */
   topic = '';
-  private lastTopics: string[] = [];
+  private topicSelection = '';
+  private topicChangePending = false;
+  private queuedTopics: QueuedTopic[] = [];
+  private consumedTopic: QueuedTopic | null = null;
   /** chúc mừng sinh nhật: ai đã được chúc (mỗi người 1 lần mỗi buổi) và biểu ngữ đang hiện */
   private birthdayDone = new Set<string>();
   private lastBirthdayAt = -Infinity;
@@ -246,8 +269,13 @@ export class Classroom {
     private rand = Math.random,
     private history: Record<string, number> = {}, // id câu -> lần hỏi gần nhất (ms)
     banned: Iterable<string> = [],
+    topic = '',
+    queuedTopics: QueuedTopic[] = [],
   ) {
     this.banned = new Set(banned);
+    this.topicSelection = bank.some((question) => question.category === topic) ? topic : '';
+    this.topicChangePending = true;
+    this.queuedTopics = queuedTopics.filter((item) => !!item?.id && (!item.topic || bank.some((question) => question.category === item.topic)));
     this.lines = new LineBag(rand);
     this.phaseStartedAt = now;
     this.phaseEndsAt = now + GAME.introSec * 1000;
@@ -350,35 +378,14 @@ export class Classroom {
   }
 
   // ---------- chọn câu ----------
-  /** Ưu tiên câu chưa hỏi theo lịch tiết, không lặp câu cũ khi ngân hàng còn câu mới */
-  /** `difficulty` = 'meo' / 'su': bốc câu đố mẹo / lịch sử; còn lại bốc câu chữ thường (không bao giờ lấy câu có chỗ riêng) */
-  private pickOne(difficulty: Question['difficulty'] | Slot, taken: Question[], now: number, topic = ''): Question | null {
+  /** Chọn trong chủ đề của phiên, ưu tiên mức trong lịch, rồi ưu tiên mức khó hơn khi chủ đề thiếu câu. */
+  private pickOne(difficulty: Question['difficulty'], taken: Question[], now: number, topic: string): Question | null {
     const used = new Set(taken.map((q) => q.id));
-    const perCat = (c: string) => taken.filter((q) => q.category === c).length;
-    const prev = taken[taken.length - 1]?.category;
-    const slot = (SLOTS as readonly string[]).includes(difficulty) ? difficulty : undefined;
-    const kind = (q: Question) => q.slot === slot && !this.banned.has(q.id) && !used.has(q.id);
-    let pool = this.bank.filter((q) => kind(q) && (slot || q.difficulty === difficulty));
-    // chủ đề cả lớp bình chọn: lấy trong chủ đề đó trước (cùng độ khó, hết thì khác độ khó)
-    const fav = topic ? pool.filter((q) => q.category === topic) : [];
-    const favAny = topic && !fav.length ? this.bank.filter((q) => kind(q) && q.category === topic) : [];
-    if (fav.length || favAny.length) pool = fav.length ? fav : favAny;
-    else {
-      const nice = pool.filter((q) => q.category !== prev && perCat(q.category) < 2);
-      if (nice.length) pool = nice;
-    }
-    if (!pool.length) pool = this.bank.filter((q) => kind(q));
-    // Dùng hết câu mới của nhóm này thì lấy câu mới ở nhóm khác trước, không lặp câu cũ.
-    const fresh = pool.filter((q) => !(this.history[q.id] ?? 0));
-    if (fresh.length) pool = fresh;
-    else {
-      const freshAny = this.bank.filter((q) => !this.banned.has(q.id) && !used.has(q.id) && !(this.history[q.id] ?? 0));
-      const freshTopic = topic ? freshAny.filter((q) => q.category === topic) : [];
-      pool = freshTopic.length ? freshTopic : freshAny;
-    }
+    const topicPool = this.bank.filter((q) => q.category === topic && !this.banned.has(q.id) && !used.has(q.id));
+    const fresh = topicPool.filter((q) => !(this.history[q.id] ?? 0));
+    const freshByDifficulty = preferDifficulty(fresh, difficulty);
+    const pool = freshByDifficulty.length ? freshByDifficulty : preferDifficulty(topicPool, difficulty);
     if (!pool.length) return null;
-    // Xáo trước để thứ tự trong file không quyết định câu nào được hỏi.
-    pool = [...pool];
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(this.rand() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -389,50 +396,30 @@ export class Classroom {
     return q;
   }
 
-  /** Lớp vắng: hỏi lại câu đã từng hỏi (bốc ngẫu nhiên), không ghi sổ, để dành câu mới cho lúc đông người */
-  private pickReview(difficulty: Question['difficulty'] | Slot, taken: Question[]): Question | null {
+  /** Lớp vắng: ôn câu cũ trong đúng chủ đề ván hiện tại. */
+  private pickReview(difficulty: Question['difficulty'], taken: Question[], topic: string): Question | null {
     const used = new Set(taken.map((q) => q.id));
-    const slot = (SLOTS as readonly string[]).includes(difficulty) ? difficulty : undefined;
-    const pool = this.bank.filter(
-      (q) => q.slot === slot && (slot || q.difficulty === difficulty) && (this.history[q.id] ?? 0) > 0 && !this.banned.has(q.id) && !used.has(q.id),
+    const old = this.bank.filter(
+      (q) => q.category === topic && (this.history[q.id] ?? 0) > 0 && !this.banned.has(q.id) && !used.has(q.id),
     );
-    return pool.length ? pool[Math.floor(this.rand() * pool.length)] : null;
-  }
-
-  /** Ôn bài vẫn có thể lấy câu cũ ở nhóm khác khi nhóm của lịch tiết không còn câu phù hợp. */
-  private pickReviewAny(taken: Question[]): Question | null {
-    const used = new Set(taken.map((q) => q.id));
-    const pool = this.bank.filter((q) => (this.history[q.id] ?? 0) > 0 && !this.banned.has(q.id) && !used.has(q.id));
+    const pool = preferDifficulty(old, difficulty);
     return pool.length ? pool[Math.floor(this.rand() * pool.length)] : null;
   }
 
   /** Bốc câu cho tiết. `from`: giữ nguyên các câu trước vị trí này (đang ôn bài thì có bạn vào, đổi phần còn lại sang câu mới) */
   private pickRound(now: number, from = 0) {
     const out: Question[] = this.roundQs.slice(0, from);
-    let plain = 0; // thứ tự câu chữ thường trong tiết
-    let fav = 0; // số câu đã lấy theo chủ đề cả lớp chọn
     for (const [i, d] of GAME.roundPlan.entries()) {
-      if (i < from) {
-        if (!d.startsWith('math') && !(SLOTS as readonly string[]).includes(d)) plain++;
-        continue;
-      }
+      if (i < from) continue;
       let q: Question | null;
       // lớp vắng: ưu tiên ôn câu cũ; chỉ lấy câu mới nếu chưa có câu cũ nào phù hợp.
-      const old = this.review ? this.pickReview(d as Question['difficulty'] | Slot, out) ?? this.pickReviewAny(out) : null;
+      const old = this.review ? this.pickReview(d, out, this.topic) : null;
       if (old) {
         out.push(old);
-        if (!(SLOTS as readonly string[]).includes(d)) plain++;
         continue;
       }
-      if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
-      else {
-        // chủ đề cả lớp chọn: cách 1 câu chữ thường lấy 1 câu chủ đề đó, tối đa GAME.voteTopicQuestions câu
-        const useTopic = this.topic && plain % 2 === 0 && fav < GAME.voteTopicQuestions ? this.topic : '';
-        q = this.pickOne(d as Question['difficulty'], out.filter((x) => !x.math), now, useTopic);
-        if (useTopic && q?.category === useTopic) fav++;
-        plain++;
-      }
-      // Toán là nguồn dự phòng cuối cùng, chỉ xuất hiện sau khi mọi câu chữ chưa hỏi đã dùng hết.
+      q = this.pickOne(d, out.filter((x) => !x.math), now, this.topic);
+      // Toán chỉ dùng khi cả chủ đề đã hết câu chưa hỏi và không còn câu nào khác để dùng.
       if (!q) q = makeMath(Math.min(4, Math.floor(i / 5) + 1) as MathLevel, this.rand);
       if (q) out.push(q);
     }
@@ -441,6 +428,33 @@ export class Classroom {
 
   get golden() {
     return this.qNo > 0 && this.qNo === this.roundQs.length && this.roundQs.length >= GAME.questionsPerRound;
+  }
+
+  /** Đặt chủ đề cho phiên tiếp theo (hoặc tiết mới nếu lớp đang chạy). Rỗng = chọn ngẫu nhiên một chủ đề. */
+  setTopic(topic: string) {
+    const selected = topic.trim();
+    if (selected && !this.bank.some((question) => question.category === selected)) return false;
+    this.topicSelection = selected;
+    this.topicChangePending = true;
+    return true;
+  }
+
+  queueTopic(item: QueuedTopic) {
+    if (!item.id || (item.topic && !this.bank.some((question) => question.category === item.topic))) return false;
+    if (this.queuedTopics.some((queued) => queued.id === item.id)) return true;
+    this.queuedTopics.push({ id: item.id, topic: item.topic });
+    return true;
+  }
+
+  takeConsumedTopic() {
+    const item = this.consumedTopic;
+    this.consumedTopic = null;
+    return item;
+  }
+
+  private randomTopic() {
+    const topics = [...new Set(this.bank.filter((q) => !this.banned.has(q.id)).map((q) => q.category))];
+    return topics.length ? topics[Math.floor(this.rand() * topics.length)] : '';
   }
 
   private lettersOf(q: Question | null) {
@@ -506,7 +520,6 @@ export class Classroom {
     const answering =
       this.phase === 'question' ||
       this.phase === 'bonus' ||
-      this.phase === 'vote' ||
       (this.phase === 'recess' && this.recess?.stage === 'play');
     return answering && left > GAME.chatterMinLeftMs;
   }
@@ -540,6 +553,7 @@ export class Classroom {
     this.revealed = new Set();
     this.bonusUsed = false;
     this.quietSaid = false;
+    this.engagedThisQuestion = false;
     this.firstCorrectGift = false;
     this.correct = [];
     this.tried = new Set();
@@ -587,7 +601,6 @@ export class Classroom {
     if (this.poll && now - this.poll.at < GAME.loveWindowMs && this.poll.opts.some((o) => o.key === key) && !this.poll.votes.has(s.username)) {
       this.poll.votes.set(s.username, key);
     }
-    if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
     // Dùng giờ máy nhận comment để tránh lệch đồng hồ giữa TikTok và máy chạy game.
@@ -601,7 +614,15 @@ export class Classroom {
       this.wrong.add(e.username);
       return [];
     }
-    this.correct.push({ username: e.username, nickname: e.nickname, avatar: e.avatar, createTime: e.createTime, seq: ++this.seq, points: 0 });
+    this.correct.push({
+      username: e.username,
+      nickname: e.nickname,
+      avatar: e.avatar,
+      createTime: e.createTime,
+      seq: ++this.seq,
+      elapsedMs: Math.max(0, e.createTime - this.phaseStartedAt),
+      points: 0,
+    });
     if (this.correct.length === 1 && (!this.walk || now - this.walk.at >= GAME.walkMs)) {
       this.walk = { username: s.username, at: now, kind: 'answer' };
     }
@@ -612,6 +633,7 @@ export class Classroom {
     if (this.correct.length === 1) {
       const fast = now - this.phaseStartedAt < GAME.superFastSec * 1000;
       this.firstCorrectGift = !fast && this.rand() < GAME.giftChance;
+      return [this.t(this.line(fast ? 'superFast' : 'firstCorrect', s.spoken), true)];
     }
     return [];
   }
@@ -770,7 +792,7 @@ export class Classroom {
       const active = this.seats().filter((s) => now - s.lastActive < 180_000 && s.spoken !== 'bạn');
       callTarget = active[Math.floor(this.rand() * active.length)] ?? null;
       // câu dễ chưa có trong tiết; bộ câu quá ít thì lấy đại 1 câu
-      callQ = callTarget ? (this.pickOne('easy', this.roundQs, now) ?? this.bank[Math.floor(this.rand() * this.bank.length)] ?? null) : null;
+      callQ = callTarget ? (this.pickOne('easy', this.roundQs, now, this.topic) ?? this.bank.find((q) => q.category === this.topic && !this.banned.has(q.id)) ?? null) : null;
       if (!callTarget || !callQ) game = 'roll';
     }
     this.lastRecess = game;
@@ -866,8 +888,15 @@ export class Classroom {
   }
 
   newRound(now: number): Say[] {
-    const voted = this.phase === 'vote' ? this.closeVote() : [];
-    if (this.phase !== 'vote') this.topic = '';
+    this.consumedTopic = this.queuedTopics.shift() ?? null;
+    if (this.consumedTopic) {
+      this.topic = this.consumedTopic.topic || this.randomTopic();
+      this.topicSelection = this.consumedTopic.topic;
+      this.topicChangePending = false;
+    } else if (this.topicChangePending) {
+      this.topic = this.topicSelection || this.randomTopic();
+      this.topicChangePending = false;
+    } else if (!this.topic) this.topic = this.randomTopic();
     this.round++;
     this.monitor = '';
     this.qNo = 0;
@@ -888,7 +917,7 @@ export class Classroom {
     const period = dayPeriod(now);
     const greet = period !== this.lastPeriod || this.round % GAME.timeGreetEvery === 0 ? [this.line0(PERIOD_LINES[period])] : [];
     this.lastPeriod = period;
-    return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro')]);
+    return this.mainOf([...greet, this.review ? this.line0('reviewIntro') : this.line0('intro')]);
   }
 
   /** Bỏ qua phần đang chạy (nút "Qua phần tiếp" ở trang điều khiển) */
@@ -911,9 +940,9 @@ export class Classroom {
       this.lastIdleAt = now;
       extra.push({ ...this.line0('idle'), ttl: 15000 });
     }
-    if (this.phase === 'question' && !this.quietSaid && this.correct.length === 0 && now - this.phaseStartedAt > GAME.questionSec * 500) {
+    if (this.phase === 'question' && !this.quietSaid && !this.engagedThisQuestion && this.correct.length === 0 && now - this.phaseStartedAt > GAME.questionSec * 500) {
       this.quietSaid = true;
-      if (this.rand() < 0.5) extra.push({ ...this.line0('quietHalfway'), ttl: 5000 });
+      extra.push({ ...this.line0('quietHalfway'), priority: true, ttl: GAME.chatterMaxWaitMs });
     }
     extra.push(...this.engageTick(now));
     // còn 5 giây: cô nhắc sắp hết giờ (đồng hồ vẫn chạy)
@@ -950,8 +979,6 @@ export class Classroom {
       case 'recess':
         if (this.recess?.stage === 'play') return this.recessResult(now);
         if (this.recess?.stage === 'result') return this.recessBoard(now);
-        return this.startVote(now);
-      case 'vote':
         return this.newRound(now);
     }
   }
@@ -980,63 +1007,29 @@ export class Classroom {
     const quiet = this.phase === 'question' && this.boardShown && !this.q?.math && this.phaseEndsAt - now > 12_000;
     if (this.love || this.poll || !quiet || now - this.lastLoveAt < GAME.engageEveryMs) return [];
     this.lastLoveAt = now;
+    this.engagedThisQuestion = true;
     const kind = GAME.engageOrder[this.engageNo++ % GAME.engageOrder.length];
     if (kind === 'love') {
       this.love = { at: now, fans: [] };
-      return [{ ...this.line0('loveCall'), ttl: 6000 }];
+      return [{ ...this.line0('loveCall'), priority: true, ttl: GAME.chatterMaxWaitMs }];
     }
     if (kind === 'sleep') {
       // gọi 1 bạn đang ngồi mà ngủ gật dậy; không ai ngủ thì kể chuyện
       const sleepy = this.seats().filter((s) => now - s.lastActive > GAME.sleepAfterMs && s.spoken !== 'bạn');
-      if (sleepy.length) return [{ ...this.t(this.line('wakeUp', sleepy[Math.floor(this.rand() * sleepy.length)].spoken)), ttl: 8000 }];
+      if (sleepy.length) return [{ ...this.t(this.line('wakeUp', sleepy[Math.floor(this.rand() * sleepy.length)].spoken)), priority: true, ttl: GAME.chatterMaxWaitMs }];
     }
     if (kind === 'poll') {
       const p = this.lines.pick('poll', POLLS);
       this.poll = { at: now, opts: p.opts, votes: new Map() };
-      return [{ ...this.t(p.ask), ttl: 6000 }];
+      return [{ ...this.t(p.ask), priority: true, ttl: GAME.chatterMaxWaitMs }];
     }
-    return [{ ...this.line0('funFact'), ttl: 8000 }];
+    return [{ ...this.line0('funFact'), priority: true, ttl: GAME.chatterMaxWaitMs }];
   }
 
   /** Xong 1 câu: sang câu tiếp hoặc tổng kết tiết */
   private afterQuestion(now: number): Say[] {
     if (this.qNo >= this.roundQs.length) return this.startResults(now);
     return this.startQuestion(now);
-  }
-
-  // ---------- bình chọn chủ đề tiết sau ----------
-  private startVote(now: number): Say[] {
-    this.recess = null;
-    // 2 chủ đề câu chữ thường, khác các chủ đề vừa chọn gần đây
-    const cats = [...new Set(this.bank.filter((q) => !q.slot).map((q) => q.category))];
-    const fresh = cats.filter((c) => !this.lastTopics.includes(c));
-    const pool = fresh.length >= 2 ? fresh : cats;
-    if (pool.length < 2) return this.newRound(now);
-    const a = pool[Math.floor(this.rand() * pool.length)];
-    const rest = pool.filter((c) => c !== a);
-    const b = rest[Math.floor(this.rand() * rest.length)];
-    this.vote = { topics: [a, b], votes: new Map() };
-    this.setPhase('vote', now, GAME.voteSec);
-    return this.mainOf([this.t(this.line('voteIntro', topicName(a), topicName(b)))]);
-  }
-
-  private voteChat(s: Student, e: ChatIn): Say[] {
-    const w = plain(e.comment);
-    if (this.vote && (w === '1' || w === '2') && !this.vote.votes.has(s.username)) this.vote.votes.set(s.username, w === '1' ? 1 : 2);
-    return [];
-  }
-
-  /** Đếm phiếu: chủ đề thắng thành chủ đề tiết sau (hoà thì bốc thăm, không ai chọn thì học bình thường) */
-  private closeVote(): Say[] {
-    const v = this.vote;
-    this.vote = null;
-    this.topic = '';
-    if (!v || v.votes.size === 0) return [this.line0('voteNobody')];
-    const one = [...v.votes.values()].filter((x) => x === 1).length;
-    const two = v.votes.size - one;
-    this.topic = one > two ? v.topics[0] : two > one ? v.topics[1] : v.topics[Math.floor(this.rand() * 2)];
-    this.lastTopics = [...this.lastTopics, this.topic].slice(-4);
-    return [this.t(this.line('voteResult', topicName(this.topic)))];
   }
 
   /** Ảnh chụp trạng thái để vẽ (gọn, gửi được qua mạng cho trang điều khiển xem trước) */
@@ -1079,11 +1072,7 @@ export class Classroom {
       answer: this.phase === 'recess' ? (r?.callQ?.answer ?? '') : (this.q?.answer ?? ''),
       tiles: this.tiles,
       slots: this.slots(showAnswer),
-      vote: this.vote && {
-        topics: this.vote.topics.map(topicName) as [string, string],
-        counts: [1, 2].map((k) => [...this.vote!.votes.values()].filter((x) => x === k).length),
-      },
-      topic: topicName(this.topic), // chủ đề cả lớp chọn cho tiết này
+      topic: topicName(this.topic), // chủ đề được giữ xuyên suốt ván hiện tại
       review: this.review, // tiết ôn bài (lớp vắng)
       // học sinh đang đi lên bảng trả lời hoặc lên bục tặng hoa
       walk: (() => {
@@ -1099,7 +1088,7 @@ export class Classroom {
       players: this.activePlayers(now),
       // Câu mới có thể hiện trong lúc cô đọc; đồng hồ vẫn chờ cô hô bắt đầu.
       boardShown: this.phase !== 'question' || this.boardShown,
-      correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),
+      correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, elapsedMs, points }) => ({ username, nickname, avatar, elapsedMs, points })),
       correctCount: this.correct.length,
       seats: seated.slice(0, GAME.seats).map(pub),
       standing: seated.slice(GAME.seats).map(pub), // không có ghế: đứng ngoài cửa hóng, vẫn tính điểm

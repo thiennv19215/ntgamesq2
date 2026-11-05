@@ -74,3 +74,6 @@ BÌNH HOA | Cắm hoa trang trí bàn khách. | 2 | LỌ HOA
 RÈM CỬA | Kéo che nắng ở cửa sổ. | 2
 THẢM | Trải dưới sàn cho êm chân. | 2
 CỬA SỔ | Mở ra cho gió vào. | 1
+THƯỚC CUỘN | Dải thước có vạch chia cuộn trong hộp; kéo ra để đo chiều dài rồi thu lại. | 3 | THƯỚC DÂY
+MÁY CHIẾU | Thiết bị dùng ánh sáng để phóng hình ảnh từ máy tính lên màn chiếu. | 3
+ỐNG NHÒM | Dụng cụ có hai ống nhìn song song, giúp quan sát vật ở xa trông gần và rõ hơn. | 3 | ỐNG DÒM

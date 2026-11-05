@@ -5,6 +5,7 @@ import { GAME } from './config';
 import { Hair } from './Hair';
 import { AnswerBadge, BouquetIcon, VaseFlower, ConfettiBurst } from './StageAssets';
 import { readStageCharacters, STAGE_CHARACTERS_EVENT, STAGE_CHARACTERS_STORAGE_KEY, type StageStudentSetId, type StageTeacherSetId } from '../live/stage-characters';
+import { Crown, Flower2, Medal } from 'lucide-react';
 import './stage.css';
 
 /**
@@ -57,11 +58,30 @@ function studentSprite(studentSet: StageStudentSetId, gender: 'nam' | 'nu', pose
   return `/assets/nv/${folder}/${seated ? 'sau-' : ''}${sprite}.webp`;
 }
 
+function teacherSprite(teacherSet: StageTeacherSetId, pose: string) {
+  if (teacherSet === 'chibi') return '/assets/nv/co-giao-chibi/01-dung.webp';
+  const folder = teacherSet === 'spring' ? 'co-giao-moi' : 'co-giao';
+  return `/assets/nv/${folder}/${pose}.webp${teacherSet === 'spring' && pose === '04-chi-phai' ? '?v=2' : ''}`;
+}
+
 const TEACHER_POSES = ['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'];
 const STUDENT_POSES = Object.keys(POSE.nam) as PoseKey[];
 const STAGE_IMAGE_LOADS = new Map<string, Promise<boolean>>();
 const IDLE_CYCLE_MS = 4800;
 const IDLE_CYCLE_EPOCH = Date.now();
+type TeacherGifAction = 'talk' | 'walk' | 'walk-left' | 'point' | 'wipe';
+
+function teacherGifActionFor(v: StageView, now: number, questionStartedAt?: number): TeacherGifAction | null {
+  if (v.phase === 'question' || v.phase === 'reveal') {
+    const elapsed = Math.max(0, now - (questionStartedAt ?? now));
+    if (v.phase === 'reveal') return elapsed < 10800 ? 'walk-left' : 'talk';
+    if (elapsed < 3000) return 'walk';
+    if (elapsed < 5200) return 'point';
+    if (elapsed < 7600) return 'wipe';
+    if (elapsed < 10800) return 'walk-left';
+  }
+  return null;
+}
 
 function SynchronizedIdle({ children, className, style }: { children: ReactNode; className: string; style?: CSSProperties }) {
   const [phaseDelay] = useState(() => -((Date.now() - IDLE_CYCLE_EPOCH) % IDLE_CYCLE_MS));
@@ -102,8 +122,8 @@ function loadStageImage(src: string, fetchPriority: 'high' | 'low' | 'auto' = 'a
   return promise;
 }
 
-function useStableImageSource(src: string) {
-  const [loadedSrc, setLoadedSrc] = useState(src);
+function useStableImageSource(src: string, initialSrc = src) {
+  const [loadedSrc, setLoadedSrc] = useState(initialSrc);
   useEffect(() => {
     let active = true;
     void loadStageImage(src).then((loaded) => {
@@ -121,18 +141,18 @@ function StableSpriteImage(props: ImgHTMLAttributes<HTMLImageElement> & { src: s
   return <img {...props} src={visibleSrc} />;
 }
 
-function stageImageSources(studentSet: StageStudentSetId, teacherSet: StageTeacherSetId) {
+function stageImageSources(studentSet: StageStudentSetId, teacherSet: StageTeacherSetId, animatedTeacher: boolean) {
   const students = (['nam', 'nu'] as const).flatMap((gender) =>
     STUDENT_POSES.flatMap((pose) => [
       studentSprite(studentSet, gender, pose),
       studentSprite(studentSet, gender, pose, true),
     ]),
   );
-  const teacherFolder = teacherSet === 'spring' ? 'co-giao-moi' : 'co-giao';
-  const teachers = TEACHER_POSES.map((pose) =>
-    `/assets/nv/${teacherFolder}/${pose}.webp${teacherSet === 'spring' && pose === '04-chi-phai' ? '?v=2' : ''}`,
-  );
-  return [...new Set([...students, ...teachers])];
+  const teacherSprites = TEACHER_POSES.map((pose) => teacherSprite(teacherSet, pose));
+  const teacherGifs = animatedTeacher && teacherSet === 'classic'
+    ? (['talk', 'walk', 'walk-left', 'point', 'wipe'] as const).map((action) => `/assets/nv/co-giao/${action}.gif${action === 'talk' ? '?v=2' : ''}`)
+    : [];
+  return [...new Set([...students, ...teacherSprites, ...teacherGifs])];
 }
 function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());
@@ -141,6 +161,16 @@ function useNow(ms = 1000) {
     return () => clearInterval(t);
   }, [ms]);
   return now;
+}
+
+function useTeacherSpeaking() {
+  const [speaking, setSpeaking] = useState(false);
+  useEffect(() => {
+    const onSpeaker = (event: Event) => setSpeaking((event as CustomEvent<'M' | 'F' | null>).detail === 'F');
+    window.addEventListener('voice-speaker', onSpeaker);
+    return () => window.removeEventListener('voice-speaker', onSpeaker);
+  }, []);
+  return speaking;
 }
 
 function useStageCharacters() {
@@ -162,14 +192,16 @@ function useStageCharacters() {
 
 export function GameStage({ game, staticPreview = false }: { game: GameState; staticPreview?: boolean }) {
   const now = useNow();
+  const teacherSpeaking = useTeacherSpeaking();
   const characters = useStageCharacters();
+  const animateTeacher = !staticPreview;
   const v = game.view;
   useEffect(() => {
     if (!v) return;
     let cancelled = false;
     const preload = () => {
       if (cancelled) return;
-      for (const src of stageImageSources(characters.student, characters.teacher)) {
+      for (const src of stageImageSources(characters.student, characters.teacher, animateTeacher)) {
         void loadStageImage(src, 'low');
       }
     };
@@ -189,7 +221,7 @@ export function GameStage({ game, staticPreview = false }: { game: GameState; st
       if (idleHandle !== undefined) idleWindow.cancelIdleCallback?.(idleHandle);
       if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
     };
-  }, [characters.student, characters.teacher, Boolean(v)]);
+  }, [characters.student, characters.teacher, Boolean(v), animateTeacher]);
   if (!v) {
     return (
       <div className="flex h-full items-center justify-center bg-black/60 p-20 text-center text-[48px] text-white">
@@ -205,7 +237,7 @@ export function GameStage({ game, staticPreview = false }: { game: GameState; st
         <Board v={v} now={now} />
         <DayTop v={v} />
         <Vase v={v} />
-        <Teacher v={v} now={now} teacherSet={characters.teacher} />
+        <Teacher v={v} now={now} teacherSet={characters.teacher} animateGifs={animateTeacher} speaking={teacherSpeaking} />
         <Punished v={v} studentSet={characters.student} />
         <Podium v={v} />
         <SeatHint now={now} />
@@ -219,6 +251,7 @@ export function GameStage({ game, staticPreview = false }: { game: GameState; st
         {v.clapping && <Claps />}
         {(v.correctCount > 0 && v.correctTop.length > 0 && (v.phase === 'question' || v.phase === 'bonus')) && <ConfettiBurst key={v.correctTop[0]?.username ?? v.qNo} />}
         {v.phase === 'results' && <ConfettiBurst key={`results-${v.round}`} />}
+        {v.phase === 'reveal' && <QuestionResults v={v} />}
       </div>
     </MotionConfig>
   );
@@ -228,11 +261,9 @@ function Header({ v, name }: { v: StageView; name: string }) {
   const sub =
     v.phase === 'recess'
       ? 'Giờ ra chơi'
-      : v.phase === 'vote'
-        ? 'Chọn chủ đề tiết sau'
-        : v.qNo > 0 && v.phase !== 'results'
-          ? `${v.review ? 'Ôn bài' : `Tiết ${v.round}`} · Câu ${v.qNo}/${v.total}`
-          : `Tiết ${v.round}`;
+      : v.qNo > 0 && v.phase !== 'results'
+        ? `${v.review ? 'Ôn bài' : `Tiết ${v.round}`} · Câu ${v.qNo}/${v.total}`
+        : `Tiết ${v.round}`;
   return (
     <div className="absolute left-1/2 top-[14px] flex w-[470px] -translate-x-1/2 flex-col items-center rounded-[28px] border-[5px] border-[#7a4a1d] bg-[#f6e3b4] px-6 py-3 shadow-[0_8px_0_#5b3512]">
       <div className="max-w-full truncate font-extrabold leading-none tracking-wide text-[#7a2e0e]" style={{ fontSize: name.length > 14 ? 34 : 46 }}>
@@ -261,7 +292,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
             <br />
             Nhanh nhất <b className="text-[#ffe680]">+10 điểm</b>
           </div>
-          {v.topic && <div className="mt-3 text-[32px] text-[#ffe680]">🗳️ Cả lớp chọn: {v.topic}</div>}
+          {v.topic && <div className="mt-3 max-w-full truncate text-[28px] text-[#ffe680]">📚 Chủ đề phiên này: {v.topic}</div>}
           {v.review && <div className="mt-3 text-[32px] text-[#ffe680]">📖 Giờ ôn bài · gõ "vào lớp" để học bài mới</div>}
           <div className="mt-4 text-[30px] opacity-80">Bắt đầu sau {left} giây</div>
         </div>
@@ -321,7 +352,6 @@ function Board({ v, now }: { v: StageView; now: number }) {
         </motion.div>
       )}
 
-      {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
       {v.phase === 'results' && <Results v={v} />}
       {v.phase === 'recess' && v.recess && <Recess v={v} left={left} />}
     </div>
@@ -422,37 +452,6 @@ function Slots({ slots, reveal }: { slots: (string | null)[]; reveal: boolean })
   );
 }
 
-// Cả lớp chọn chủ đề tiết sau: gõ 1 hoặc 2
-function Vote({ v, left }: { v: StageView; left: number }) {
-  const r = v.vote!;
-  const total = r.counts[0] + r.counts[1] || 1;
-  return (
-    <div className="flex h-full flex-col items-center text-center">
-      <div className="flex w-full items-center justify-between">
-        <span className="rounded-full bg-[#ffd84a] px-4 text-[26px] font-bold text-[#7a2e0e]">🗳️ Cả lớp quyết định</span>
-        <Timer left={left} duration={GAME.voteSec} />
-      </div>
-      <div className="mt-1 text-[44px] leading-tight text-[#ffe680]">Tiết sau học gì?</div>
-      <div className="mt-3 w-full space-y-4 px-4">
-        {r.topics.map((label, i) => {
-          const pct = Math.round((r.counts[i] / total) * 100);
-          return (
-            <div key={label} className="relative h-[76px] overflow-hidden rounded-2xl border-2 border-white/40 text-left">
-              <div className="absolute inset-y-0 left-0 bg-[#ffd84a]/35 transition-all duration-500" style={{ width: `${pct}%` }} />
-              <div className="relative flex h-full items-center justify-between gap-3 px-4 text-[32px]">
-                <span className="truncate">
-                  Gõ <b className="text-[#ffe680]">{i + 1}</b>: {label}
-                </span>
-                <span>{r.counts[i]}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function Results({ v }: { v: StageView }) {
   const top = v.seats.filter((s) => s.score > 0).slice(0, 5);
   return (
@@ -474,6 +473,97 @@ function Results({ v }: { v: StageView }) {
           </motion.div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Bảng công bố đáp án sau từng câu, lấy điểm và thứ tự từ kết quả chấm thật. */
+function QuestionResults({ v }: { v: StageView }) {
+  const top = v.correctTop.slice(0, 3);
+  const multiplier = v.golden ? 2 : 1;
+  const restPoints = GAME.latePoints * multiplier;
+  const rankPoints = 3 * multiplier;
+
+  return (
+    <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/55 px-[62px] py-[160px]" role="status" aria-live="polite">
+      <motion.div
+        initial={{ opacity: 0, y: 28, scale: 0.94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.32, ease: 'easeOut' }}
+        className="relative flex h-[1120px] w-full flex-col items-center rounded-[54px] border-[12px] border-[#8b4718] bg-[#fff0c4] px-[52px] pb-[38px] pt-[112px] text-[#48280e] shadow-[0_18px_0_#5a2e0d,0_28px_60px_rgba(0,0,0,.55)]"
+      >
+        <div className="absolute -top-[64px] left-1/2 flex h-[160px] w-[600px] -translate-x-1/2 items-center justify-center gap-5 rounded-[52px] border-[10px] border-[#8b4718] bg-gradient-to-b from-[#ffcf4e] to-[#e9951e] px-8 text-white shadow-[0_10px_0_#6a370f]">
+          <Flower2 aria-hidden="true" className="h-[52px] w-[52px] shrink-0 fill-white text-[#fff9d7]" />
+          <Crown aria-hidden="true" className="h-[78px] w-[78px] shrink-0 fill-[#ffef87] text-[#8b4718] drop-shadow-[0_3px_0_#fff1a8]" />
+          <div className="whitespace-nowrap text-[72px] font-black leading-none tracking-wide drop-shadow-[0_3px_2px_rgba(100,45,8,.5)]">KẾT QUẢ</div>
+          <Flower2 aria-hidden="true" className="h-[52px] w-[52px] shrink-0 fill-white text-[#fff9d7]" />
+        </div>
+
+        <div className="mb-3 flex items-center gap-3 rounded-full border-[4px] border-[#a55b1e] bg-[#fff8df] px-9 py-2 text-[34px] font-extrabold text-[#653912] shadow-[0_4px_0_#d8a755]">
+          <Flower2 aria-hidden="true" className="h-8 w-8 fill-[#4c9b3d] text-[#28602a]" />
+          Đáp án
+          <Flower2 aria-hidden="true" className="h-8 w-8 fill-[#4c9b3d] text-[#28602a]" />
+        </div>
+        <div className="flex h-[126px] w-full max-w-[770px] items-center justify-center rounded-[34px] border-[8px] border-[#f7bd37] bg-gradient-to-b from-[#08743f] to-[#064d31] px-8 text-center text-[62px] font-black uppercase leading-tight text-[#fff9df] shadow-[inset_0_0_0_4px_#063f2a,0_8px_0_#793d12]">
+          <span className="line-clamp-2 break-words">{v.answer}</span>
+        </div>
+
+        <div className="my-7 flex items-center gap-4 rounded-full border-[4px] border-[#a55b1e] bg-[#fff8df] px-8 py-2 text-[34px] font-extrabold uppercase leading-none text-[#653912] shadow-[0_4px_0_#d8a755]">
+          <Flower2 aria-hidden="true" className="h-8 w-8 fill-[#4c9b3d] text-[#28602a]" />
+          Top 3 nhanh nhất
+          <Flower2 aria-hidden="true" className="h-8 w-8 fill-[#4c9b3d] text-[#28602a]" />
+        </div>
+
+        {top.length > 0 ? (
+          <div className="flex w-full flex-col gap-4">
+            {top.map((answerer, index) => (
+              <motion.div
+                key={answerer.username}
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: index * 0.1, duration: 0.24 }}
+                className="flex h-[112px] w-full items-center gap-4 rounded-[28px] border-[5px] border-[#cf8b37] bg-gradient-to-r from-[#fff9dc] to-[#fff0c2] px-5 shadow-[0_5px_0_#a15b20]"
+              >
+                <Medal
+                  aria-hidden="true"
+                  className={`h-[62px] w-[62px] shrink-0 ${['fill-[#f8c629] text-[#b56b12]', 'fill-[#dbe2e7] text-[#74828a]', 'fill-[#ce7443] text-[#8f471d]'][index]}`}
+                />
+                <div className="relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-full border-[3px] border-[#bf873c] bg-[#f4deb0] text-center text-[34px] font-bold leading-[58px] text-[#75451a]">
+                  {answerer.nickname.slice(0, 1).toUpperCase()}
+                  {answerer.avatar && (
+                    <img
+                      src={answerer.avatar}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <div className="truncate text-[36px] font-extrabold text-[#49290f]">{answerer.nickname}</div>
+                  <div className="mt-1 text-[25px] font-semibold text-[#76532a]">{(answerer.elapsedMs / 1000).toFixed(1).replace('.', ',')} giây</div>
+                </div>
+                <div className="shrink-0 whitespace-nowrap text-[31px] font-black text-[#168044]">+{answerer.points} điểm</div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-[220px] w-full items-center justify-center rounded-[30px] border-[5px] border-[#cf8b37] bg-[#fff9dc] text-center text-[38px] font-extrabold text-[#75451a]">
+            Chưa có bạn nào trả lời đúng
+          </div>
+        )}
+
+        <div className="mt-auto flex min-h-[94px] w-full items-center justify-center rounded-[28px] border-[7px] border-[#f7bd37] bg-gradient-to-b from-[#078249] to-[#065332] px-6 text-center text-[36px] font-extrabold leading-tight text-white shadow-[inset_0_0_0_3px_#06432c,0_6px_0_#793d12]">
+          {v.correctCount > 0 ? `Chúc mừng ${v.correctCount} bạn trả lời đúng!` : 'Cố gắng ở câu tiếp theo nhé!'}
+        </div>
+        {v.correctCount > 0 && (
+          <div className="mt-3 text-center text-[23px] font-bold leading-tight text-[#5c542f]">
+            Hạng 4–10 được +{rankPoints} điểm · các bạn còn lại +{restPoints} điểm
+            {v.golden ? ' · Câu hỏi vàng x2' : ''}
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
@@ -620,7 +710,14 @@ function DayTop({ v }: { v: StageView }) {
 }
 
 // ---------- Cô giáo ----------
-function Teacher({ v, now, teacherSet }: { v: StageView; now: number; teacherSet: StageTeacherSetId }) {
+function Teacher({ v, now, teacherSet, animateGifs, speaking }: { v: StageView; now: number; teacherSet: StageTeacherSetId; animateGifs: boolean; speaking: boolean }) {
+  const [questionCycle, setQuestionCycle] = useState<{ round: number; qNo: number; startedAt: number } | null>(null);
+  useEffect(() => {
+    if (v.phase === 'question' && (questionCycle?.round !== v.round || questionCycle?.qNo !== v.qNo)) {
+      setQuestionCycle({ round: v.round, qNo: v.qNo, startedAt: Date.now() });
+    }
+  }, [v.phase, v.round, v.qNo, questionCycle]);
+
   let pose = '01-dung';
   if (now - v.lastFlowerAt < 3000) pose = '05-vui';
   else if (v.walk?.kind === 'answer') pose = '04-chi-phai';
@@ -628,47 +725,56 @@ function Teacher({ v, now, teacherSet }: { v: StageView; now: number; teacherSet
   else if (v.phase === 'question') pose = '04-chi-phai';
   else if (v.phase === 'bonus') pose = '07-suy-nghi';
   else if (v.phase === 'reveal') pose = v.correctCount > 0 ? '05-vui' : '06-buon';
-  else if (v.phase === 'vote') pose = '02-giang-bai';
   else if (v.phase === 'results') pose = '02-giang-bai';
   else if (v.phase === 'recess') pose = v.recess?.stage === 'play' ? '08-vay-chao' : v.recess?.stage === 'result' ? '05-vui' : '03-chi-trai';
   const gotFlower = now - v.lastFlowerAt < 3000;
-  const sprite = `/assets/nv/${teacherSet === 'spring' ? 'co-giao-moi' : 'co-giao'}/${pose}.webp${teacherSet === 'spring' && pose === '04-chi-phai' ? '?v=2' : ''}`;
-  const visibleSprite = useStableImageSource(sprite);
+  const staticSprite = teacherSprite(teacherSet, pose);
+  const questionStartedAt = questionCycle?.round === v.round && questionCycle.qNo === v.qNo ? questionCycle.startedAt : undefined;
+  const scheduledAction = teacherGifActionFor(v, now, questionStartedAt);
+  const gifAction = !animateGifs || teacherSet !== 'classic' || gotFlower ? null : (scheduledAction ?? (speaking ? 'talk' : null));
+  const sprite = gifAction ? `/assets/nv/co-giao/${gifAction}.gif${gifAction === 'talk' ? '?v=2' : ''}` : staticSprite;
+  const visibleSprite = useStableImageSource(sprite, staticSprite);
+  const walkingToBoard = gifAction === 'walk' || gifAction === 'point' || gifAction === 'wipe';
+  const walking = gifAction === 'walk' || gifAction === 'walk-left';
+  const teacherX = walkingToBoard ? 90 : 0;
   return (
-    <SynchronizedIdle
-      className="teacher-character absolute left-[96px] top-[410px] h-[490px] w-[300px]"
-      style={{ transformOrigin: '50% 100%' }}
-    >
-      <AnimatePresence mode="sync" initial={false}>
-        <motion.img
-          key={visibleSprite}
-          src={visibleSprite}
-          initial={{ opacity: 0, y: 7, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -4, scale: 0.99 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="absolute inset-0 h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]"
-        />
-      </AnimatePresence>
-      <AnimatePresence>
-        {gotFlower && (
-          <motion.div
-            key={v.lastFlowerAt}
-            initial={{ scale: 0, y: 80 }}
-            animate={{ scale: 1, y: 0 }}
+    <MotionConfig reducedMotion={animateGifs ? 'never' : 'always'}>
+      <motion.div
+        className="teacher-character absolute left-[96px] top-[410px] h-[490px] w-[300px]"
+        animate={{ x: teacherX }}
+        transition={{ x: { duration: walking ? (v.phase === 'reveal' ? 1.6 : 2.6) : 0.35, ease: 'easeInOut' } }}
+      >
+        <AnimatePresence mode="sync" initial={false}>
+          <motion.img
+            key={visibleSprite}
+            src={visibleSprite}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute left-[110px] top-[140px] drop-shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
-          >
-            <BouquetIcon className="h-32 w-32" />
-          </motion.div>
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute inset-0 h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]"
+          />
+        </AnimatePresence>
+        <AnimatePresence>
+          {gotFlower && (
+            <motion.div
+              key={v.lastFlowerAt}
+              initial={{ scale: 0, y: 80 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute left-[110px] top-[140px] drop-shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
+            >
+              <BouquetIcon className="h-32 w-32" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {v.flowers > 0 && (
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-4 py-1 text-[24px] font-bold text-pink-600 shadow">
+            💐 {v.flowers} bó hoa
+          </div>
         )}
-      </AnimatePresence>
-      {v.flowers > 0 && (
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-4 py-1 text-[24px] font-bold text-pink-600 shadow">
-          💐 {v.flowers} bó hoa
-        </div>
-      )}
-    </SynchronizedIdle>
+      </motion.div>
+    </MotionConfig>
   );
 }
 
@@ -789,7 +895,7 @@ function Students({ v, now, studentSet }: { v: StageView; now: number; studentSe
                 </div>
               )}
             </SynchronizedIdle>
-            {s.answered && (
+            {(s.answered === 'right' || s.answered === 'wrong') && (
               <motion.div
                 key={s.answered}
                 initial={{ scale: 0, rotate: -22, opacity: 0 }}

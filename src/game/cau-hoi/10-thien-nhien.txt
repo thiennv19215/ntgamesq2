@@ -74,3 +74,6 @@ GIÓ LÀO | Gió khô nóng thổi miền Trung mùa hè. | 3
 TRIỀU CƯỜNG | Nước biển dâng cao ngập phố. | 3
 THẠCH NHŨ | Đá rủ xuống trong hang động. | 3
 MẠCH NƯỚC NGẦM | Nước chảy dưới lòng đất. | 3 | NƯỚC NGẦM
+THỦY TRIỀU | Mực nước biển lên xuống theo chu kỳ, chịu ảnh hưởng chủ yếu từ lực hấp dẫn của Mặt Trăng và Mặt Trời. | 3
+CỰC QUANG | Dải sáng gần vùng cực hình thành khi hạt mang điện từ Mặt Trời va chạm với khí quyển. | 3
+HỆ SINH THÁI | Gồm sinh vật sống, môi trường vô sinh quanh chúng và mối quan hệ giữa các thành phần ấy. | 3

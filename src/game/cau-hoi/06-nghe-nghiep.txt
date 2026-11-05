@@ -71,3 +71,6 @@ KIỂM LÂM | Người bảo vệ rừng. | 3
 THỢ NAIL | Người sơn móng tay. | 2 | LÀM NAIL
 THỢ TRANG ĐIỂM | Người make up cho cô dâu. | 3 | MAKEUP
 HƯỚNG DẪN VIÊN | Người dẫn khách du lịch tham quan. | 3
+NHÀ KHÍ TƯỢNG HỌC | Người nghiên cứu các hiện tượng khí quyển, phân tích số liệu để dự báo thời tiết. | 3 | NHÀ KHÍ TƯỢNG
+THỦ THƯ | Người quản lý thư viện, giúp bạn đọc tìm và mượn sách. | 3
+PHIÊN DỊCH VIÊN | Người chuyển lời nói trực tiếp từ ngôn ngữ này sang ngôn ngữ khác. | 3

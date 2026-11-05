@@ -152,7 +152,7 @@ for (const q of BANK) {
     assert.equal(c.phase, 'question');
     const q = c.q!;
     assert.ok(!q.math, 'chưa hết câu trong ngân hàng thì không sinh toán');
-    plan.push(q.slot ?? q.difficulty);
+    plan.push(q.difficulty);
     cats.push(q.category);
     if (k === GAME.questionsPerRound - 1) assert.ok(c.golden, 'câu 20 là câu hỏi vàng');
     else assert.ok(!c.golden);
@@ -163,8 +163,8 @@ for (const q of BANK) {
   }
   assert.ok(c.students.get('u1')!.desk.length >= 1, 'quà tổng kết đặt lên bàn');
   assert.ok(c.students.get('u1')!.desk.length <= GAME.deskGifts);
-  assert.deepEqual(plan, [...GAME.roundPlan]);
-  for (let i = 1; i < cats.length; i++) assert.notEqual(cats[i], cats[i - 1], 'không 2 câu chữ liền cùng chủ đề');
+  assert.equal(plan.length, GAME.questionsPerRound);
+  assert.ok(cats.every((category) => category === c.topic), 'mọi câu trong phiên cùng một chủ đề');
   // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
   assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
@@ -207,13 +207,11 @@ for (const lv of [1, 2, 3, 4] as const) {
 // ---------- không hỏi lại câu đã hỏi gần đây ----------
 {
   const history: Record<string, number> = {};
-  const c = new Classroom(BANK, t, Math.random, history);
+  const topic = 'Bài hát thiếu nhi';
+  const c = new Classroom(BANK, t, Math.random, history, [], topic);
   const asked = new Set<string>();
-  // chưa tới lúc hết câu dễ / câu đố mẹo (loại nào ít hơn thì hết trước)
-  const perRound = (d: string) => GAME.roundPlan.filter((x) => x === d).length;
-  const easy = BANK.filter((q) => q.difficulty === 'easy' && !q.slot).length;
-  const ofSlot = (s: string) => BANK.filter((q) => q.slot === s).length;
-  const rounds = Math.min(Math.floor(easy / perRound('easy')), ...['meo', 'su', 'anh'].map((s) => Math.floor(ofSlot(s) / perRound(s)))) - 2;
+  const available = BANK.filter((q) => q.category === topic).length;
+  const rounds = Math.floor(available / GAME.questionsPerRound);
   for (let r = 0; r < rounds; r++) {
     c.newRound((t += 1000));
     for (const id of c.usedLog.splice(0)) {
@@ -223,9 +221,11 @@ for (const lv of [1, 2, 3, 4] as const) {
   }
   // buổi live sau (đọc sổ cũ) cũng không hỏi lại
   const next = new Classroom(BANK, t, Math.random, { ...history });
+  assert.ok(next.setTopic(topic));
   next.newRound(t);
   const fresh = next.usedLog.filter((id) => !asked.has(id)).length;
-  assert.equal(fresh, next.usedLog.length, 'buổi sau vẫn ưu tiên câu chưa hỏi');
+  assert.equal(fresh, available - asked.size, 'ưu tiên hết câu mới trong chủ đề trước khi lặp');
+  assert.equal(new Set(next.usedLog).size, next.usedLog.length, 'không lặp câu trong cùng tiết');
   console.log(`  ${rounds} tiết liền (${asked.size} câu) không lặp câu nào`);
 }
 
@@ -516,25 +516,20 @@ const recessOf = (game: 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1) => {
   assert.equal(c.view(t).seats.find((s) => s.username === 'u3')!.days, GAME.attendMilestones[0]);
 }
 
-// ---------- cả lớp chọn chủ đề tiết sau ----------
+// ---------- một chủ đề cho cả phiên live; đổi chủ đề có hiệu lực ở tiết mới ----------
 {
-  const c = new Classroom(BANK, t);
+  const c = new Classroom(BANK, t, Math.random, {}, [], 'Bài hát thiếu nhi');
   c.newRound(t);
-  for (let k = 0; k < 200 && c.phase !== 'vote'; k++) c.tick((t = c.phaseEndsAt));
-  assert.equal(c.phase, 'vote');
-  const [a, b] = c.view(t).vote!.topics;
-  assert.notEqual(a, b);
-  chat(c, 1, '2', t, t);
-  chat(c, 2, '2', t, t);
-  chat(c, 2, '1', t, t); // đổi ý không tính
-  chat(c, 3, '1', t, t);
-  assert.deepEqual(c.view(t).vote!.counts, [1, 2]);
-  c.tick((t = c.phaseEndsAt));
-  assert.equal(c.phase, 'intro');
-  assert.equal(topicName(c.topic), b);
+  assert.equal(topicName(c.topic), 'Bài hát thiếu nhi');
+  const before = (c as unknown as { roundQs: Question[] }).roundQs;
+  assert.ok(before.every((q) => q.category === c.topic));
+  assert.ok(c.setTopic('Truyện dân gian Việt Nam'));
+  c.newRound((t += 1000));
+  assert.equal(topicName(c.topic), 'Truyện dân gian Việt Nam');
   assert.equal(topicName('Ca dao, thành ngữ (điền từ còn thiếu)'), 'Ca dao, thành ngữ');
   const qs = (c as unknown as { roundQs: Question[] }).roundQs;
-  assert.equal(qs.filter((q) => q.category === c.topic && !q.slot).length, GAME.voteTopicQuestions, 'chủ đề thắng có 5 câu');
+  assert.equal(qs.length, GAME.questionsPerRound);
+  assert.ok(qs.every((q) => q.category === c.topic), 'tiết mới chỉ lấy câu trong chủ đề đã chọn');
 }
 
 // ---------- báo cáo: mỗi câu đã hỏi ghi số bạn thử / đúng ----------

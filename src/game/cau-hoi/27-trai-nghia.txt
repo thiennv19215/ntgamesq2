@@ -89,3 +89,13 @@ TRÁI | Ngược nghĩa với từ: phải (bên phải). | 1
 PHẢI | Ngược nghĩa với bên tay trái. | 1
 CON GÁI | Ngược nghĩa với từ: con trai. | 1 | GÁI
 TRẢ LỜI | Ngược nghĩa với từ: hỏi. | 2 | ĐÁP
+THẤT BẠI | Ngược nghĩa với từ: thành công. | 3
+BI QUAN | Ngược nghĩa với từ: lạc quan. | 3
+CẨU THẢ | Ngược nghĩa với từ: cẩn thận. | 3
+THIẾU THỐN | Ngược nghĩa với từ: đầy đủ. | 3
+ĐẦY ĐỦ | Ngược nghĩa với từ: thiếu thốn. | 3
+TIÊU CỰC | Ngược nghĩa với từ: tích cực. | 3
+TÍCH CỰC | Ngược nghĩa với từ: tiêu cực. | 3
+HOANG PHÍ | Ngược nghĩa với từ: tiết kiệm. | 3 | LÃNG PHÍ
+VÔ LÝ | Ngược nghĩa với từ: hợp lý. | 3 | PHI LÝ
+VÔ TRÁCH NHIỆM | Ngược nghĩa với từ: có trách nhiệm. | 3 | THIẾU TRÁCH NHIỆM

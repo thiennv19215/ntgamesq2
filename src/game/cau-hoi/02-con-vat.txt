@@ -74,3 +74,6 @@ CON SAO BIỂN | Hình ngôi sao năm cánh nằm dưới đáy biển. | 3 | SA
 CON SỨA | Trong suốt như thạch, chạm vào bị ngứa rát. | 3 | SỨA
 CON NAI | Có gạc trên đầu, chạy trong rừng. | 2 | NAI
 CON TÊ GIÁC | Có sừng trên mũi, da dày. | 3 | TÊ GIÁC
+THÚ MỎ VỊT | Loài thú có mỏ dẹt giống vịt nhưng đẻ trứng, sống ở sông suối Australia. | 3
+CÁ NGỰA | Loài cá mà con đực ấp trứng đã thụ tinh trong túi ở bụng rồi sinh cá con. | 3
+TÊ TÊ | Thú có vảy cứng; khi gặp nguy hiểm thường cuộn tròn thành quả bóng. | 3

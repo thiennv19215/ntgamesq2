@@ -74,3 +74,6 @@ SINH HOẠT LỚP | Tiết cuối tuần cô nhận xét cả lớp. | 3
 HỌC THÊM | Tan trường xong còn phải đi học ở nhà cô. | 2
 THỜI KHÓA BIỂU | Bảng ghi hôm nào học môn gì. | 3
 NGÀY NHÀ GIÁO | Ngày hai mươi tháng mười một tặng hoa thầy cô. | 3
+BÁN TRÚ | Hình thức học mà học sinh ở lại trường buổi trưa để ăn, nghỉ rồi học tiếp. | 3
+HỌC BỔNG | Khoản hỗ trợ người học được trao theo thành tích hoặc điều kiện xét chọn. | 3
+THẺ HỌC SINH | Tấm thẻ có ảnh và thông tin như tên, lớp, dùng để nhận diện học sinh trong trường. | 3

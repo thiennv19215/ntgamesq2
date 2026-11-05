@@ -29,6 +29,12 @@ export const STAGE_TEACHER_SETS = [
     description: 'Cầm thước khi chỉ bảng',
     thumbnail: '/assets/nv/co-giao-moi/04-chi-phai.webp?v=2',
   },
+  {
+    id: 'chibi',
+    title: 'Cô giáo chibi áo dài xanh',
+    description: 'Tóc búi hoa, nét mặt đáng yêu',
+    thumbnail: '/assets/nv/co-giao-chibi/01-dung.webp',
+  },
 ] as const;
 
 export type StageStudentSetId = (typeof STAGE_STUDENT_SETS)[number]['id'];

@@ -1,5 +1,5 @@
 # Đố mẹo
-# Câu đố mẹo: chỉ hỏi ở câu 7 và câu 13 của mỗi tiết (GAME.roundPlan 'meo'), không lẫn vào câu chữ thường.
+# Đố mẹo là một chủ đề riêng; đuôi -meo để hiện nhãn đố mẹo khi được chọn.
 # Mỗi dòng: ĐÁP ÁN | câu đố | độ khó (để 2) | cách trả lời khác cũng tính đúng (cách nhau dấu phẩy)
 > Câu đố mẹo nè, cẩn thận bị cô lừa nha.
 QUẦN ĐẢO | Quần gì rộng nhất thế giới? | 2
@@ -103,3 +103,16 @@ BÓNG ĐÁ | Môn gì hai mươi hai người tranh nhau một quả bóng? | 2 
 NHÀ VỆ SINH | Phòng gì ai cũng phải vào mà chẳng ai muốn ở lâu? | 2 | PHÒNG VỆ SINH, TOILET, WC
 CHỮ O | Chữ cái gì tròn như quả trứng? | 2 | O
 TRÁI ĐẤT | Quả gì to nhất mà không ai ăn được? | 2 | QUẢ ĐẤT
+BÓNG TỐI | Khi căn phòng không có nguồn sáng nào, thứ gì phủ quanh em mà không thể cầm nắm? | 3
+THỨ HAI | Trong cuộc đua, em vượt qua người đang đứng ngay sau người dẫn đầu. Em giành vị trí nào? | 3
+NĂM PHÚT | Nửa giờ được chia đều thành sáu khoảng. Mỗi khoảng kéo dài bao lâu? | 3
+ĐỒNG HỒ CÁT | Không có kim mà vẫn đếm giờ; cát chảy qua eo hẹp, hết cát là hết lượt. | 3
+CON TEM | Dán ở góc phong bì, nó theo lá thư đi xa mà vẫn ngồi yên một chỗ. | 3
+ĐỒNG XU | Có mặt sấp và ngửa; người chơi tung lên để chọn ai đi trước. | 3
+GĂNG TAY | Có năm ngón nhưng chẳng tự cầm nắm; bàn tay phải xỏ vào mới dùng được. | 3
+KHÓA KÉO | Có hàng răng khép hai mép áo; kéo miếng trượt lên xuống nhưng chẳng mở cửa. | 3
+CÁI PHỄU | Miệng rộng, cổ hẹp; đặt trên chai để rót nước khỏi tràn ra ngoài. | 3
+HỘP NHẠC | Lên dây cót rồi mở nắp, món đồ nhỏ tự vang lên một giai điệu. | 3
+SỔ TAY | Cuốn giấy nhỏ để ghi việc cần nhớ, thường được mang theo trong cặp. | 3
+CÁI PHÍCH | Bình giữ nước nóng lâu; mở nắp là có thể rót ra ly. | 3 | PHÍCH NƯỚC
+KẸP TÓC | Hai miếng nhỏ bật ra rồi khép vào để giữ một lọn tóc khỏi rơi xuống trán. | 3 | CÁI KẸP TÓC

@@ -29,7 +29,7 @@ export default function App() {
           <GameStage game={game} staticPreview />
         </StageFrame>
       }
-      extra={<GameControls view={game.view} stageCount={game.stageCount} />}
+      extra={<GameControls view={game.view} stageCount={game.stageCount} isLive={!!game.status?.isConnected || !!game.status?.isConnecting} />}
     />
   );
 }

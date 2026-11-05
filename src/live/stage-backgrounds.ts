@@ -30,6 +30,13 @@ export const STAGE_BACKGROUNDS = [
     src: '/assets/bg/lop-mua-xuan.webp',
     thumbnail: '/assets/bg/thumbs/lop-mua-xuan.webp',
   },
+  {
+    id: 'chibi',
+    title: 'Lớp học chibi',
+    description: 'Nắng ấm, bàn ghế gỗ',
+    src: '/assets/bg/lop-chibi.webp',
+    thumbnail: '/assets/bg/thumbs/lop-chibi.webp',
+  },
 ] as const;
 
 export type StageBackgroundId = (typeof STAGE_BACKGROUNDS)[number]['id'];

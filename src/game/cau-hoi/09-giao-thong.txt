@@ -73,3 +73,6 @@ XE BÒ | Bò kéo thùng gỗ ở quê. | 2
 XE NGỰA | Ngựa kéo, chở người thời xưa. | 2
 TÀU CAO TỐC | Tàu chạy hơn ba trăm cây số một giờ. | 3
 XE ĐIỆN | Xe chạy pin, không xả khói. | 2
+GƯƠNG CHIẾU HẬU | Gương trên xe giúp người lái quan sát khu vực phía sau. | 3
+ĐƯỜNG MỘT CHIỀU | Con đường mà phương tiện chỉ được đi theo một hướng. | 3
+ĐÈN SƯƠNG MÙ | Đèn trên xe dùng khi sương mù làm tầm nhìn giảm mạnh. | 3

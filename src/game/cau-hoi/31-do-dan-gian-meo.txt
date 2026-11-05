@@ -1,5 +1,5 @@
 # Đố dân gian vui
-# Câu đố mới theo lối dân gian, pha chút hài hước; dùng chung hai lượt đố mẹo trong mỗi tiết.
+# Câu đố mới theo lối dân gian, pha chút hài hước; có thể chọn làm chủ đề riêng cho phiên live.
 > Câu đố dân gian vui nè, nghe xong đừng cười cô trước khi trả lời nha.
 CON DỐC | Đầu dê, mình ốc; leo lên gặp em thì ai cũng thở hồng hộc. | 2 | DỐC
 ĐÒN GÁNH | Hai đầu gánh nặng, đặt lên vai; đi chợ từ sáng, về nhà chẳng được ăn quà. | 2 | GÁNH
@@ -24,3 +24,16 @@ KHUNG CỬI | Sợi dọc xếp hàng, sợi ngang luồn qua; thoi đưa tới 
 CÁI PHẢN | Mặt phẳng đặt trong nhà, cả nhà nằm nghỉ; ban ngày trống trơn, ban đêm đông như họp lớp. | 2 | PHẢN
 BÌNH VÔI | Đồ đựng vôi ăn trầu của bà, đứng góc nhà; bà têm xong môi đỏ, em vẫn không được khen. | 2
 CÁI THÙNG | Bụng rỗng, miệng rộng, lúc cần thì xách đi lấy nước; đầy quá em nặng, chủ cũng thở dài. | 2 | THÙNG
+CÁI CÀO | Răng xếp thành hàng, chẳng nhai gì; kéo qua sân gom lá khô thành đống. | 3
+CÁI VÓ | Lưới vuông được nhúng xuống ao rồi kéo bốn góc lên để vớt cá. | 3
+CỐI XAY | Hai mặt đá chồng lên nhau; quay tay, nghiền hạt ngũ cốc thành bột. | 3
+CỐI GIÃ GẠO | Cái hốc sâu đặt trên sân; nhấc chày nện xuống để giã trấu khỏi hạt gạo. | 3
+GUỒNG NƯỚC | Bánh xe tre quay bên suối, hớt nước lên máng tưới ruộng mà chẳng cần máy bơm. | 3
+CON THOI | Luồn ngang qua sợi dọc, kéo sợi chỉ qua lại; miệt mài mà chẳng tự dệt áo cho mình. | 3
+KIỀNG | Ba chân sắt đứng trên bếp củi, đỡ đáy nồi nóng mà chẳng bao giờ ăn. | 3
+ĐÈN DẦU | Bấc hút dầu, châm lửa lên thì sáng; thiếu điện vẫn học bài được nhờ em. | 3
+CHÕ XÔI | Đặt trên nồi nước sôi; hơi chui qua lỗ làm gạo nếp chín mà không ngập nước. | 3
+ĐÒN XÓC | Đòn tre hai đầu nhọn, xóc vào bó lúa vừa gặt để gánh về. | 3
+CHÀY | Đầu gỗ nặng giã xuống lòng cối để tách vỏ trấu khỏi hạt gạo. | 3 | CÁI CHÀY
+BỒ | Thân đan bằng tre, thành cao, miệng tròn rộng; sau mùa gặt, thóc được trút vào em. | 3 | CÁI BỒ
+SỌT | Đồ đựng đan thưa, lòng sâu; người ta xách đầy khoai hoặc rau ra chợ. | 3 | CÁI SỌT

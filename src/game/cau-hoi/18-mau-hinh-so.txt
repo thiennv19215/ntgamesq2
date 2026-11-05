@@ -76,3 +76,6 @@ TRÊN DƯỚI | Hai hướng đối nhau theo chiều đứng. | 2
 SỐ LA MÃ | Kiểu chữ số I, V, X trên đồng hồ cổ. | 3
 MÁY TÍNH BỎ TÚI | Cầm tay bấm cộng trừ nhân chia. | 3
 THƯỚC ĐO GÓC | Hình bán nguyệt có độ. | 3
+HÌNH NGŨ GIÁC | Hình đa giác có năm cạnh và năm góc. | 3
+HÌNH LỤC GIÁC | Hình đa giác có sáu cạnh và sáu góc. | 3
+HÌNH BÁT GIÁC | Hình đa giác có tám cạnh và tám góc. | 3

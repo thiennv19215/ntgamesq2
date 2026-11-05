@@ -1,5 +1,5 @@
 # Lịch sử Việt Nam
-# Câu lịch sử: chỉ hỏi ở câu 9 và câu 17 của mỗi tiết (GAME.roundPlan 'su'), không lẫn vào câu chữ thường.
+# Lịch sử là một chủ đề riêng; đuôi -su để hiện nhãn lịch sử khi được chọn.
 # Phạm vi: lịch sử Việt Nam tới năm 1945, kiến thức sách giáo khoa, tránh chuyện còn tranh cãi.
 # Chi tiết nào các nguồn ghi khác nhau thì KHÔNG đưa vào gợi ý (vd năm sinh, lý do tên gọi).
 # Mỗi dòng: ĐÁP ÁN | gợi ý | độ khó (1 dễ, 2 vừa, 3 khó) | cách trả lời khác cũng tính đúng
@@ -105,3 +105,6 @@ NGUYỄN DU | Đại thi hào, tác giả Truyện Kiều. | 1
 HỒ XUÂN HƯƠNG | Nữ sĩ được mệnh danh là Bà chúa thơ Nôm. | 2
 CHỮ NÔM | Chữ người Việt xưa tạo ra dựa trên chữ Hán để ghi tiếng Việt. | 2
 CHỮ QUỐC NGỮ | Chữ viết bằng chữ cái La-tinh mà các bạn nhỏ đang học hằng ngày. | 2 | QUỐC NGỮ
+LAM KINH | Khu di tích ở Thanh Hóa gắn với quê hương Lê Lợi và nơi an nghỉ của các vua triều Lê sơ. | 3
+NAM KỲ KHỞI NGHĨA | Cuộc nổi dậy chống Pháp diễn ra ở Nam Kỳ vào tháng 11 năm 1940. | 3
+BẮC SƠN | Cuộc khởi nghĩa chống Pháp nổ ra ở Lạng Sơn vào tháng 9 năm 1940. | 3

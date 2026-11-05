@@ -68,8 +68,6 @@ THƠ | Có vần có điệu, lục bát. | 1
 LỤC BÁT | Thể thơ câu sáu câu tám. | 2
 TRUYỆN KIỀU | Tác phẩm nổi tiếng của Nguyễn Du. | 3 | KIỀU
 DẾ MÈN | Nhân vật phiêu lưu ký của Tô Hoài. | 3
-TẤM CÁM | Truyện cổ tích có con gà, chiếc hài, quả thị. | 2
-SỌ DỪA | Chàng trai hình quả dừa trong cổ tích. | 3
-THÁNH GIÓNG | Cậu bé vươn vai thành tráng sĩ cưỡi ngựa sắt. | 3
-SƠN TINH | Thần núi đánh nhau với Thủy Tinh. | 3
-CÂY KHẾ | Truyện ăn một quả trả cục vàng. | 2
+TAM TẤU | Tác phẩm âm nhạc dành cho ba nhạc công hoặc nhóm biểu diễn gồm ba nhạc công. | 3
+TỨ TẤU | Tác phẩm âm nhạc dành cho bốn nhạc công hoặc nhóm biểu diễn gồm bốn nhạc công. | 3
+NGŨ TẤU | Tác phẩm âm nhạc dành cho năm nhạc công hoặc nhóm biểu diễn gồm năm nhạc công. | 3

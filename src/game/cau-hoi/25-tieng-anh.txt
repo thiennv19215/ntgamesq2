@@ -1,5 +1,5 @@
 # Tiếng Anh
-# Câu tiếng Anh: chỉ hỏi ở câu 3 và câu 12 của mỗi tiết (GAME.roundPlan 'anh'), không lẫn vào câu chữ thường.
+# Tiếng Anh là một chủ đề riêng; đuôi -anh để đọc đáp án bằng giọng tiếng Anh.
 # Cô đọc gợi ý tiếng Việt, người xem gõ từ tiếng Anh (không cần dấu). Lúc hiện đáp án cô đọc từ đó bằng giọng tiếng Anh.
 # Từ vựng tiểu học. Nghĩa nào có nhiều từ tiếng Anh đúng thì ghi thêm ở cột cách viết khác.
 # Mỗi dòng: ĐÁP ÁN | gợi ý | độ khó (1 dễ, 2 vừa, 3 khó) | cách trả lời khác cũng tính đúng
@@ -180,3 +180,9 @@ MORNING | Buổi sáng tiếng Anh là gì? | 2
 NIGHT | Ban đêm tiếng Anh là gì? | 2
 TODAY | Hôm nay tiếng Anh là gì? | 3
 BIRTHDAY | Sinh nhật tiếng Anh là gì? | 2
+WEDNESDAY | Ngày tiếng Anh nằm giữa Tuesday và Thursday là ngày nào? | 3
+THURSDAY | Ngày tiếng Anh đứng ngay trước Friday là ngày nào? | 3
+SATURDAY | Ngày tiếng Anh đứng ngay sau Friday là ngày nào? | 3
+OCTOPUS | Từ tiếng Anh bắt đầu bằng O, chỉ loài vật biển có tám xúc tu. | 3
+SEAHORSE | Từ ghép từ SEA (biển) và HORSE (ngựa), tiếng Việt gọi là cá ngựa. | 3
+CATERPILLAR | Từ tiếng Anh chỉ sâu nhiều chân ăn lá, sau này hóa thành bướm hoặc ngài. | 3
