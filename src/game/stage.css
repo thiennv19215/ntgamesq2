@@ -253,3 +253,18 @@
   animation: clap-overlay-opacity 600ms ease-in-out infinite alternate;
 }
 @keyframes clap-overlay-opacity { from { opacity: 0.05; } to { opacity: 1; } }
+
+/* Always reserve a full line for the player's name, even with many badges. */
+.student-seat-tag { flex-direction: column; gap: 1px; width: max-content; padding: 2px 5px; }
+.student-tag-name { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; line-height: 1.25; }
+.student-tag-meta { display: flex; align-items: center; justify-content: center; max-width: 100%; overflow: hidden; font-size: 0.8em; line-height: 1.2; }
+.student-tag-meta:empty { display: none; }
+.student-walker-label-compact { max-width: 105px; padding: 1px 4px; font-size: 13px; box-shadow: none; }
+.hallway-name { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); width: 72px; padding: 1px 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 5px; background: #fff7df; color: #653914; font-size: 13px; font-weight: 700; text-align: center; }
+
+/* Nameplates match the original readable style: wide, bold, staggered by seat. */
+.student-seat-tag { padding: 3px 6px; border-width: 2px; }
+.student-seat-tag .student-tag-name { font-weight: 900; line-height: 1.15; color: #35200d; }
+.student-seat-tag .student-tag-meta { font-size: 11px; line-height: 1; max-height: 13px; }
+
+.hallway-name { top: auto; bottom: calc(100% + 3px); }

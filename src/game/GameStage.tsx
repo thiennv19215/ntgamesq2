@@ -1383,6 +1383,7 @@ const HallwayPerson = memo(function HallwayPerson({ person: s, index }: { person
     <div className="absolute" style={{ left: spot.x, top: spot.y, width: 185 * 0.47, height: 185, marginLeft: -185 * 0.47 / 2, marginTop: -185, transform: `scale(${spot.scale})`, transformOrigin: '50% 100%', zIndex: index + 1 }}>
       <div className="student-walker-shadow" />
       <img src={`/assets/nv/${g}/${POSE[g].dung}.webp`} alt={s.nickname} className="relative h-full w-full object-contain" />
+      <span className="hallway-name" title={s.nickname || s.username}>{s.nickname || s.username}</span>
       <span className="absolute -top-2 right-0 text-[17px]">{s.sleeping ? '💤' : '⏳'}</span>
     </div>
   );
@@ -1406,6 +1407,7 @@ const QueuedStudent = memo(function QueuedStudent({ movement: m }: { movement: M
   const g = m.girl ? 'nu' : 'nam';
   return <div data-student-queued={m.kind} className="pointer-events-none absolute" style={{ left: point.x, top: point.y, width: W, height: H, marginLeft: -W / 2, marginTop: -H, transform: `scale(${scale})`, transformOrigin: '50% 100%', zIndex: point.x > 960 && point.y < 900 ? 1 : 12 + Math.max(0, ROWS.filter((r) => point.y > r.y + 90 * r.s).length - 1) * 6 }}>
     <div className="student-walker-shadow" /><img src={`/assets/nv/${g}/${POSE[g].dung}.webp`} alt="" className="h-full w-full" />
+    <div className="student-walker-label student-walker-label-compact" title={m.nickname || m.username}><span>{m.nickname || m.username}</span></div>
   </div>;
 }, (a, b) => a.movement.id === b.movement.id && a.movement.seatIndex === b.movement.seatIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.standIndex === b.movement.standIndex && a.movement.hallwayIndex === b.movement.hallwayIndex);
 
@@ -1461,7 +1463,7 @@ const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { 
           {back && <div className="absolute" style={{ left: hd.x * W, top: hd.y * H, width: hd.w * W, height: hd.h * H }}><Hair username={m.username} girl={m.girl} /></div>}
         </div>
       </div>
-      {!compact && <div className="student-walker-label"><span>{m.nickname}</span><small>{movementLabel(m)}</small></div>}
+      <div className={`student-walker-label ${compact ? 'student-walker-label-compact' : ''}`} title={m.nickname || m.username}><span>{m.nickname || m.username}</span>{!compact && <small>{movementLabel(m)}</small>}</div>
     </div>
   );
 }, (a, b) => a.compact === b.compact && a.movement.id === b.movement.id && a.movement.username === b.movement.username && a.movement.startedAt === b.movement.startedAt && a.movement.durationMs === b.movement.durationMs && a.movement.seatIndex === b.movement.seatIndex && a.movement.kind === b.movement.kind && a.movement.reason === b.movement.reason && a.movement.hallwayIndex === b.movement.hallwayIndex && a.movement.standIndex === b.movement.standIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.nickname === b.movement.nickname && a.movement.girl === b.movement.girl);
@@ -1598,26 +1600,29 @@ function Students({ v, now }: { v: StageView; now: number }) {
 
             {/* Lớp 3: Lưng ghế (che thân dưới) và Bảng tên */}
             {rowSeats.map(({ rank, student: s, cx, cy, k }) => {
-              const maxTagW = gap - 4;
-              const ySoLe = k % 2 === 0 ? 0 : 9;
+              const maxTagW = gap * 2 - 12;
+              const ySoLe = k % 2 === 0 ? 0 : -40;
               const called = s ? v.recess?.game === 'callup' && v.recess.callUser === s.username : false;
-              const moving = s && (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs);
+              const away = s && (s.standing || called || v.walk?.username === s.username || (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs));
               return (
                 <Fragment key={`chair-tag-${ri}-${k}`}>
                   <StudentChairBack cx={cx} cy={cy} scale={r.s} zIndex={baseZ + 3} />
 
-                  {s && !moving && (
+                  {s && !away && (
                     <div
-                      className="nametag"
+                      className="nametag student-seat-tag"
                       style={{
                         left: cx,
-                        top: cy + 38 * r.s + ySoLe,
+                        top: cy - SPRITE_H * r.s * 0.68 * 0.44 - 46 + ySoLe,
                         transform: 'translateX(-50%)',
+                        width: maxTagW,
                         maxWidth: maxTagW,
-                        fontSize: Math.max(12, 14.5 * r.s),
+                        fontSize: Math.max(20, 21 * r.s),
                         zIndex: baseZ + 4,
                       }}
                     >
+                      <span className="student-tag-name" title={s.nickname || s.username}>{s.nickname || s.username}</span>
+                      <span className="student-tag-meta">
                       {s.team > 0 && (
                         <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
                           {s.team}
@@ -1633,8 +1638,8 @@ function Students({ v, now }: { v: StageView; now: number }) {
                           {s.grade > 12 ? '🎓' : `L${s.grade}`}
                         </span>
                       )}
-                      <span className="truncate">{s.nickname}</span>
                       {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
+                      </span>
                     </div>
                   )}
                 </Fragment>
@@ -1719,7 +1724,7 @@ function Punished({ v }: { v: StageView }) {
                 className="h-full w-full object-contain object-bottom"
                 alt={`${s.nickname} đang đứng cạnh bảng`}
               />
-              <div className="nametag whitespace-nowrap px-2 py-0.5 text-[15px] font-bold shadow-md" style={{ top: 'calc(100% + 5px)', bottom: 'auto', maxWidth: 100 }}>
+              <div className="nametag whitespace-nowrap px-2 py-0.5 text-[15px] font-bold shadow-md" style={{ top: 'auto', bottom: 'calc(100% + 6px)', maxWidth: 100 }}>
                 <span className="mr-1 text-[13px] text-[#dc2626]">⚠️</span>
                 <span className="max-w-[70px] truncate">{s.nickname}</span>
                 {s.left > 0 && <span className="ml-1 text-[12px] font-extrabold text-[#b91c1c]">({s.left}c)</span>}
@@ -1765,7 +1770,7 @@ function CallupStudent({ v }: { v: StageView }) {
         transition={{ duration: result === 'right' ? 0.6 : 1.4, repeat: Infinity }}
         className="h-full w-full object-contain drop-shadow-[0_5px_4px_rgba(0,0,0,0.35)]"
       />
-      <div className="nametag whitespace-nowrap border-2 border-[#f59e0b] bg-[#fffbeb] px-2.5 py-0.5 text-[16px] font-bold text-[#78350f] shadow-md" style={{ top: 'calc(100% + 5px)', bottom: 'auto' }}>
+      <div className="nametag whitespace-nowrap border-2 border-[#f59e0b] bg-[#fffbeb] px-2.5 py-0.5 text-[16px] font-bold text-[#78350f] shadow-md" style={{ top: 'auto', bottom: 'calc(100% + 6px)' }}>
         <span className="mr-1">📢</span>
         <span className="max-w-[80px] truncate">{v.recess.callName || s?.nickname || 'Học sinh'}</span>
       </div>
