@@ -49,7 +49,7 @@ export const GAME = {
 
   // ---------- Học sinh tương tác trên màn hình ----------
   walkMs: 6000, // tặng hoa: bạn nhỏ đi lên bục đưa hoa cho cô rồi về chỗ
-  bubbleMs: 5000, // bong bóng chat trên đầu (không hiện câu trả lời, không hiện câu có từ cấm)
+  bubbleMs: 5000, // Bình luận và câu trả lời trên đầu học sinh; lọc câu có từ cấm.
   sleepAfterMs: 5 * 60_000, // ngồi im chừng này thì ngủ gật 💤, thỉnh thoảng cô gọi dậy
   // gõ sai: lên đứng cạnh cô (học sinh cá biệt) chừng này câu rồi về chỗ; tối đa standMax bạn cùng lúc, ai sai trước lên trước
   standQuestions: 3,
@@ -153,8 +153,8 @@ export const GAME = {
   forgetAfterMs: 2 * 60 * 60_000,
 
   // ---------- Lớp ----------
-  seats: 40, // bốn dãy bàn riêng, mỗi dãy 10 chỗ
-  rowSeats: [10, 10, 10, 10], // tổng bằng seats
+  seats: 40, // năm hàng, mỗi hàng 8 chỗ để đủ khoảng cách và bảng tên
+  rowSeats: [8, 8, 8, 8, 8], // tổng bằng seats
   // hết ghế: không vẽ đám đông đứng 2 bên cửa nữa (chủ kênh bỏ 2026-11-04), các bạn vẫn chơi, tính điểm,
   // hiện ở bảng "Sĩ số · Đang chờ vào lớp"
   standing: 0,
@@ -182,9 +182,14 @@ export const GAME = {
   giftPileMax: 18, // bàn quà sau lưng cô bày tối đa chừng này món (mới nhất)
 
   // ---------- Quà / tim ----------
-  // 0 = quà KHÔNG cho lợi thế trong game (chủ kênh chốt 2026-11-04): TikTok cấm khuyến khích trẻ em tặng quà,
-  // quà chỉ để cảm ơn. Đặt vd 30 thì quà từ 30 xu lúc chưa ai đúng sẽ mở thêm 1 chữ như trước.
-  hintGiftCoins: 0,
+  // 0 = tắt mở ô bằng hoa; chỉ Hoa hồng mở ô, các món khác vẫn dùng lời cảm ơn.
+  hintGiftCoins: 1, // Hoa hồng từ 1 xu mở 1 ô chữ cho cả lớp khi đang trả lời.
+  roseRoleMs: 120_000,
+  roseRoles: [
+    { roses: 5, label: 'Lớp phó', icon: '⭐' },
+    { roses: 10, label: 'Lớp trưởng', icon: '👑' },
+    { roses: 20, label: 'Cô giáo', icon: '👩‍🏫' },
+  ],
   likesPerClap: 300, // đủ 300 tim: cả lớp vỗ tay
   clapSec: 5,
   giftThanksCooldownMs: 30_000,

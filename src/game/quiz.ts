@@ -68,6 +68,13 @@ interface ShowState {
  */
 
 export type Phase = 'team' | 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'show' | 'vote';
+export interface RoseSettings {
+  visible: boolean;
+  hint: number;
+  deputy: number;
+  leader: number;
+  teacher: number;
+}
 
 /** "tổ 2", "to2", "t2", "2", "tổ hai" -> 2; không phải chọn tổ thì 0 */
 const TEAM_WORDS: Record<string, number> = { mot: 1, hai: 2, ba: 3, bon: 4 };
@@ -262,6 +269,20 @@ export function scramble(answer: string, rand = Math.random): string[] {
   return out;
 }
 
+/** Giữ vị trí ô chữ xáo, thay một phần bằng dấu hỏi; luôn còn ít nhất một chữ. */
+export function maskTiles(tiles: string[], difficulty: Question['difficulty'], rand = Math.random): string[] {
+  const rate = { easy: 0.40, medium: 0.55, hard: 0.70 }[difficulty];
+  const count = Math.min(Math.max(0, tiles.length - 1), Math.ceil(tiles.length * rate));
+  const indices = tiles.map((_, i) => i);
+  const out = [...tiles];
+  for (let i = 0; i < count; i++) {
+    const j = i + Math.floor(rand() * (indices.length - i));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+    out[indices[i]] = '?';
+  }
+  return out;
+}
+
 const hash = (s: string) => {
   let h = 0;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
@@ -311,6 +332,13 @@ interface Recess {
 }
 
 export class Classroom {
+  roseSettings: RoseSettings = { visible: true, hint: GAME.hintGiftCoins, deputy: GAME.roseRoles[0].roses, leader: GAME.roseRoles[1].roses, teacher: GAME.roseRoles[2].roses };
+  setRoseSettings(value: unknown): boolean {
+    const s = value as RoseSettings | null;
+    if (!s || typeof s.visible !== 'boolean' || ![s.hint, s.deputy, s.leader, s.teacher].every((n) => Number.isInteger(n) && n >= 1 && n <= 9999) || !(s.deputy < s.leader && s.leader < s.teacher)) return false;
+    this.roseSettings = { visible: s.visible, hint: s.hint, deputy: s.deputy, leader: s.leader, teacher: s.teacher };
+    return true;
+  }
   phase: Phase = 'intro';
   round = 0; // gọi newRound() để vào tiết 1
   qNo = 0; // câu thứ mấy trong tiết (1..questionsPerRound)
@@ -321,6 +349,25 @@ export class Classroom {
   private roundQs: Question[] = [];
   q: Question | null = null;
   tiles: string[] = [];
+  private hintTiles: string[] = [];
+  private roseRoles = new Map<number, { username: string; roses: number; expiresAt: number | null }>();
+  private roleNotices = new Map<number, { username: string; roses: number; line: Say }>();
+  private teacherChat: { text: string; at: number } | null = null;
+  private lastHallwayVoiceAt = -Infinity;
+  previewTeacherChat(now: number) {
+    this.teacherChat = { text: '😏 Giỏi quá rồi, lên đây dạy thay cô đi!', at: now };
+  }
+  private roseTotal = 0;
+  private roseParty: { milestone: number; at: number } | null = null;
+  private lightRosePartyAt: number | null = null;
+  takeRoleNotice(now: number): Say | null {
+    for (const [level, notice] of this.roleNotices) {
+      this.roleNotices.delete(level);
+      const role = this.roseRoles.get(level);
+      if (role?.username === notice.username && role.roses === notice.roses && (role.expiresAt === null || role.expiresAt > now)) return notice.line;
+    }
+    return null;
+  }
   revealed = new Set<number>(); // vị trí chữ đã mở (tính trên đáp án bỏ khoảng trắng)
   private bonusUsed = false;
   private quietSaid = false;
@@ -464,10 +511,12 @@ export class Classroom {
     if (entering) {
       const place = this.seats(Infinity, now).findIndex((p) => p.username === s!.username);
       if (place >= GAME.seats) {
-        this.announce.push({
-          ...this.t(`${s.spoken} ơi, lớp đầy rồi, đứng hành lang chờ cô nhé.`, true),
-          ttl: 30_000,
-        });
+        this.teacherChat = { text: `${s.nickname} ơi, lớp đầy rồi, đứng hành lang chờ cô nhé!`, at: now };
+        // Ít người chờ mới đọc lúc rảnh; phòng đông chỉ báo chat, không dồn lời nhắc.
+        if (place < GAME.seats + 3 && now - this.lastHallwayVoiceAt >= 30_000) {
+          this.lastHallwayVoiceAt = now;
+          this.announce.push({ ...this.t(`${s.spoken} ơi, lớp đầy rồi, đứng hành lang chờ cô nhé.`, true), ttl: 15_000 });
+        }
       }
     }
     return s;
@@ -886,6 +935,15 @@ export class Classroom {
     return true;
   }
 
+  /** Hoa mở một dấu hỏi trong hàng chữ xáo, không điền vào ô đáp án. */
+  private revealHintTile(): boolean {
+    const hidden = this.hintTiles.flatMap((ch, i) => ch === '?' ? [i] : []);
+    if (!hidden.length) return false;
+    const index = hidden[Math.floor(this.rand() * hidden.length)];
+    this.hintTiles[index] = this.tiles[index];
+    return true;
+  }
+
   private setPhase(p: Phase, now: number, sec: number) {
     this.phase = p;
     this.phaseStartedAt = now;
@@ -981,6 +1039,7 @@ export class Classroom {
     if (!this.q) return this.startResults(now, true);
     // câu toán hiện phép tính, đuổi hình bắt chữ hiện emoji: không xáo chữ
     this.tiles = this.q.math || this.q.slot === 'dh' ? [] : scramble(this.q.answer, this.rand);
+    this.hintTiles = maskTiles(this.tiles, this.q.difficulty, this.rand);
     this.boardShown = false;
     this.revealed = new Set();
     // đuổi hình bắt chữ: hiện sẵn chữ cái đầu của mỗi chữ trong ô đáp án để người chơi có chỗ bám (chủ kênh duyệt 2026-11-05)
@@ -1047,17 +1106,26 @@ export class Classroom {
     if (Number.isFinite(sample) && Math.abs(sample) < 10 * 60_000) {
       this.clockSkew = this.skewSamples++ === 0 ? sample : Math.min(sample, this.clockSkew + 5);
     }
-    // bong bóng chat: không hiện câu trả lời (lộ đáp án cho bạn khác) và câu có từ cấm
+    // Hiện bình luận an toàn trên đầu học sinh.
     const asking = this.phase === 'question' || this.phase === 'bonus';
     const answering =
       (asking && this.isAttempt(this.q, e.comment)) ||
       (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment)) ||
       (this.phase === 'show' && this.isShowAnswer(e.comment));
-    if (e.safe !== false && !answering && e.comment.trim()) s.bubble = { text: e.comment.trim().slice(0, 28), at: now };
+    if (e.safe !== false && e.comment.trim()) s.bubble = { text: e.comment.trim().slice(0, 160), at: now };
     // tương tác: 1 bình luận = 1 (mỗi bạn tối đa 1 lần / 2 giây để gõ dồn không leo bảng)
     if (now - (s.lastTalkAt ?? -Infinity) >= GAME.talkGapMs) {
       s.lastTalkAt = now;
       this.addTalk(s, 1);
+    }
+    const character = normVi(e.comment.trim());
+    if (e.safe !== false && ['nam', 'nữ', 'nu'].includes(character)) {
+      s.girl = character !== 'nam';
+      s.bubble = { text: s.girl ? 'Đã đổi nhân vật nữ 👧' : 'Đã đổi nhân vật nam 👦', at: now };
+      const visual = this.visualPeople.get(s.username);
+      if (visual) this.visualPeople.set(s.username, { ...visual, girl: s.girl });
+      this.movements = this.movements.map((m) => m.username === s.username ? { ...m, girl: s.girl } : m);
+      return []; // Lệnh đổi nhân vật không tính là một lượt trả lời.
     }
     // đang trả lời câu có đáp án "sinh nhật" thì chấm bài, không coi là báo sinh nhật
     if (!answering && isBirthday(e.comment)) return this.celebrate(s, now);
@@ -1181,8 +1249,49 @@ export class Classroom {
   }
 
   /** Quà: luôn là hoa tặng cô, mỗi món quà = 10 tương tác (không nói ra). `count` = số món (combo) */
-  gift(e: Person, coins: number, now: number, count = 1, giftName = ''): Say[] {
+  private awardRoseRole(e: Person, roses: number, now: number): Say[] {
+    const thresholds = [this.roseSettings.deputy, this.roseSettings.leader, this.roseSettings.teacher];
+    const level = thresholds.reduce((best, threshold, index) => roses >= threshold ? index : best, -1);
+    if (level < 0) return [];
+    const current = this.roseRoles.get(level);
+    this.roseRoles.set(level, { username: e.username, roses, expiresAt: level === 2 ? now + GAME.roseRoleMs : null });
+    const previous = current && current.username !== e.username && (current.expiresAt === null || current.expiresAt > now)
+      ? this.students.get(current.username)?.spoken
+      : '';
+    const announcement = level === 2
+      ? this.line('guestTeacher', e.spoken)
+      : previous
+        ? this.line('officerReplace', e.spoken, GAME.roseRoles[level].label, previous)
+        : this.line('officerWelcome', e.spoken, GAME.roseRoles[level].label);
+    this.roleNotices.set(level, { username: e.username, roses, line: this.t(announcement, true) });
+    this.teacherChat = { text: level === 2 ? this.line('teacherChatMeme', e.nickname) : this.line('officerChatMeme', e.nickname, GAME.roseRoles[level].label.toLowerCase()), at: now };
+    return [];
+  }
+
+  gift(e: Person, coins: number, now: number, count = 1, giftName = '', roleCount = count): Say[] {
     const s = this.touch(e, now);
+    if (giftName.toLowerCase() === 'rose' && roleCount >= 3 && (this.lightRosePartyAt === null || now - this.lightRosePartyAt >= 2500)) this.lightRosePartyAt = now;
+    const roleLines = giftName.toLowerCase() === 'rose' ? this.awardRoseRole(e, roleCount, now) : [];
+    const asking = this.phase === 'question' || this.phase === 'bonus';
+    const hintLines = asking && this.boardShown && !this.q?.math && giftName.toLowerCase() === 'rose' && roleCount >= this.roseSettings.hint && this.correct.length === 0 && this.revealHintTile()
+      ? this.mainOf([this.t(this.line('giftHint', e.spoken), true)]) : [];
+    // Một combo vừa nhận vai vừa mở chữ: đọc gộp trong lượt cảm ơn quà.
+    const roleNotice = [...this.roleNotices.values()].find((notice) => notice.username === e.username && notice.roses === roleCount);
+    if (hintLines.length && !roleNotice) this.teacherChat = { text: this.line('hintChatMeme', e.nickname), at: now };
+    if (hintLines.length && roleNotice) {
+      roleNotice.line = { ...roleNotice.line, text: `${roleNotice.line.text} Cả lớp được mở thêm một chữ gợi ý nha!` };
+      hintLines.length = 0;
+    }
+    const announcements = roleLines.length
+      ? roleLines.map((line) => ({ ...line, text: line.text + (hintLines.length ? ' Cả lớp được mở thêm một chữ gợi ý nha!' : '') }))
+      : hintLines;
+    if (count <= 0) return announcements; // Combo hoàn tất có thể không có hoa mới.
+    if (giftName.toLowerCase() === 'rose') {
+      const before = Math.floor(this.roseTotal / 100);
+      this.roseTotal += Math.max(0, Math.floor(count));
+      const after = Math.floor(this.roseTotal / 100);
+      if (after > before) this.roseParty = { milestone: after * 100, at: now };
+    }
     this.addTalk(s, GAME.talkPerGift * Math.max(1, count));
     this.flowers++;
     this.lastFlowerAt = now;
@@ -1191,12 +1300,12 @@ export class Classroom {
     const before = this.flowersToday;
     this.flowerBase += bong;
     this.flowerDelta += bong;
-    const out: Say[] = [];
+    const out: Say[] = [...announcements];
     const reached = GAME.flowerGoals.filter((g) => before < g && this.flowersToday >= g).pop();
     if (reached) {
       this.fundParty = { goal: reached, at: now };
       this.clapUntil = now + GAME.clapSec * 1000;
-      out.push({ ...this.t(this.line('fundGoal', String(reached))), warn: true });
+      if (!announcements.length) out.push({ ...this.t(this.line('fundGoal', String(reached))), warn: true });
     }
     // bạn nhỏ đi lên bục đưa hoa cho cô, cô cảm ơn ngay (đang có bạn đi thì thôi, tránh combo chen nhau)
     const tier = tierOf(coins);
@@ -1207,13 +1316,11 @@ export class Classroom {
     if (!this.walk || now - this.walk.at > GAME.walkMs) {
       this.walk = { username: e.username, at: now, tier, icon };
       // món có lời đáp riêng (bắn tim, hoa hồng, bánh donut) thì đáp riêng; tặng nhiều xu (bậc lớn) vẫn dùng lời cảm ơn theo bậc
-      const key = (['thankTier0', 'thankTier1', 'thankTier2', 'thankTier3'] as const)[tier];
-      const text = known && tier < 2 ? this.line(known.thanks, s.spoken) : this.line(key, s.spoken, known?.say ?? GAME.giftTiers[tier].name);
-      out.unshift({ ...this.t(text), warn: true });
-    }
-    const asking = this.phase === 'question' || this.phase === 'bonus';
-    if (asking && GAME.hintGiftCoins > 0 && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
-      out.push(...this.mainOf([this.t(this.line('giftHint', e.spoken), true)]));
+      if (!announcements.length && !(giftName.toLowerCase() === 'rose' && (roleCount === 0 || roleCount >= this.roseSettings.deputy))) {
+        const key = (['thankTier0', 'thankTier1', 'thankTier2', 'thankTier3'] as const)[tier];
+        const text = known && tier < 2 ? this.line(known.thanks, s.spoken) : this.line(key, s.spoken, known?.say ?? GAME.giftTiers[tier].name);
+        out.unshift({ ...this.t(text), warn: true });
+      }
     }
     return out;
   }
@@ -2164,6 +2271,15 @@ export class Classroom {
       lastActive,
       joinedAt,
       title: titles.get(username) ?? '',
+      roseRole: (() => {
+        for (let level = GAME.roseRoles.length - 1; level >= 0; level--) {
+          const role = this.roseRoles.get(level);
+          if (role?.username === username && (role.expiresAt === null || role.expiresAt > now)) {
+            return { ...GAME.roseRoles[level], expiresAt: role.expiresAt, roses: role.roses };
+          }
+        }
+        return null;
+      })(),
       // danh hiệu từ 2 game lớn: chỉ lấy icon đầu mỗi danh hiệu cho gọn bảng tên
       showIcons: (this.titles.get(username) ?? []).map((x) => x.split(' ')[0]).join(''),
       // câu đang hỏi: trả lời đúng / sai / chưa (ngoài giờ hỏi thì không hiện)
@@ -2193,6 +2309,23 @@ export class Classroom {
     const r = this.recess;
     return {
       phase: this.phase,
+      roseFireworks: {
+        total: this.roseTotal,
+        progress: this.roseTotal % 100,
+        goal: 100,
+        party: this.roseParty && now - this.roseParty.at < 6000 ? this.roseParty.milestone : 0,
+        partyAt: this.roseParty?.at ?? 0,
+        lightParty: this.lightRosePartyAt !== null && now - this.lightRosePartyAt < 2200,
+        lightPartyAt: this.lightRosePartyAt ?? 0,
+      },
+      teacherChat: this.teacherChat && now - this.teacherChat.at < 7000 ? { ...this.teacherChat } : null,
+      roseSettings: { ...this.roseSettings },
+      roleHolders: [...this.roseRoles].flatMap(([level, role]) => {
+        const student = this.students.get(role.username);
+        return student && (role.expiresAt === null || role.expiresAt > now)
+          ? [{ ...GAME.roseRoles[level], username: student.username, nickname: student.nickname, girl: student.girl, roses: role.roses, expiresAt: role.expiresAt }]
+          : [];
+      }),
       round: this.round,
       qNo: this.qNo,
       total: this.roundQs.length,
@@ -2206,7 +2339,7 @@ export class Classroom {
       math: this.q?.math?.show ?? '', // câu toán: phép tính hiện thay cho chữ xáo
       category: this.q?.category ?? '',
       answer: this.phase === 'recess' ? (r?.callQ?.answer ?? '') : (this.q?.answer ?? ''),
-      tiles: this.tiles,
+      tiles: showAnswer ? this.tiles : this.hintTiles,
       slots: this.slots(showAnswer),
       vote: this.vote && {
         topics: this.vote.topics.map(topicName) as [string, string],

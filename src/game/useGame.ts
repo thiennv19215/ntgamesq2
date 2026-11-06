@@ -65,6 +65,7 @@ export function useGame() {
   // - Câu nói thêm (chào, cảm ơn, cà khịa) giữ ở đây, chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây.
   const mainSpeaking = useRef(0);
   const chatter = useRef<{ text: string; priority: boolean; until: number }[]>([]);
+  const lastGiftSpeechAt = useRef(-Infinity);
   function say(lines: Say[]) {
     const now = Date.now();
     for (const l of lines) {
@@ -100,12 +101,20 @@ export function useGame() {
     chatter.current = chatter.current.filter((c) => c.until > now);
     if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow(now)) return;
     // cảm ơn quà trước; câu thường mỗi phần chỉ nói GAME.chatterPerPhase câu, còn lại chờ phần sau hoặc hết hạn thì bỏ
-    const p = chatter.current.findIndex((c) => c.priority);
-    const i = p >= 0 ? p : room.chatterAllowed(false) ? 0 : -1;
+    const giftTurn = now - lastGiftSpeechAt.current >= 15_000;
+    const notice = giftTurn ? room.takeRoleNotice(now) : null;
+    if (notice) {
+      lastGiftSpeechAt.current = now;
+      voice.say(notice.text); // Nhận vai dùng cùng lượt nói thêm như cảm ơn quà, không giữ đồng hồ.
+      return;
+    }
+    const p = giftTurn ? chatter.current.findIndex((c) => c.priority) : -1;
+    const i = p >= 0 ? p : room.chatterAllowed(false) ? chatter.current.findIndex((c) => !c.priority) : -1;
     if (i < 0) return;
     const next = chatter.current.splice(i, 1)[0];
     if (!next) return;
     if (!next.priority) room.chatterUsed++;
+    else lastGiftSpeechAt.current = now;
     voice.say(next.text);
   }
 
@@ -151,11 +160,13 @@ export function useGame() {
       if (!room) return;
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
-      setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
-      const hint = room.gift(p, coins, Date.now(), e.repeatCount, e.giftName);
-      say(hint); // bạn nhỏ lên bục đưa hoa: cô cảm ơn ngay, quà đạt mốc quỹ hoa: cô cảm ơn cả lớp
+      if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
+      const hint = room.gift(p, coins, Date.now(), e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
+      // Mọi lời về quà (mở chữ, nhận vai, cảm ơn) chờ cùng lượt nói thêm, không chen lời giảng.
+      say(hint.map((line) => ({ ...line, main: false, warn: false, priority: true })));
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
-      if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
+      const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
+      if (e.repeatCount > 0 && !pendingRole && !(e.giftName.toLowerCase() === 'rose' && e.roleCount === 0) && !hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
 
     onFollow: (e) => {
@@ -177,6 +188,18 @@ export function useGame() {
       if (c.action === 'setName' && c.text) setChannelName(c.text);
       const room = roomRef.current;
       if (!room) return;
+      if (c.action === 'custom' && c.text === 'teacherChatTest') {
+        room.previewTeacherChat(Date.now());
+        dirty.current = true;
+      }
+      if (c.action === 'custom' && c.text?.startsWith('roseSettings:')) {
+        try {
+          if (room.setRoseSettings(JSON.parse(c.text.slice('roseSettings:'.length)))) {
+            localStorage.setItem('classroom.roseSettings', JSON.stringify(room.roseSettings));
+            dirty.current = true;
+          }
+        } catch { /* Bỏ qua thiết lập không hợp lệ. */ }
+      }
       if (c.action === 'speak' && c.text) voice.say(c.text, true);
       if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
       if (c.action === 'reset' || (c.action === 'custom' && c.text === 'newRound')) {
@@ -260,6 +283,7 @@ export function useGame() {
       }
       if (stop) return;
       const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
+      try { room.setRoseSettings(JSON.parse(localStorage.getItem('classroom.roseSettings') ?? 'null')); } catch { /* Dùng mặc định. */ }
       room.setFlowersSaved(flowersSaved);
       room.showBank = SHOW_BANK;
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';

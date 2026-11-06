@@ -10,15 +10,17 @@ import './stage.css';
  * Màn hình lớp học 1080x1920 chuẩn dọc livestream TikTok.
  * Bố cục 2.5D phối cảnh có chiều sâu:
  * - Khoảng sàn trước lớp rộng rãi cho cô giáo, bục giảng và học sinh lên bảng / đứng phạt.
- * - 4 hàng ghế × 10 học sinh = 40 chỗ ngồi mở rộng theo góc nhìn xa gần.
+ * - 5 hàng ghế × 8 học sinh = 40 chỗ ngồi, chừa lối đi hai bên.
  */
 
-// 4 hàng ghế: mở rộng dần từ xa đến gần tạo chiều sâu không gian phòng học
+// Các hàng dùng chung kích thước để hàng đầu và nhân vật không bị bé hơn hàng cuối.
+const SEAT_SCALE = 1.26;
 const ROWS = [
-  { y: 920, x1: 105, x2: 975, n: GAME.rowSeats[0], s: 0.80 },
-  { y: 1105, x1: 85, x2: 995, n: GAME.rowSeats[1], s: 0.90 },
-  { y: 1315, x1: 65, x2: 1015, n: GAME.rowSeats[2], s: 1.01 },
-  { y: 1545, x1: 45, x2: 1035, n: GAME.rowSeats[3], s: 1.14 },
+  { y: 1035, x1: 60, x2: 1020, n: GAME.rowSeats[0], s: SEAT_SCALE },
+  { y: 1200, x1: 60, x2: 1020, n: GAME.rowSeats[1], s: SEAT_SCALE },
+  { y: 1365, x1: 60, x2: 1020, n: GAME.rowSeats[2], s: SEAT_SCALE },
+  { y: 1530, x1: 60, x2: 1020, n: GAME.rowSeats[3], s: SEAT_SCALE },
+  { y: 1695, x1: 60, x2: 1020, n: GAME.rowSeats[4], s: SEAT_SCALE },
 ];
 const SPRITE_H = 250; // chiều cao sprite học sinh
 // khung đầu đã xoá khỏi ảnh thân sau lưng (tools/tach-nen.py)
@@ -119,9 +121,12 @@ export function GameStage({ game }: { game: GameState }) {
         <Header v={v} name={game.channelName} />
                 <Motto />
         <ClassroomGuide />
+        <RoseProgress v={v} />
         <HallwayStudents v={v} now={now} />
         <Board v={v} now={now} />
         <DayTop v={v} />
+        <ClassOfficers v={v} />
+        {v.teacherChat ? <TeacherChat v={v} /> : (['team', 'intro', 'question', 'bonus'] as string[]).includes(v.phase) && <HintGuide v={v} />}
         <GiftPile v={v} />
         <Vase v={v} />
         <Teacher v={v} now={now} />
@@ -136,6 +141,7 @@ export function GameStage({ game }: { game: GameState }) {
       <BirthdayBanner v={v} />
       <GoodbyeBanner v={v} />
       <FundParty v={v} />
+      <RoseFireworks v={v} />
       <LoveHearts n={v.loveFans} />
       <PollCard v={v} />
       {(v.clapping || v.fund.party > 0) && <Claps />}
@@ -173,6 +179,7 @@ function GiftPile({ v }: { v: StageView }) {
 
 // Quỹ hoa đạt mốc
 function FundParty({ v }: { v: StageView }) {
+  if (v.roseFireworks?.party) return null;
   return (
     <AnimatePresence>
       {v.fund.party > 0 && (
@@ -188,6 +195,38 @@ function FundParty({ v }: { v: StageView }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function RoseProgress({ v }: { v: StageView }) {
+  const roses = v.roseFireworks;
+  if (!roses) return null;
+  return (
+    <div className="pointer-events-none absolute left-[120px] top-[1806px] z-20 flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
+      <span className="whitespace-nowrap text-[20px] font-extrabold">{roses.party ? '🎆 Cả lớp đỉnh quá!' : '🌹 Đủ 100 hoa, bắn pháo!'}</span>
+      <div role="progressbar" aria-label="Hoa hồng để bắn pháo hoa" aria-valuemin={0} aria-valuemax={100} aria-valuenow={roses.progress} className="h-[14px] min-w-0 flex-1 overflow-hidden rounded-full bg-[#efd2dc]">
+        <motion.div animate={{ width: `${roses.progress}%` }} transition={{ duration: 0.35 }} className="h-full rounded-full bg-gradient-to-r from-[#ef6591] to-[#eaaa3b]" />
+      </div>
+      <span className="whitespace-nowrap text-[20px] font-extrabold tabular-nums">{roses.progress}/100</span>
+    </div>
+  );
+}
+
+function RoseFireworks({ v }: { v: StageView }) {
+  if (!v.roseFireworks?.party && !v.roseFireworks?.lightParty) return null;
+  const light = !v.roseFireworks.party;
+  const origins = light ? [[160, 820], [920, 820]] : [[140, 300], [940, 370], [160, 1130], [920, 1250]];
+  const colors = ['#ffe074', '#ff81b0', '#87e7ff', '#c0f58b'];
+  return (
+    <svg key={`${light ? 'light' : 'big'}-${light ? v.roseFireworks.lightPartyAt : v.roseFireworks.partyAt}`} className="pointer-events-none absolute inset-0 z-[70] h-full w-full motion-reduce:hidden" viewBox="0 0 1080 1920" aria-hidden="true">
+      {origins.map(([x, y], burst) => <g key={burst} transform={`translate(${x},${y})`}>
+        {Array.from({ length: light ? 10 : 14 }, (_, i) => {
+          const angle = i * Math.PI * 2 / (light ? 10 : 14);
+          const distance = light ? 55 + (i % 3) * 10 : 100 + (i % 3) * 24;
+          return <motion.circle key={i} r={light ? 3 : 4} fill={colors[i % colors.length]} initial={{ cx: 0, cy: 0, opacity: 0 }} animate={{ cx: [0, Math.cos(angle) * distance], cy: [0, Math.sin(angle) * distance + 35], opacity: [0, 1, 1, 0] }} transition={{ duration: light ? 1.2 : 1.5, delay: burst * 0.25, repeat: light ? 0 : 2, repeatDelay: 0.25 }} />;
+        })}
+      </g>)}
+    </svg>
   );
 }
 
@@ -532,10 +571,48 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
   );
 }
 
+function TeacherChat({ v }: { v: StageView }) {
+  if (!v.teacherChat) return null;
+  return (
+    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="pointer-events-none absolute left-[215px] top-[744px] z-20 w-[330px] rounded-[20px] border-[3px] border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg" role="status">
+      <div className="text-[17px] font-extrabold text-[#9b2852]">💬 Cô Ngân</div>
+      <div className="mt-0.5 line-clamp-3 break-words text-[21px] font-bold leading-[24px]">{v.teacherChat.text}</div>
+      <div className="absolute -left-[13px] top-7 h-5 w-5 rotate-45 border-b-[3px] border-l-[3px] border-[#d65b88] bg-[#fffaf6]" />
+    </motion.aside>
+  );
+}
+
+function HintGuide({ v }: { v: StageView }) {
+  const settings = v.roseSettings;
+  if (!settings?.visible) return null;
+  const thresholds = [settings.deputy, settings.leader, settings.teacher];
+  return (
+    <>
+    <div className="hint-sign pointer-events-none absolute right-[130px] top-[750px] z-20 w-[540px] whitespace-nowrap px-3 py-1 text-center text-[27px] font-extrabold leading-[32px] text-[#9b2852]">
+      🌹 {settings.hint} Hoa hồng → mở 1 chữ gợi ý
+    </div>
+    <aside className="hint-sign pointer-events-none absolute right-[130px] top-[804px] z-20 w-[540px] px-3 py-1 text-center">
+      <div className="grid grid-cols-4 gap-1.5">
+        <div className="min-w-0 rounded-[14px] border border-[#b6a0db] bg-[#f2eaff] px-1 py-1 text-[#61418a] shadow-sm">
+          <div className="whitespace-nowrap text-[18px] font-bold leading-[25px]">Pháo hoa nhẹ</div>
+          <div className="text-[20px] font-extrabold leading-[25px]">x3 🌹</div>
+        </div>
+        {GAME.roseRoles.map((role, index) => (
+          <div key={role.roses} className={`min-w-0 rounded-[14px] border px-1 py-1 shadow-sm ${index === 2 ? 'border-[#c64172] bg-[#bd3d6a] text-white' : index === 1 ? 'border-[#edc36b] bg-[#fff0c7] text-[#783f0a]' : 'border-[#9bc9dd] bg-[#e2f3fb] text-[#245873]'}`}>
+            <div className="whitespace-nowrap text-[18px] font-bold leading-[25px]">{role.label}</div>
+            <div className="whitespace-nowrap text-[19px] font-extrabold leading-[25px]">x{thresholds[index]} 🌹{index === 2 && <span className="text-[15px] font-semibold"> · 2 phút</span>}</div>
+          </div>
+        ))}
+      </div>
+    </aside>
+    </>
+  );
+}
+
 function ClassroomGuide() {
   return (
     <div className="classroom-ribbon absolute left-[65px] top-[1845px] z-20 w-[950px] px-6 py-2.5 text-center text-[26px] font-extrabold text-[#7c330f]">
-      🌸 Cùng học vui · Trả lời bình luận · Tranh tài mỗi tiết 🏆
+      💬 Gõ đáp án để chơi · Gõ “nam” / “nữ” để đổi nhân vật
     </div>
   );
 }
@@ -1016,7 +1093,41 @@ function showPose(v: StageView, now: number): string {
   }
 }
 
+function isGuestTeacher(v: StageView, username: string) {
+  return v.roleHolders?.some((role) => role.label === 'Cô giáo' && role.username === username) ?? false;
+}
+
+function ClassOfficers({ v }: { v: StageView }) {
+  const officers = v.roleHolders?.filter((role) => role.expiresAt === null) ?? [];
+  if (!officers.length) return null;
+  return (
+    <aside className="classroom-panel absolute right-[18px] top-[25px] z-20 w-[225px] px-3 py-2 text-[#73324a]">
+      {officers.slice().reverse().map((role) => (
+        <div key={role.label} className={`my-1 rounded-lg px-1 py-1 text-center ${role.label === 'Lớp trưởng' ? 'bg-[#ffedb5] text-[#7b4306]' : 'bg-[#dcefff] text-[#20557c]'}`}>
+          <div className="text-[21px] font-extrabold">{role.icon} {role.label}</div>
+          <div className="truncate text-[20px] font-bold" title={role.nickname}>{role.nickname}</div>
+          <div className="text-[16px]">🌹 Combo x{role.roses}</div>
+        </div>
+      ))}
+    </aside>
+  );
+}
+
 function Teacher({ v, now }: { v: StageView; now: number }) {
+  const guest = v.roleHolders?.find((role) => role.label === 'Cô giáo');
+  if (guest) {
+    const g = guest.girl ? 'nu' : 'nam';
+    return (
+      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[40px] top-[550px] z-[3] h-[320px] w-[170px]">
+        <div className="teacher-shadow" />
+        <img src={`/assets/nv/${g}/${POSE[g].tay}.webp`} alt={guest.nickname} className="h-full w-full object-contain object-bottom drop-shadow-lg" />
+        <div className="absolute -bottom-1 left-1/2 w-[210px] -translate-x-1/2 rounded-xl border-2 border-[#fff6dd] bg-[#be426b] px-2 py-1 text-center text-white shadow-lg">
+          <div className="text-[19px] font-extrabold">👩‍🏫 Cô giáo · {Math.max(0, Math.ceil(((guest.expiresAt ?? now) - now) / 1000))}s</div>
+          <div className="truncate text-[19px] font-bold" title={guest.nickname}>{guest.nickname}</div>
+        </div>
+      </motion.div>
+    );
+  }
   const gotFlower = now - v.lastFlowerAt < 3000;
   const src = v.show
     ? `/assets/nv/co-ngan/${v.show.kind}/${showPose(v, now)}.webp`
@@ -1051,11 +1162,11 @@ const secText = (ms: number) => `${(ms / 1000).toFixed(3).replace('.', ',')} gi�
 function FastestBoard({ v }: { v: StageView }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute left-1/2 top-[765px] z-30 w-[640px] -translate-x-1/2 overflow-hidden rounded-[18px] border-[3px] border-[#7a2e0e] bg-[#fff6dd]/98 shadow-2xl"
+      className="absolute right-[130px] top-[762px] z-30 w-[600px] overflow-hidden rounded-[12px] border-2 border-[#7a2e0e] bg-[#fff6dd]/98 shadow-lg"
     >
-      <div className="flex items-center justify-between bg-[#7a2e0e] px-3 py-[2px] text-[25px] font-bold text-[#ffe9b8]">
+      <div className="flex h-[24px] items-center justify-between bg-[#7a2e0e] px-3 text-[20px] font-bold text-[#ffe9b8]">
         <span>⚡ Top 3 nhanh nhất</span>
         <span>{v.correctCount} bạn đúng</span>
       </div>
@@ -1066,17 +1177,17 @@ function FastestBoard({ v }: { v: StageView }) {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15 * i }}
-          className={`flex items-center gap-2 px-3 text-[26px] leading-[34px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
+          className={`flex h-[22px] items-center gap-2 px-3 text-[20px] leading-[22px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
         >
-          <span className="w-9 shrink-0 text-center text-[28px]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+          <span className="w-6 shrink-0 text-center text-[20px]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
           <span className="min-w-0 flex-1 truncate font-semibold">{a.nickname}</span>
-          <span className="shrink-0 whitespace-nowrap text-right text-[24px] font-bold tabular-nums text-[#6b4a22]">{secText(a.ms)}</span>
-          <b className="w-[58px] shrink-0 text-right text-[30px] text-[#c2410c]">+{a.points}</b>
+          <span className="shrink-0 whitespace-nowrap text-right text-[19px] font-bold tabular-nums text-[#6b4a22]">{secText(a.ms)}</span>
+          <b className="w-[48px] shrink-0 text-right text-[21px] text-[#c2410c]">+{a.points}</b>
         </motion.div>
       ))}
       {v.laterCount > 0 && (
-        <div className="border-t border-[#e9d8a6] px-3 text-center text-[22px] font-semibold leading-[34px] text-[#6b4a22]">
-          {v.laterCount} bạn khác đúng chậm hơn: mỗi bạn +{v.laterPoints}
+        <div className="h-[20px] border-t border-[#e9d8a6] px-3 text-center text-[17px] font-semibold leading-[19px] text-[#6b4a22]">
+          {v.laterCount} bạn đúng khác · +{v.laterPoints} điểm/bạn
         </div>
       )}
     </motion.div>
@@ -1362,13 +1473,15 @@ function routeSample(points: WalkPoint[], times: number[], progress: number) {
 function HallwayStudents({ v, now }: { v: StageView; now: number }) {
   const people = v.hallway ?? [];
   const total = v.hallwayTotal ?? people.length;
-  if (!total) return null;
   return (
     <aside aria-label={`Hành lang: ${total} học sinh`} className="pointer-events-none absolute inset-0 z-[1]">
-      <div className="absolute left-[966px] top-[550px] w-[108px] rounded-xl border-2 border-[#c18139] bg-[#fff0cc] px-1 py-1 text-center text-[17px] font-extrabold leading-tight text-[#794319] shadow-sm">HÀNH LANG<br />{total} bạn</div>
+      <div className="absolute left-[966px] top-[448px] w-[108px] rounded-xl border-2 border-[#bd6280] bg-[#fff2f6] px-1 py-1 text-center text-[17px] font-semibold leading-[20px] text-[#87324f] shadow-sm">
+        💬 Gõ<br /><strong className="text-[20px] font-extrabold">vào lớp</strong><br /><strong>+ Follow</strong><br />để tham gia
+      </div>
+      {total > 0 && <div className="absolute left-[966px] top-[550px] w-[108px] rounded-xl border-2 border-[#c18139] bg-[#fff0cc] px-1 py-1 text-center text-[17px] font-extrabold leading-tight text-[#794319] shadow-sm">HÀNH LANG<br />{total} bạn</div>}
       {people.map((s, i) => {
         const moving = (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs);
-        if (moving || v.punished.some((p) => p.username === s.username)) return null;
+        if (isGuestTeacher(v, s.username) || moving || v.punished.some((p) => p.username === s.username)) return null;
         return <HallwayPerson key={s.username} person={s} index={s.hallwayIndex ?? i} />;
       })}
       {total > people.length && <div className="absolute left-[970px] top-[860px] w-[104px] rounded-lg bg-[#fff0cc] text-center text-[17px] font-bold text-[#794319]">+{total - people.length} bạn</div>}
@@ -1390,7 +1503,7 @@ const HallwayPerson = memo(function HallwayPerson({ person: s, index }: { person
 }, (a, b) => a.index === b.index && a.person.username === b.person.username && a.person.nickname === b.person.nickname && a.person.girl === b.person.girl && a.person.sleeping === b.person.sleeping);
 
 function StudentMovements({ v, now }: { v: StageView; now: number }) {
-  const events = v.movements ?? [];
+  const events = (v.movements ?? []).filter((m) => !isGuestTeacher(v, m.username));
   const moving = events.filter((m) => now >= m.startedAt && now < m.startedAt + m.durationMs);
   const queued = events.filter((m) => now < m.startedAt);
   const compact = moving.length > 8;
@@ -1409,7 +1522,7 @@ const QueuedStudent = memo(function QueuedStudent({ movement: m }: { movement: M
     <div className="student-walker-shadow" /><img src={`/assets/nv/${g}/${POSE[g].dung}.webp`} alt="" className="h-full w-full" />
     <div className="student-walker-label student-walker-label-compact" title={m.nickname || m.username}><span>{m.nickname || m.username}</span></div>
   </div>;
-}, (a, b) => a.movement.id === b.movement.id && a.movement.seatIndex === b.movement.seatIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.standIndex === b.movement.standIndex && a.movement.hallwayIndex === b.movement.hallwayIndex);
+}, (a, b) => a.movement.id === b.movement.id && a.movement.girl === b.movement.girl && a.movement.seatIndex === b.movement.seatIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.standIndex === b.movement.standIndex && a.movement.hallwayIndex === b.movement.hallwayIndex);
 
 const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { movement: MovingStudent; compact: boolean }) {
   const element = useRef<HTMLDivElement>(null);
@@ -1496,6 +1609,12 @@ const StudentBody = memo(function StudentBody({ s, pose, away, called, w, h, lef
                       <Hair username={s.username} girl={s.girl} />
                     </div>
                   </div>
+                  {s.roseRole && s.roseRole.expiresAt === null && (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center" aria-label={s.roseRole.label}>
+                      <span className="text-[34px] leading-[36px] drop-shadow-md">{s.roseRole.icon}</span>
+                      <span className={`mt-[25px] whitespace-nowrap rounded-md border px-1 text-[14px] font-extrabold leading-[18px] shadow-sm ${s.roseRole.label === 'Lớp trưởng' ? 'border-[#b77915] bg-[#ffe080] text-[#713900]' : 'border-[#4088b5] bg-[#c9e9ff] text-[#16486a]'}`}>{s.roseRole.label}</span>
+                    </div>
+                  )}
                   {s.answered === 'right' && <div className="badge bg-[#16a34a]">✓</div>}
                   {s.answered === 'right' && s.gain > 0 && (
                     <motion.div
@@ -1555,7 +1674,7 @@ const StudentBody = memo(function StudentBody({ s, pose, away, called, w, h, lef
                   {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
                 </motion.div>
               );
-}, (a, b) => a.pose === b.pose && a.away === b.away && a.called === b.called && a.w === b.w && a.h === b.h && a.left === b.left && a.top === b.top && a.scale === b.scale && a.isFirst === b.isFirst && a.qNo === b.qNo && a.zIndex === b.zIndex && a.s.username === b.s.username && a.s.girl === b.s.girl && a.s.answered === b.s.answered && a.s.gain === b.s.gain && a.s.bubble === b.s.bubble && a.s.sleeping === b.s.sleeping && a.s.desk.length === b.s.desk.length && a.s.desk.every((g, i) => g.at === b.s.desk[i].at && g.icon === b.s.desk[i].icon));
+}, (a, b) => a.pose === b.pose && a.away === b.away && a.called === b.called && a.w === b.w && a.h === b.h && a.left === b.left && a.top === b.top && a.scale === b.scale && a.isFirst === b.isFirst && a.qNo === b.qNo && a.zIndex === b.zIndex && a.s.roseRole?.label === b.s.roseRole?.label && a.s.username === b.s.username && a.s.girl === b.s.girl && a.s.answered === b.s.answered && a.s.gain === b.s.gain && a.s.bubble === b.s.bubble && a.s.sleeping === b.s.sleeping && a.s.desk.length === b.s.desk.length && a.s.desk.every((g, i) => g.at === b.s.desk[i].at && g.icon === b.s.desk[i].icon));
 
 function Students({ v, now }: { v: StageView; now: number }) {
   const asking = v.phase === 'question' || v.phase === 'bonus';
@@ -1593,32 +1712,31 @@ function Students({ v, now }: { v: StageView; now: number }) {
               const pose = studentPose(s, v, rank, now);
               const called = v.recess?.game === 'callup' && v.recess.callUser === s.username;
               const moving = (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs);
-              const away = moving || s.standing || v.walk?.username === s.username || called;
+              const away = isGuestTeacher(v, s.username) || moving || s.standing || v.walk?.username === s.username || called;
 
               return <StudentBody key={s.username} s={s} pose={pose} away={away} called={called} w={w} h={h} left={left} top={top} scale={scale} isFirst={s.username === first} qNo={v.qNo} zIndex={baseZ + 2} />;
             })}
 
             {/* Lớp 3: Lưng ghế (che thân dưới) và Bảng tên */}
             {rowSeats.map(({ rank, student: s, cx, cy, k }) => {
-              const maxTagW = gap * 2 - 12;
-              const ySoLe = k % 2 === 0 ? 0 : -40;
+              const maxTagW = gap - 4;
               const called = s ? v.recess?.game === 'callup' && v.recess.callUser === s.username : false;
-              const away = s && (s.standing || called || v.walk?.username === s.username || (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs));
+              const away = s && (isGuestTeacher(v, s.username) || s.standing || called || v.walk?.username === s.username || (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs));
               return (
                 <Fragment key={`chair-tag-${ri}-${k}`}>
                   <StudentChairBack cx={cx} cy={cy} scale={r.s} zIndex={baseZ + 3} />
 
                   {s && !away && (
                     <div
-                      className="nametag student-seat-tag"
+                      className={`nametag student-seat-tag ${s.roseRole?.label === 'Lớp trưởng' ? 'student-officer-leader' : s.roseRole?.label === 'Lớp phó' ? 'student-officer-deputy' : ''}`}
                       style={{
                         left: cx,
-                        top: cy - SPRITE_H * r.s * 0.68 * 0.44 - 46 + ySoLe,
+                        top: cy + 8 * r.s,
                         transform: 'translateX(-50%)',
                         width: maxTagW,
                         maxWidth: maxTagW,
-                        fontSize: Math.max(20, 21 * r.s),
-                        zIndex: baseZ + 4,
+                        fontSize: 20,
+                        zIndex: 60 + ri,
                       }}
                     >
                       <span className="student-tag-name" title={s.nickname || s.username}>{s.nickname || s.username}</span>
@@ -1629,7 +1747,11 @@ function Students({ v, now }: { v: StageView; now: number }) {
                         </span>
                       )}
                       {rank < 5 && s.score > 0 && <span className="rank">{rank + 1}</span>}
-                      {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
+                      {s.roseRole && s.roseRole.expiresAt === null ? (
+                        <span className="mr-1 font-bold">🌹 x{s.roseRole.roses}</span>
+                      ) : s.roseRole ? (
+                        <span className="mr-1 rounded bg-[#fce7f3] px-1 text-[#9b2852]">{s.roseRole.icon} {s.roseRole.label}{s.roseRole.expiresAt !== null ? ` ${Math.max(0, Math.ceil((s.roseRole.expiresAt - now) / 1000))}s` : ` x${s.roseRole.roses}`}</span>
+                      ) : s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
                       {s.showIcons && <span className="mr-1 whitespace-nowrap">{s.showIcons}</span>}
                       {called && <span className="mr-1">📢</span>}
                       {s.days >= 2 && <span className="mr-1 whitespace-nowrap">🎒{s.days}</span>}
@@ -1658,21 +1780,22 @@ function ChatBubble({ text, scale }: { text: string; scale: number }) {
       key={text}
       initial={{ opacity: 0, y: 10, scale: 0.7 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="pointer-events-none absolute bottom-[calc(100%+26px)] left-1/2 z-30 max-w-[200px] -translate-x-1/2 truncate rounded-[16px] bg-white px-3 py-1 font-semibold text-[#3b2a14] shadow-md"
+      className="pointer-events-none absolute bottom-[calc(100%+2px)] left-1/2 z-30 w-max max-w-[112px] -translate-x-1/2 rounded-[12px] bg-white px-2 py-1 font-semibold leading-[16px] text-[#3b2a14] shadow-md"
       style={{ fontSize: 18 * scale }}
     >
-      {text}
+      <span className="line-clamp-2 whitespace-normal break-words" title={text}>{text}</span>
       <div className="absolute -bottom-[7px] left-1/2 h-[14px] w-[14px] -translate-x-1/2 rotate-45 bg-white" />
     </motion.div>
   );
 }
 
-const PODIUM: [number, number] = [240, 890]; // Chân ở khoảng sàn trước lớp cạnh cô
+const FLOWER_SPOT: [number, number] = [285, 860]; // Tâm chân học sinh cạnh cô, phía trên dãy bàn đầu.
 function FlowerWalk({ v }: { v: StageView }) {
   const w = v.walk;
-  if (!w || (v.movements ?? []).some((m) => m.username === w.username && Date.now() < m.startedAt + m.durationMs)) return null;
+  if (!w || isGuestTeacher(v, w.username) || (v.movements ?? []).some((m) => m.username === w.username && Date.now() < m.startedAt + m.durationMs)) return null;
   const i = v.seats.find((s) => s.username === w.username)?.seatIndex ?? -1;
   const H = 210;
+  const target: [number, number] = [FLOWER_SPOT[0] - H * 0.235, FLOWER_SPOT[1] - H];
   const seat = i >= 0 ? movementSeat(i) : null;
   const from: [number, number] = seat ? [seat.cx - H * 0.235, seat.feet - H] : [65, 870];
   const g = w.girl ? 'nu' : 'nam';
@@ -1680,7 +1803,7 @@ function FlowerWalk({ v }: { v: StageView }) {
     <motion.div
       key={w.at}
       initial={{ left: from[0], top: from[1], opacity: 0 }}
-      animate={{ left: [from[0], PODIUM[0], PODIUM[0], from[0]], top: [from[1], PODIUM[1], PODIUM[1], from[1]], opacity: [1, 1, 1, 0] }}
+      animate={{ left: [from[0], target[0], target[0], from[0]], top: [from[1], target[1], target[1], from[1]], opacity: [1, 1, 1, 0] }}
       transition={{ duration: GAME.walkMs / 1000, times: [0, 0.35, 0.65, 1], ease: 'easeInOut' }}
       className="pointer-events-none absolute z-30"
       style={{ width: H * 0.47, height: H }}
@@ -1703,7 +1826,7 @@ function Punished({ v }: { v: StageView }) {
   return (
     <>
       {v.punished
-        .filter((s) => !(v.movements ?? []).some((m) => m.username === s.username && Date.now() < m.startedAt + m.durationMs))
+        .filter((s) => !isGuestTeacher(v, s.username) && !(v.movements ?? []).some((m) => m.username === s.username && Date.now() < m.startedAt + m.durationMs))
         .slice(0, STAND_SPOTS.length)
         .map((s) => {
           const i = s.standIndex ?? 0;
@@ -1739,6 +1862,7 @@ function Punished({ v }: { v: StageView }) {
 // Học sinh được gọi lên bảng kiểm tra miệng trong giờ ra chơi
 function CallupStudent({ v }: { v: StageView }) {
   if (v.recess?.game !== 'callup' || !v.recess.callUser) return null;
+  if (isGuestTeacher(v, v.recess.callUser)) return null;
   const s = v.seats.find((st) => st.username === v.recess!.callUser);
   const g = s?.girl ?? false ? 'nu' : 'nam';
   const stage = v.recess.stage;

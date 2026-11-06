@@ -252,7 +252,8 @@ async function connectTikTok(cleanUser: string) {
     const isStreakable = (data?.gift?.type ?? data?.giftDetails?.giftType ?? data?.giftType) === 1;
     if (isStreakable && !data?.repeatEnd) streakCounts.set(key, total);
     else streakCounts.delete(key);
-    if (delta <= 0) return;
+    const comboDone = !isStreakable || Boolean(data?.repeatEnd);
+    if (delta <= 0 && !comboDone) return;
 
     broadcast('gift', {
       username,
@@ -260,7 +261,8 @@ async function connectTikTok(cleanUser: string) {
       giftName: data?.gift?.name || data?.giftDetails?.giftName || data?.giftName || 'Quà',
       giftId,
       diamondCount: data?.gift?.diamondCount || data?.diamondCount || data?.giftDetails?.diamondCount || 1,
-      repeatCount: delta,
+      repeatCount: Math.max(0, delta),
+      roleCount: comboDone ? total : 0, // Xét vai bằng tổng một combo hoàn tất, không cộng các combo riêng.
       avatar: avatarOf(data),
       timestamp: Date.now(),
     });
