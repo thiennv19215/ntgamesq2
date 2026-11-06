@@ -6,6 +6,7 @@ import { containsBanned } from '../live/bannedWords';
 import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
+import { saveClassroomBackground } from '../live/classroomBackgrounds';
 import { GAME } from './config';
 import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
@@ -199,6 +200,10 @@ export function useGame() {
 
     onControl: (c) => {
       if (c.action === 'setName' && c.text) setChannelName(c.text);
+      if (c.action === 'custom' && c.text?.startsWith('theme:')) {
+        saveClassroomBackground(c.text.slice('theme:'.length));
+        dirty.current = true;
+      }
       const room = roomRef.current;
       if (!room) return;
       if (c.action === 'custom' && c.text === 'teacherChatTest') {

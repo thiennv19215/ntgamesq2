@@ -69,17 +69,21 @@ let stageIds: string[] = [];
 const announceSpeaker = () => broadcast('speaker', { id: stageIds[stageIds.length - 1] ?? null, count: stageIds.length });
 let activeConn: InstanceType<typeof TikTokLiveConnection> | null = null;
 let lastRateControl: { action: string; text: string } | null = null;
+let lastThemeControl: { action: string; text: string } | null = null;
 
 // Tên kênh (giọng đọc + tiêu đề) lưu ở settings.json cạnh file này, tắt server mở lại vẫn còn
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 let lastNameControl: { action: string; text: string } | null = null;
 // tài khoản TikTok đang cần giữ kết nối: rớt thì tự kết nối lại, tắt server bật lại cũng tự kết nối
 let wantUser = '';
-let settings: { channelName?: string; tiktokUser?: string } = {};
+let settings: { channelName?: string; tiktokUser?: string; classroomTheme?: string } = {};
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
     lastNameControl = { action: 'setName', text: settings.channelName.trim() };
+  }
+  if (typeof settings.classroomTheme === 'string' && /^[a-z0-9-]{1,40}$/i.test(settings.classroomTheme)) {
+    lastThemeControl = { action: 'custom', text: `theme:${settings.classroomTheme}` };
   }
   if (typeof settings.tiktokUser === 'string') wantUser = settings.tiktokUser;
 } catch {
@@ -113,6 +117,7 @@ app.get('/api/tiktok/events', (req, res) => {
   res.write(`event: status\ndata: ${JSON.stringify(liveStats)}\n\n`);
   if (lastRateControl) res.write(`event: control\ndata: ${JSON.stringify(lastRateControl)}\n\n`);
   if (lastNameControl) res.write(`event: control\ndata: ${JSON.stringify(lastNameControl)}\n\n`);
+  if (lastThemeControl) res.write(`event: control\ndata: ${JSON.stringify(lastThemeControl)}\n\n`);
   sseClients.push(res);
   const stageId = typeof req.query.stage === 'string' ? req.query.stage.slice(0, 40) : '';
   if (stageId) {
@@ -363,6 +368,13 @@ app.post('/api/control', (req, res) => {
     payload.text = name;
     lastNameControl = { action, text: name };
     saveSettings({ channelName: name });
+  }
+  if (action === 'custom' && payload.text?.startsWith('theme:')) {
+    const theme = payload.text.slice('theme:'.length).trim();
+    if (!/^[a-z0-9-]{1,40}$/i.test(theme)) return res.status(400).json({ success: false, error: 'Theme không hợp lệ' });
+    payload.text = `theme:${theme}`;
+    lastThemeControl = { action: 'custom', text: payload.text };
+    saveSettings({ classroomTheme: theme });
   }
   broadcast('control', payload);
   res.json({ success: true, pages: sseClients.length });

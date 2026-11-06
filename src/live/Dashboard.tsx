@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { LiveStatus } from './types';
 import { emitTest, sendControl } from './page';
+import { CLASSROOM_BACKGROUNDS, classroomBackgroundStyle, readClassroomBackgroundId, saveClassroomBackground } from './classroomBackgrounds';
 
 const FAKE_NAMES = ['Lan Anh', 'Minh Tuấn', 'Bé Na 🌸', 'Hoàng Long', 'Thu Trang', 'Quốc Bảo', 'duyanh99', '𝑵𝒈𝒐̣𝒄 𝑨𝒏𝒉'];
 const pick = () => {
@@ -95,8 +96,11 @@ export function Dashboard({
                 <span className="text-slate-400">● Chưa kết nối</span>
               )}
               <span className="text-slate-500">
-                LIVE Studio: <b className="text-slate-300">http://lvh.me:{window.location.port || 80}/?view=stage</b> · 1080×1920
+                Trang này chỉ để điều khiển · LIVE Studio dùng: <b className="text-slate-300">http://lvh.me:{window.location.port || 80}/stage</b> · 1080×1920
               </span>
+              <a href="/stage" target="_blank" rel="noreferrer" className="rounded bg-amber-500 px-2 py-0.5 font-semibold text-slate-950 hover:bg-amber-400">
+                Mở màn LIVE
+              </a>
             </div>
             {(msg || status?.error) && <div className="mt-1 text-xs text-amber-300">{msg || status?.error}</div>}
           </Card>
@@ -135,6 +139,8 @@ export function Dashboard({
             </div>
           </Card>
 
+          <BackgroundPicker />
+
           {extra}
 
           <details className="rounded-2xl bg-slate-900 p-3 ring-1 ring-slate-800">
@@ -166,6 +172,45 @@ export function Dashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+function BackgroundPicker() {
+  const [selected, setSelected] = useState(() => readClassroomBackgroundId());
+  const [message, setMessage] = useState('');
+  const choose = (id: string) => {
+    setSelected(id);
+    saveClassroomBackground(id);
+    setMessage('Đang đồng bộ theme lên màn LIVE...');
+    void sendControl('custom', `theme:${id}`).then((result) => {
+      setMessage(result.success === false ? 'Chưa đồng bộ được lên màn LIVE.' : 'Đã đổi theme trên màn LIVE.');
+    }).catch(() => setMessage('Mất kết nối, theme chỉ đổi ở màn điều khiển.'));
+  };
+  return (
+    <Card title="🎨 Thay theme lớp học">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Chọn theme lớp học">
+        {CLASSROOM_BACKGROUNDS.map((background) => {
+          const active = background.id === selected;
+          return (
+            <button
+              key={background.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => choose(background.id)}
+              className={`overflow-hidden rounded-xl text-left ring-2 transition ${active ? 'ring-amber-400' : 'ring-slate-700 hover:ring-slate-500'}`}
+            >
+              <span className="block h-16" style={classroomBackgroundStyle(background.id, 'cover')} aria-hidden="true" />
+              <span className={`block px-2 py-1.5 text-xs ${active ? 'bg-amber-400 font-bold text-slate-950' : 'bg-slate-800 text-slate-200'}`}>
+                {active ? '✓ ' : ''}{background.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs text-slate-500">Các theme dùng cùng kích thước nền gốc, chỉ thay bối cảnh và tự lưu cho lần mở sau.</p>
+      {message && <p role="status" className="mt-1 text-xs text-amber-300">{message}</p>}
+    </Card>
   );
 }
 

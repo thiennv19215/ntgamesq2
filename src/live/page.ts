@@ -1,8 +1,8 @@
 // Trang nào đang mở?
-//   /?view=stage  -> trang đưa vào TikTok LIVE Studio (1080x1920), DUY NHẤT trang này phát tiếng
+//   /stage hoặc /?view=stage -> trang đưa vào TikTok LIVE Studio (1080x1920), DUY NHẤT trang này phát tiếng
 //   /             -> trang điều khiển, im lặng, mở bao nhiêu tab cũng được
 const params = new URLSearchParams(window.location.search);
-export const IS_STAGE = params.get('view') === 'stage';
+export const IS_STAGE = params.get('view') === 'stage' || window.location.pathname === '/stage';
 // mã riêng của trang stage này: server chỉ cho trang stage mở sau cùng phát tiếng
 export const STAGE_ID = IS_STAGE ? Math.random().toString(36).slice(2, 10) : '';
 
