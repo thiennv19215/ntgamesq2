@@ -127,7 +127,7 @@ export function GameStage({ game }: { game: GameState }) {
         <ClassOfficers v={v} />
         <BoardSidebar v={v} />
         <ClassroomGuide />
-        <RoseProgress v={v} />
+        <HeartProgress v={v} />
         <HallwayStudents v={v} />
         <Board v={v} now={now} />
         <Teacher v={v} now={now} />
@@ -142,7 +142,8 @@ export function GameStage({ game }: { game: GameState }) {
       <BirthdayBanner v={v} />
       <GoodbyeBanner v={v} />
       <FundParty v={v} />
-      <RoseFireworks v={v} />
+      <RoseGiftFireworks v={v} />
+      <HeartFireworks v={v} />
       <LoveHearts n={v.loveFans} />
       <PollCard v={v} />
       {(v.clapping || v.fund.party > 0) && <Claps />}
@@ -152,7 +153,7 @@ export function GameStage({ game }: { game: GameState }) {
 
 // Quỹ hoa đạt mốc
 function FundParty({ v }: { v: StageView }) {
-  if (v.roseFireworks?.party) return null;
+  if (v.heartFireworks?.party) return null;
   return (
     <AnimatePresence>
       {v.fund.party > 0 && (
@@ -171,24 +172,24 @@ function FundParty({ v }: { v: StageView }) {
   );
 }
 
-function RoseProgress({ v }: { v: StageView }) {
-  const roses = v.roseFireworks;
-  if (!roses) return null;
+function HeartProgress({ v }: { v: StageView }) {
+  const hearts = v.heartFireworks;
+  if (!hearts) return null;
   return (
-    <div className="rose-progress pointer-events-none absolute bottom-[145px] left-[120px] z-[70] flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
-      <span className="whitespace-nowrap text-[20px] font-extrabold">{roses.party ? '🎆 Cả lớp đỉnh quá!' : '🌹 Đủ 100 hoa, bắn pháo!'}</span>
-      <div role="progressbar" aria-label="Hoa hồng để bắn pháo hoa" aria-valuemin={0} aria-valuemax={100} aria-valuenow={roses.progress} className="h-[14px] min-w-0 flex-1 overflow-hidden rounded-full bg-[#efd2dc]">
-        <motion.div animate={{ width: `${roses.progress}%` }} transition={{ duration: 0.35 }} className="h-full rounded-full bg-gradient-to-r from-[#ef6591] to-[#eaaa3b]" />
+    <div className="heart-progress pointer-events-none absolute bottom-[145px] left-[120px] z-[70] flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
+      <span className="whitespace-nowrap text-[20px] font-extrabold">{hearts.party ? '🎆 Cả lớp đỉnh quá!' : '❤️ Đủ 100 tim, bắn pháo!'}</span>
+      <div role="progressbar" aria-label="Tim để bắn pháo hoa" aria-valuemin={0} aria-valuemax={hearts.goal} aria-valuenow={hearts.progress} className="h-[14px] min-w-0 flex-1 overflow-hidden rounded-full bg-[#efd2dc]">
+        <motion.div animate={{ width: `${(hearts.progress / hearts.goal) * 100}%` }} transition={{ duration: 0.35 }} className="h-full rounded-full bg-gradient-to-r from-[#ef6591] to-[#eaaa3b]" />
       </div>
-      <span className="whitespace-nowrap text-[20px] font-extrabold tabular-nums">{roses.progress}/100</span>
+      <span className="whitespace-nowrap text-[20px] font-extrabold tabular-nums">{hearts.progress}/{hearts.goal}</span>
     </div>
   );
 }
 
-function RoseFireworks({ v }: { v: StageView }) {
-  if (!v.roseFireworks?.party && !v.roseFireworks?.lightParty) return null;
-  const light = !v.roseFireworks.party;
-  const origins = light ? [[160, 820], [920, 820]] : [[140, 300], [940, 370], [160, 1130], [920, 1250]];
+function RoseGiftFireworks({ v }: { v: StageView }) {
+  if (!v.roseFireworks?.lightParty) return null;
+  const light = true;
+  const origins = [[160, 820], [920, 820]];
   const colors = ['#ffe074', '#ff81b0', '#87e7ff', '#c0f58b'];
   return (
     <svg key={`${light ? 'light' : 'big'}-${light ? v.roseFireworks.lightPartyAt : v.roseFireworks.partyAt}`} className="pointer-events-none absolute inset-0 z-[70] h-full w-full motion-reduce:hidden" viewBox="0 0 1080 1920" aria-hidden="true">
@@ -197,6 +198,24 @@ function RoseFireworks({ v }: { v: StageView }) {
           const angle = i * Math.PI * 2 / (light ? 10 : 14);
           const distance = light ? 55 + (i % 3) * 10 : 100 + (i % 3) * 24;
           return <motion.circle key={i} r={light ? 3 : 4} fill={colors[i % colors.length]} initial={{ cx: 0, cy: 0, opacity: 0 }} animate={{ cx: [0, Math.cos(angle) * distance], cy: [0, Math.sin(angle) * distance + 35], opacity: [0, 1, 1, 0] }} transition={{ duration: light ? 1.2 : 1.5, delay: burst * 0.25, repeat: light ? 0 : 2, repeatDelay: 0.25 }} />;
+        })}
+      </g>)}
+    </svg>
+  );
+}
+
+function HeartFireworks({ v }: { v: StageView }) {
+  const hearts = v.heartFireworks;
+  if (!hearts?.party) return null;
+  const origins = [[140, 300], [940, 370], [160, 1130], [920, 1250]];
+  const colors = ['#ffe074', '#ff81b0', '#87e7ff', '#c0f58b'];
+  return (
+    <svg key={`heart-${hearts.partyAt}`} className="pointer-events-none absolute inset-0 z-[70] h-full w-full motion-reduce:hidden" viewBox="0 0 1080 1920" aria-hidden="true">
+      {origins.map(([x, y], burst) => <g key={burst} transform={`translate(${x},${y})`}>
+        {Array.from({ length: 14 }, (_, i) => {
+          const angle = i * Math.PI * 2 / 14;
+          const distance = 100 + (i % 3) * 24;
+          return <motion.circle key={i} r={4} fill={colors[i % colors.length]} initial={{ cx: 0, cy: 0, opacity: 0 }} animate={{ cx: [0, Math.cos(angle) * distance], cy: [0, Math.sin(angle) * distance + 35], opacity: [0, 1, 1, 0] }} transition={{ duration: 1.5, delay: burst * 0.25, repeat: 2, repeatDelay: 0.25 }} />;
         })}
       </g>)}
     </svg>
@@ -621,10 +640,10 @@ function ClassroomGuide() {
     return () => window.clearInterval(timer);
   }, [tips.length]);
   return (
-    <div className="classroom-ribbon absolute left-[220px] top-[142px] z-20 flex h-[56px] w-[620px] items-center overflow-hidden px-4 text-center text-[24px] font-extrabold text-[#fff5c4]" aria-label="Hướng dẫn chơi và tương tác">
+    <div className="classroom-ribbon absolute left-[220px] top-[142px] z-20 flex h-[56px] w-[620px] items-center overflow-hidden px-4 text-center text-[20px] font-extrabold text-[#fff5c4]" aria-label="Hướng dẫn chơi và tương tác">
       <div className="relative min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={index} initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -22 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="leading-[34px]">
+          <motion.div key={index} initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -22 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="whitespace-nowrap leading-[28px]">
             {tips[index]}
           </motion.div>
         </AnimatePresence>

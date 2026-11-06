@@ -128,6 +128,20 @@ assert.deepEqual(maskTiles([], 'hard'), []);
   assert.equal(c.view(at + 6002).roseFireworks.party, 200);
   assert.equal(c.view(at + 6002).roseFireworks.progress, 50);
 }
+// Pháo hoa theo tim thật của phòng: đủ 100 tim thì bắn, không tính quà.
+{
+  const at = 910_000;
+  const c = new Classroom([mk('BẢNG ĐEN')], at);
+  c.like(99, at, false, 99);
+  assert.equal(c.view(at).heartFireworks.progress, 99);
+  assert.equal(c.view(at).heartFireworks.party, 0);
+  c.like(1, at + 1, false, 100);
+  assert.equal(c.view(at + 1).heartFireworks.progress, 0, 'đủ 100 tim thì reset thanh về 0');
+  assert.equal(c.view(at + 1).heartFireworks.party, 100);
+  c.gift(who(1), 999, at + 2, 1, 'Doughnut');
+  assert.equal(c.view(at + 2).heartFireworks.total, 100, 'quà không làm tăng bộ đếm tim');
+  assert.equal(c.view(at + 6002).heartFireworks.party, 0);
+}
 
 // Tin nhắn sự kiện: đọc đủ thời gian, chống dồn và nhường thông báo quan trọng.
 {

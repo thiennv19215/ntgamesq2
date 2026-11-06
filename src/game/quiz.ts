@@ -397,6 +397,9 @@ export class Classroom {
   private roseTotal = 0;
   private roseParty: { milestone: number; at: number } | null = null;
   private lightRosePartyAt: number | null = null;
+  private heartBase: number | null = null;
+  private heartTotal = 0;
+  private heartParty: { milestone: number; at: number } | null = null;
   takeRoleNotice(now: number): Say | null {
     for (const [level, notice] of this.roleNotices) {
       this.roleNotices.delete(level);
@@ -1451,9 +1454,17 @@ export class Classroom {
     return this.line0('share');
   }
 
-  /** Tim: giờ ra chơi "thả tim" thì đếm; ngoài ra đủ mốc thì cả lớp vỗ tay */
-  like(count: number, now: number, reachedClap: boolean): Say[] {
+  /** Tim: giờ ra chơi "thả tim" thì đếm; ngoài ra đủ mốc thì cả lớp vỗ tay và bắn pháo */
+  like(count: number, now: number, reachedClap: boolean, totalLikes?: number): Say[] {
     this.lastSeenAt = now;
+    if (typeof totalLikes === 'number') {
+      if (this.heartBase === null) this.heartBase = Math.max(0, totalLikes - Math.max(0, count));
+      const next = Math.max(0, totalLikes - this.heartBase);
+      const before = Math.floor(this.heartTotal / GAME.likesPerFirework);
+      this.heartTotal = Math.max(this.heartTotal, next);
+      const after = Math.floor(this.heartTotal / GAME.likesPerFirework);
+      if (after > before) this.heartParty = { milestone: after * GAME.likesPerFirework, at: now };
+    }
     if (this.recess?.game === 'heart' && this.recess.stage === 'play') {
       this.recess.hearts += count * GAME.heartBoost;
       return [];
@@ -2461,6 +2472,13 @@ export class Classroom {
         partyAt: this.roseParty?.at ?? 0,
         lightParty: this.lightRosePartyAt !== null && now - this.lightRosePartyAt < 2200,
         lightPartyAt: this.lightRosePartyAt ?? 0,
+      },
+      heartFireworks: {
+        total: this.heartTotal,
+        progress: this.heartTotal % GAME.likesPerFirework,
+        goal: GAME.likesPerFirework,
+        party: this.heartParty && now - this.heartParty.at < 6000 ? this.heartParty.milestone : 0,
+        partyAt: this.heartParty?.at ?? 0,
       },
       teacherChat: this.teacherChat && now - this.teacherChat.at < 7000 ? { ...this.teacherChat } : null,
       roseSettings: { ...this.roseSettings },

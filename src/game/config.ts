@@ -202,6 +202,7 @@ export const GAME = {
     { roses: 20, label: 'Cô giáo', icon: '👩‍🏫' },
   ],
   likesPerClap: 300, // đủ 300 tim: cả lớp vỗ tay
+  likesPerFirework: 100, // đủ 100 tim thật: bắn pháo hoa
   clapSec: 5,
   giftThanksCooldownMs: 30_000,
   bigGiftCoins: 99,

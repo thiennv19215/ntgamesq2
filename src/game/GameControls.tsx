@@ -228,7 +228,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to</Btn>
         <Btn disabled={!view} onClick={() => emitTest('chat', { ...fake(0), comment: 'nam' })}>👦 Test đổi nam · Nguyễn Lan Anh</Btn>
         <Btn disabled={!view} onClick={() => emitTest('chat', { ...fake(0), comment: 'nữ' })}>👧 Test đổi nữ · Nguyễn Lan Anh</Btn>
-        <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>
+        <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 100 })}>❤️ 100 tim · bắn pháo</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'hôm nay sinh nhật con cô ơi' })}>🎂 Thử: 1 bạn báo sinh nhật</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:rps')}>✊ Ra chơi: oẳn tù tì</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:callup')}>📢 Ra chơi: kiểm tra miệng</Btn>

@@ -214,7 +214,7 @@ export function useGame() {
       // tim thật x GAME.heartBoost: đủ 300 tim (60 tim thật) là cả lớp vỗ tay
       const reached = (e.totalLikes - likeBase.current) * GAME.heartBoost >= GAME.likesPerClap;
       if (reached) likeBase.current = e.totalLikes;
-      say(room.like(e.likeCount, Date.now(), reached));
+      say(room.like(e.likeCount, Date.now(), reached, e.totalLikes));
     },
 
     onControl: (c) => {
