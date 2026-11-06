@@ -11,7 +11,7 @@ export type ClassroomBackground = {
   overlay?: string;
 };
 
-const CLASSROOM_IMAGE = '/assets/generated/classroom-blossom-clean-v5-1620x2880.png';
+const CLASSROOM_IMAGE = '/assets/generated/classroom-blossom-clean-v5-1620x2880.webp';
 
 /**
  * Các preset chỉ thay lớp nền/bối cảnh. Toàn bộ bảng, ghế, nhân vật và logic
@@ -22,10 +22,10 @@ export const CLASSROOM_BACKGROUNDS: ClassroomBackground[] = [
   { id: 'sunny', label: 'Nắng vàng', color: '#d97706', image: CLASSROOM_IMAGE, overlay: 'rgba(255, 204, 112, .24)' },
   { id: 'calm', label: 'Xanh dịu', color: '#2d6474', image: CLASSROOM_IMAGE, overlay: 'rgba(72, 157, 180, .28)' },
   { id: 'plain', label: 'Nền trơn ấm', color: '#c8793d' },
-  { id: 'modern', label: 'Phòng sáng', color: '#e7cda8', image: '/assets/generated/classroom-modern-v1-1620x2880.png' },
-  { id: 'wood', label: 'Phòng gỗ', color: '#a85724', image: '/assets/generated/classroom-wood-v1-1620x2880.png' },
-  { id: 'evening', label: 'Phòng buổi tối', color: '#23344f', image: '/assets/generated/classroom-evening-v1-1620x2880.png' },
-  { id: 'tet', label: 'Mùa xuân Tết Việt', color: '#c85b25', image: '/assets/generated/classroom-tet-v1-1620x2880.png' },
+  { id: 'modern', label: 'Phòng sáng', color: '#e7cda8', image: '/assets/generated/classroom-modern-v1-1620x2880.webp' },
+  { id: 'wood', label: 'Phòng gỗ', color: '#a85724', image: '/assets/generated/classroom-wood-v1-1620x2880.webp' },
+  { id: 'evening', label: 'Phòng buổi tối', color: '#23344f', image: '/assets/generated/classroom-evening-v1-1620x2880.webp' },
+  { id: 'tet', label: 'Mùa xuân Tết Việt', color: '#c85b25', image: '/assets/generated/classroom-tet-v1-1620x2880.webp' },
 ];
 
 export function getClassroomBackground(id: string | null | undefined): ClassroomBackground {
