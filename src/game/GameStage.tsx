@@ -1,5 +1,5 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
@@ -135,7 +135,9 @@ export function GameStage({ game }: { game: GameState }) {
         <Students v={v} now={now} />
         <StudentMovements v={v} now={now} />
         <FlowerWalk v={v} />
-        {v.teacherChat && !isFastestNotice(v) && <TeacherChat v={v} />}
+        <AnimatePresence>
+          {v.teacherChat && !isFastestNotice(v) && <TeacherChat key="teacher-popup" v={v} />}
+        </AnimatePresence>
       </motion.div>
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
@@ -174,7 +176,7 @@ function RoseProgress({ v }: { v: StageView }) {
   const roses = v.roseFireworks;
   if (!roses) return null;
   return (
-    <div className="rose-progress pointer-events-none absolute left-[120px] top-[1806px] z-[70] flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
+    <div className="rose-progress pointer-events-none absolute bottom-[145px] left-[120px] z-[70] flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
       <span className="whitespace-nowrap text-[20px] font-extrabold">{roses.party ? '🎆 Cả lớp đỉnh quá!' : '🌹 Đủ 100 hoa, bắn pháo!'}</span>
       <div role="progressbar" aria-label="Hoa hồng để bắn pháo hoa" aria-valuemin={0} aria-valuemax={100} aria-valuenow={roses.progress} className="h-[14px] min-w-0 flex-1 overflow-hidden rounded-full bg-[#efd2dc]">
         <motion.div animate={{ width: `${roses.progress}%` }} transition={{ duration: 0.35 }} className="h-full rounded-full bg-gradient-to-r from-[#ef6591] to-[#eaaa3b]" />
@@ -232,7 +234,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
 function Board({ v, now }: { v: StageView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className={`chalk classroom-board absolute left-1/2 top-[210px] z-[2] h-[544px] w-[780px] -translate-x-1/2 origin-top scale-[0.76] px-[26px] pt-[20px] text-[#f4f1e6] pb-[60px] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+    <div className={`chalk classroom-board absolute left-1/2 top-[210px] z-[2] h-[544px] w-[780px] -translate-x-1/2 origin-top scale-[0.80] px-[26px] pt-[20px] text-[#f4f1e6] pb-[60px] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
       {/* 4 Nẹp góc đồng cổ điển bo tròn */}
       <div className="board-corner board-corner-tl" />
       <div className="board-corner board-corner-tr" />
@@ -547,16 +549,17 @@ function TeacherChat({ v }: { v: StageView }) {
   if (!v.teacherChat) return null;
   const thanking = v.teacherChat.text.startsWith('Cô cảm ơn ');
   return (
-    <motion.aside initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="teacher-notice pointer-events-none absolute left-[18px] top-[380px] z-40 w-[225px] overflow-hidden rounded-[18px] border-[3px] border-[#cf7891] bg-[#fffaf3] text-[#73324a] shadow-[0_5px_0_#9b5366,0_9px_16px_#56203326]" role="status" aria-live="polite" aria-atomic="true">
-      <div className="flex items-center gap-2 border-b border-[#edc3c8] bg-[#fbe3e7] px-3 py-2">
-        <span aria-hidden="true" className="text-[23px]">{thanking ? '💝' : '💬'}</span>
-        <div className="min-w-0">
-          <div className="text-[12px] font-bold uppercase tracking-wide text-[#a25a70]">Lời nhắn từ</div>
-          <div className="truncate text-[18px] font-extrabold leading-[23px]" title={v.cfg.teacherName}>{v.cfg.teacherName}</div>
+    <motion.aside initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22 }} className="teacher-notice pointer-events-none absolute left-[18px] top-[330px] z-40 w-[210px] text-[#73324a]" role="status" aria-live="polite" aria-atomic="true">
+      <div className="relative overflow-hidden rounded-[20px] border-[3px] border-[#cf7891] bg-[#fffaf3] shadow-[0_5px_0_#9b5366,0_9px_16px_#56203326]">
+        <div className="flex items-center gap-2 border-b border-[#edc3c8] bg-[#fbe3e7] px-3 py-1.5">
+          <span aria-hidden="true" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#fbe3e7] text-[20px]">{thanking ? '💝' : '💬'}</span>
+          <div className="min-w-0">
+            <div className="truncate text-[17px] font-extrabold leading-[22px]" title={v.cfg.teacherName}>{v.cfg.teacherName}</div>
+          </div>
         </div>
-      </div>
-      <div className="px-3 py-3">
-        <div className="line-clamp-4 min-h-[96px] break-words text-[18px] font-semibold leading-[24px]">{v.teacherChat.text}</div>
+        <div className="px-4 py-2">
+          <div className="line-clamp-3 break-words text-[20px] font-bold leading-[25px]">{v.teacherChat.text}</div>
+        </div>
       </div>
     </motion.aside>
   );
@@ -575,19 +578,40 @@ function HintGuide({ v }: { v: StageView }) {
     { label: 'Mời cô giáo', amount: settings.teacher },
   ];
   return (
-    <aside aria-label="Gợi ý quà hoa hồng" className="hint-sign pointer-events-none absolute right-[18px] top-[420px] z-20 w-[225px] px-2 py-2 text-[#9b2852]">
-      <div className="text-center text-[19px] font-extrabold">🌹 Tặng hoa hồng</div>
-      <div className="mb-2 text-center text-[14px] font-bold text-[#a85b72]">Hoa giúp mở chữ và nhận vai trong lớp</div>
-      {rows.map((row) => <div key={row.label} className="flex min-h-[28px] items-center justify-between gap-1 text-[16px] font-bold leading-[22px]"><span className="whitespace-nowrap">{row.label}</span><span className="shrink-0 whitespace-nowrap">x{row.amount} 🌹</span></div>)}
+    <aside aria-label="Gợi ý quà hoa hồng" className="hint-sign pointer-events-none absolute right-[18px] top-[430px] z-20 w-[210px] side-rail-board px-2 py-2 text-[#9b2852]">
+      <div className="text-center text-[21px] font-extrabold">🌹 Tặng hoa hồng</div>
+      <div className="mb-2 text-center text-[16px] font-bold text-[#8d3152]">Hoa giúp mở chữ và nhận vai trong lớp</div>
+      {rows.map((row) => <div key={row.label} className="flex min-h-[34px] items-center justify-between gap-1 text-[18px] font-bold leading-[26px]"><span className="whitespace-nowrap">{row.label}</span><span className="shrink-0 whitespace-nowrap">x{row.amount} 🌹</span></div>)}
       <div className="mt-2 text-center text-[13px]">Vai cô giáo kéo dài 2 phút</div>
     </aside>
   );
 }
 
 function ClassroomGuide() {
+  const tips = [
+    '💬 Gõ đáp án trong bình luận để tham gia lớp học',
+    '⚡ Trả lời đúng càng sớm, điểm xếp hạng càng cao',
+    '❤️ Thả tim để cả lớp cùng vỗ tay với cô nhé!',
+    '➕ Follow kênh để được ưu tiên khi chờ vào lớp',
+    '👦 Gõ “nam” / “nữ” để đổi nhân vật của bạn',
+    '🚪 Gõ “vào lớp” để đăng ký tham gia cùng cả lớp',
+  ];
+  const [index, setIndex] = useState(0);
+  const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    const timer = window.setInterval(() => setIndex((i) => (i + 1) % tips.length), 6000);
+    return () => window.clearInterval(timer);
+  }, [tips.length]);
   return (
-    <div className="classroom-ribbon absolute left-[65px] top-[1845px] z-20 w-[950px] px-6 py-2.5 text-center text-[26px] font-extrabold text-[#7c330f]">
-      💬 Gõ đáp án để chơi · Gõ “nam” / “nữ” để đổi nhân vật
+    <div className="classroom-ribbon absolute bottom-[64px] left-[65px] z-20 flex h-[68px] w-[950px] items-center overflow-hidden px-6 text-center text-[26px] font-extrabold text-[#7c330f]" aria-label="Hướng dẫn chơi và tương tác">
+      <div className="relative min-w-0 flex-1">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={index} initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -22 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="leading-[34px]">
+            {tips[index]}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <span aria-hidden="true" className="ml-4 shrink-0 text-[17px] tabular-nums text-[#92532c]">{index + 1}/{tips.length}</span>
     </div>
   );
 }
@@ -974,7 +998,7 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
 function DayTop({ v }: { v: StageView }) {
   const rows = [...(v.todayTop ?? [])].filter((s) => s.points > 0).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username)).slice(0, 5);
   return (
-    <aside className="classroom-panel honor-board absolute left-[18px] top-[25px] z-20 w-[225px]" aria-label="Top 5 học sinh xuất sắc hôm nay">
+    <aside className="classroom-panel honor-board absolute left-[18px] top-[25px] z-20 w-[210px] side-rail-board" aria-label="Top 5 học sinh xuất sắc hôm nay">
       <h2 className="honor-board-title">🏆 Học sinh xuất sắc<span>HÔM NAY</span></h2>
       <div className="honor-board-body">
         {rows.length === 0 && <p className="honor-board-empty">Trả lời đúng để ghi tên<br />lên bảng vàng nhé!</p>}
@@ -1084,7 +1108,7 @@ function ClassOfficers({ v }: { v: StageView }) {
   }, [pages]);
   const start = (page % pages) * 5;
   return (
-    <aside className="classroom-panel honor-board flower-board absolute right-[18px] top-[25px] z-20 w-[225px]" aria-label="Bảng tặng quà và cán bộ lớp">
+    <aside className="classroom-panel honor-board flower-board absolute right-[18px] top-[25px] z-20 w-[210px] side-rail-board" aria-label="Bảng tặng quà và cán bộ lớp">
       <h2 className="honor-board-title">💐 Tặng hoa cho cô<span>TẤM LÒNG HỌC TRÒ</span></h2>
       <div className="honor-board-body">
         {donors.length ? donors.slice(start, start + 5).map((student, i) => (
@@ -1110,7 +1134,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   if (guest) {
     const g = guest.girl ? 'nu' : 'nam';
     return (
-      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[455px] top-[535px] z-[3] h-[310px] w-[170px]">
+      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[30px] top-[535px] z-[3] h-[310px] w-[170px]" style={{ scale: 1.18, transformOrigin: 'bottom center' }}>
         <div className="teacher-shadow" />
         <img src={`/assets/nv/${g}/${POSE[g].tay}.webp`} alt={guest.nickname} className="h-full w-full object-contain object-bottom drop-shadow-lg" />
         <div className="absolute -bottom-1 left-1/2 w-[210px] -translate-x-1/2 rounded-xl border-2 border-[#fff6dd] bg-[#be426b] px-2 py-1 text-center text-white shadow-lg">
@@ -1127,7 +1151,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
       ? `/assets/nv/co-ngan/${teacherPose(v, now)}.webp?v=classic-restored`
       : `/assets/nv/co-ngan/${v.outfit}/${OUTFIT_POSE[teacherPose(v, now)] ?? '01-dung'}.webp`;
   return (
-    <div className="teacher-character absolute left-[435px] top-[535px] z-[3] h-[310px] w-[210px]">
+    <div className="teacher-character absolute left-[10px] top-[535px] z-[3] h-[310px] w-[210px] origin-bottom scale-[1.18]">
       <div className="teacher-shadow" />
       <img src={src} style={!v.show && (!v.outfit || v.outfit === 'trang') ? { clipPath: 'none' } : undefined} className="teacher-sprite h-full w-full object-contain object-bottom drop-shadow-[0_8px_6px_rgba(0,0,0,0.25)]" />
       <div className="absolute bottom-[10px] left-[35px] z-10 whitespace-nowrap rounded-full border-2 border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[2px] text-[17px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
@@ -1465,22 +1489,8 @@ function routeSample(points: WalkPoint[], times: number[], progress: number) {
 /** Hàng chờ thật đặt bên trái bảng, cùng bố cục với bảng thành tích. */
 function HallwayStudents({ v }: { v: StageView }) {
   const people = v.hallway ?? [];
-  const total = v.hallwayTotal ?? people.length;
   return (
     <>
-      <aside aria-label={`Hàng chờ: ${total} học sinh`} className="classroom-panel pointer-events-none absolute left-[18px] top-[270px] z-20 w-[225px] px-3 py-3 text-[#794319]">
-        <div className="text-center text-[21px] font-extrabold">🚪 Chờ vào lớp</div>
-        <div className="mb-2 text-center text-[27px] font-extrabold">{total} bạn</div>
-        {people.slice(0, 6).map((s, i) => (
-          <div key={s.username} className="flex h-[25px] items-center gap-1 text-[17px]" title={s.nickname}>
-            <span className="w-4 shrink-0 text-[13px] text-[#ae8756]">{i + 1}</span>
-            <span className="min-w-0 flex-1 truncate font-bold">{seatName(s.nickname || s.username)}</span>
-            {s.score > 0 && <b className="text-[#ba5c23]">{s.score}</b>}
-          </div>
-        ))}
-        {total > 6 && <div className="mt-1 text-center text-[14px]">Còn {total - 6} bạn đang chờ</div>}
-        <div className="mt-2 border-t border-[#e0bd83] pt-2 text-center text-[15px] leading-[20px]">Gõ “vào lớp” để tham gia<br />Follow để được ưu tiên hàng chờ</div>
-      </aside>
       {people.slice(0, 6).map((s, i) => {
         const point = hallwaySpot(i);
         const h = 155;

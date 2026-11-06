@@ -95,6 +95,8 @@ function Preview() {
   return <div className="flex h-screen items-center justify-center bg-[#1c1715]">
     {!new URLSearchParams(window.location.search).has('clean') && <aside className="fixed left-3 top-3 z-[100] max-w-[245px] rounded-xl bg-white p-3 text-sm text-stone-800 shadow-lg">
       <b>Thử chuyển động riêng</b><p className="my-2">40 học sinh + 1 bạn chờ. Khi hết câu, bạn ngủ đi ra, người chờ vào đúng ghế trống.</p>
+      <button onClick={() => model.current.room.notifyGiftThanks(person(1), 'Rose', 1, Date.now())} className="mb-2 rounded-lg bg-pink-700 px-3 py-2 font-bold text-white">Thử popup cảm ơn</button>
+      <button onClick={() => { const now = Date.now(); for (let i = 1; i <= 8; i++) model.current.room.notifyGiftThanks(person(i), 'Rose', 1, now); }} className="mb-2 rounded-lg bg-pink-900 px-3 py-2 font-bold text-white">Thử 8 bạn tặng cùng lúc</button>
       <button onClick={() => reset()} className="rounded-lg bg-amber-700 px-3 py-2 font-bold text-white">Chạy lại chuyển động</button>
       <button onClick={() => reset(GAME.seats)} className="mt-2 rounded-lg bg-stone-700 px-3 py-2 font-bold text-white">Thử cả lớp cùng ra / vào</button>
       <button onClick={() => reset(GAME.standMax, true)} className="mt-2 rounded-lg bg-rose-700 px-3 py-2 font-bold text-white">Thử học sinh lên đứng bảng</button>

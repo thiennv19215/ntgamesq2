@@ -9,8 +9,8 @@ export function StageFrame({ children, maxHeight }: { children: ReactNode; maxHe
   useEffect(() => {
     const fit = () => {
       const h = Math.min(window.innerHeight, maxHeight ?? Infinity);
-      // Zoom nhẹ để góc nhìn bớt lùi nhưng vẫn giữ toàn bộ khung dọc trong vùng an toàn.
-      setScale(Math.min(window.innerWidth / STAGE_W, h / STAGE_H) * 1.02);
+      // Vừa đúng vùng hiển thị; phóng cô/bảng riêng để không cắt mép sân khấu.
+      setScale(Math.min(window.innerWidth / STAGE_W, h / STAGE_H));
     };
     fit();
     window.addEventListener('resize', fit);
