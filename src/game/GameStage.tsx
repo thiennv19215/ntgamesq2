@@ -14,13 +14,13 @@ import './stage.css';
  */
 
 // Các hàng dùng chung kích thước để hàng đầu và nhân vật không bị bé hơn hàng cuối.
-const SEAT_SCALE = 1.26;
+const SEAT_SCALE = 1.10;
 const ROWS = [
-  { y: 1035, x1: 60, x2: 1020, n: GAME.rowSeats[0], s: SEAT_SCALE },
-  { y: 1200, x1: 60, x2: 1020, n: GAME.rowSeats[1], s: SEAT_SCALE },
-  { y: 1365, x1: 60, x2: 1020, n: GAME.rowSeats[2], s: SEAT_SCALE },
-  { y: 1530, x1: 60, x2: 1020, n: GAME.rowSeats[3], s: SEAT_SCALE },
-  { y: 1695, x1: 60, x2: 1020, n: GAME.rowSeats[4], s: SEAT_SCALE },
+  { y: 980, x1: 60, x2: 1020, n: GAME.rowSeats[0], s: SEAT_SCALE },
+  { y: 1162, x1: 60, x2: 1020, n: GAME.rowSeats[1], s: SEAT_SCALE },
+  { y: 1344, x1: 60, x2: 1020, n: GAME.rowSeats[2], s: SEAT_SCALE },
+  { y: 1526, x1: 60, x2: 1020, n: GAME.rowSeats[3], s: SEAT_SCALE },
+  { y: 1708, x1: 60, x2: 1020, n: GAME.rowSeats[4], s: SEAT_SCALE },
 ];
 const SPRITE_H = 250; // chiều cao sprite học sinh
 // khung đầu đã xoá khỏi ảnh thân sau lưng (tools/tach-nen.py)
@@ -202,7 +202,7 @@ function RoseProgress({ v }: { v: StageView }) {
   const roses = v.roseFireworks;
   if (!roses) return null;
   return (
-    <div className="pointer-events-none absolute left-[120px] top-[1806px] z-20 flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
+    <div className="rose-progress pointer-events-none absolute left-[120px] top-[1806px] z-[70] flex h-[32px] w-[840px] items-center gap-3 rounded-full border-2 border-[#d65b88] bg-[#fff8ef] px-4 text-[#8d3152] shadow-sm">
       <span className="whitespace-nowrap text-[20px] font-extrabold">{roses.party ? '🎆 Cả lớp đỉnh quá!' : '🌹 Đủ 100 hoa, bắn pháo!'}</span>
       <div role="progressbar" aria-label="Hoa hồng để bắn pháo hoa" aria-valuemin={0} aria-valuemax={100} aria-valuenow={roses.progress} className="h-[14px] min-w-0 flex-1 overflow-hidden rounded-full bg-[#efd2dc]">
         <motion.div animate={{ width: `${roses.progress}%` }} transition={{ duration: 0.35 }} className="h-full rounded-full bg-gradient-to-r from-[#ef6591] to-[#eaaa3b]" />
@@ -260,7 +260,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
 function Board({ v, now }: { v: StageView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className={`chalk classroom-board absolute left-1/2 top-[196px] z-[2] h-[544px] w-[840px] -translate-x-1/2 px-[26px] pt-[20px] pb-[60px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+    <div className={`chalk classroom-board absolute left-1/2 top-[196px] z-[2] h-[544px] w-[840px] -translate-x-1/2 px-[26px] pt-[20px] text-[#f4f1e6] ${['question', 'bonus', 'reveal'].includes(v.phase) ? 'pb-[190px]' : 'pb-[60px]'} ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
       {/* 4 Nẹp góc đồng cổ điển bo tròn */}
       <div className="board-corner board-corner-tl" />
       <div className="board-corner board-corner-tr" />
@@ -378,7 +378,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           ) : (
             <>
               <div className="mt-2 line-clamp-2 min-h-[96px] shrink-0 text-center text-[38px] leading-[48px]">{v.clue}</div>
-              <Tiles letters={v.tiles} dim={v.phase === 'reveal'} />
+              {v.phase !== 'reveal' && <Tiles letters={v.tiles} dim={false} />}
             </>
           )}
           {v.boardShown && <Slots slots={v.slots} reveal={v.phase === 'reveal'} />}
@@ -438,7 +438,7 @@ function Slots({ slots, reveal }: { slots: (string | null)[]; reveal: boolean })
   const n = slots.length || 1;
   const size = Math.min(64, Math.floor((700 - 6 * (n - 1)) / n));
   return (
-    <div className="mt-4 flex justify-center gap-[6px]">
+    <div data-board-answer={reveal ? 'revealed' : 'guess'} className="mt-4 flex justify-center gap-[6px]">
       {slots.map((ch, i) =>
         ch === ' ' ? (
           <div key={i} style={{ width: size * 0.5 }} />
@@ -574,10 +574,9 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
 function TeacherChat({ v }: { v: StageView }) {
   if (!v.teacherChat) return null;
   return (
-    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="pointer-events-none absolute left-[215px] top-[744px] z-20 w-[330px] rounded-[20px] border-[3px] border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg" role="status">
-      <div className="text-[17px] font-extrabold text-[#9b2852]">💬 Cô Ngân</div>
-      <div className="mt-0.5 line-clamp-3 break-words text-[21px] font-bold leading-[24px]">{v.teacherChat.text}</div>
-      <div className="absolute -left-[13px] top-7 h-5 w-5 rotate-45 border-b-[3px] border-l-[3px] border-[#d65b88] bg-[#fffaf6]" />
+    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="teacher-notice pointer-events-none absolute left-[215px] top-[560px] z-20 w-[310px] rounded-[14px] border-2 border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg" role="status">
+      <div className="text-[17px] font-extrabold leading-[20px] text-[#9b2852]">💬 Thông báo · Cô Ngân</div>
+      <div className="mt-0.5 line-clamp-3 break-words text-[20px] font-bold leading-[22px]">{v.teacherChat.text}</div>
     </motion.aside>
   );
 }
@@ -1098,17 +1097,34 @@ function isGuestTeacher(v: StageView, username: string) {
 }
 
 function ClassOfficers({ v }: { v: StageView }) {
-  const officers = v.roleHolders?.filter((role) => role.expiresAt === null) ?? [];
-  if (!officers.length) return null;
+  const officers = v.roleHolders?.filter((role) => role.expiresAt === null).sort((a, b) => Number(b.label === 'Lớp trưởng') - Number(a.label === 'Lớp trưởng')) ?? [];
+  const donors = v.goodStudents ?? [];
+  const pages = Math.max(1, Math.ceil(donors.length / 3));
+  const [page, setPage] = useState(0);
+  useEffect(() => {
+    if (pages <= 1) return;
+    const timer = setInterval(() => setPage((n) => (n + 1) % pages), 5000);
+    return () => clearInterval(timer);
+  }, [pages]);
+  const start = (page % pages) * 3;
   return (
-    <aside className="classroom-panel absolute right-[18px] top-[25px] z-20 w-[225px] px-3 py-2 text-[#73324a]">
-      {officers.slice().reverse().map((role) => (
-        <div key={role.label} className={`my-1 rounded-lg px-1 py-1 text-center ${role.label === 'Lớp trưởng' ? 'bg-[#ffedb5] text-[#7b4306]' : 'bg-[#dcefff] text-[#20557c]'}`}>
-          <div className="text-[21px] font-extrabold">{role.icon} {role.label}</div>
-          <div className="truncate text-[20px] font-bold" title={role.nickname}>{role.nickname}</div>
-          <div className="text-[16px]">{role.source === 'score' ? `🏆 ${role.points} điểm` : `🌹 Combo x${role.roses}`}</div>
+    <aside className="classroom-panel absolute right-[18px] top-[25px] z-20 w-[225px] px-2 py-1.5 text-[#73324a]" aria-label="Cán bộ lớp và học sinh ngoan">
+      {officers.map((role) => (
+        <div key={role.label} title={`${role.nickname} · ${role.source === 'score' ? `${role.points} điểm` : `Hoa hồng x${role.roses}`}`} className={`mb-0.5 flex h-[22px] items-center gap-1 rounded-lg px-1 ${role.label === 'Lớp trưởng' ? 'bg-[#ffedb5] text-[#7b4306]' : 'bg-[#dcefff] text-[#20557c]'}`}>
+          <span className="shrink-0 text-[14px] font-extrabold">{role.icon} {role.label}</span>
+          <span className="min-w-0 flex-1 truncate text-right text-[16px] font-bold">{seatName(role.nickname)}</span>
         </div>
       ))}
+      <div className={`${officers.length ? 'mt-0.5 border-t border-[#d9ba7f] pt-0.5' : ''}`}>
+        <div className="text-center text-[17px] font-extrabold leading-[20px] text-[#865520]">🌟 Học sinh ngoan</div>
+        {donors.length ? donors.slice(start, start + 3).map((student) => (
+          <div key={student.username} className="flex h-[18px] items-center gap-1 text-[15px] leading-[18px]" title={`${student.nickname} (@${student.username}) · ${student.gifts} món quà`}>
+            <span className="shrink-0 text-[13px]">🎁</span>
+            <span className="min-w-0 truncate font-bold text-[#774a25]">{seatName(student.nickname || student.username)}</span>
+          </div>
+        )) : <div className="py-1 text-center text-[14px] text-[#966f48]">Chưa có bạn tặng quà</div>}
+        {pages > 1 && <div className="text-center text-[11px] leading-[12px] text-[#966f48]">{start + 1}–{Math.min(start + 3, donors.length)} / {donors.length} bạn</div>}
+      </div>
     </aside>
   );
 }
@@ -1164,7 +1180,7 @@ function FastestBoard({ v }: { v: StageView }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute right-[130px] top-[762px] z-30 w-[600px] overflow-hidden rounded-[12px] border-2 border-[#7a2e0e] bg-[#fff6dd]/98 shadow-lg"
+      className="absolute right-[140px] top-[560px] z-30 w-[390px] overflow-hidden rounded-[12px] border-2 border-[#7a2e0e] bg-[#fff6dd]/98 shadow-lg"
     >
       <div className="flex h-[24px] items-center justify-between bg-[#7a2e0e] px-3 text-[20px] font-bold text-[#ffe9b8]">
         <span>⚡ Top 3 nhanh nhất</span>
@@ -1220,7 +1236,7 @@ function StudentDeskShape({ cx, cy, scale }: { cx: number; cy: number; scale: nu
   const left = cx - w / 2;
   const top = cy;
   return (
-    <div className="pointer-events-none absolute" style={{ left, top, width: w, height: h + legH }}>
+    <div data-seat-furniture="desk" className="pointer-events-none absolute" style={{ left, top, width: w, height: h + legH }}>
       <svg width={w} height={h + legH} viewBox={`0 0 ${w} ${h + legH}`} className="overflow-visible">
         <defs>
           <linearGradient id={`desk-top-${Math.round(cx)}`} x1="0%" y1="0%" x2="0%" y2="100%">
@@ -1312,7 +1328,7 @@ function StudentChairBackShape({ cx, cy, scale, zIndex }: { cx: number; cy: numb
   const left = cx - w / 2;
   const top = cy + 14 * scale; // Che ngang hông học sinh
   return (
-    <div className="pointer-events-none absolute" style={{ left, top, width: w, height: h, zIndex }}>
+    <div data-seat-furniture="chair" className="pointer-events-none absolute" style={{ left, top, width: w, height: h, zIndex }}>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
         <defs>
           <linearGradient id={`chair-wood-${Math.round(cx)}`} x1="0%" y1="0%" x2="0%" y2="100%">
@@ -1670,10 +1686,23 @@ const StudentBody = memo(function StudentBody({ s, pose, away, called, w, h, lef
                       💤
                     </motion.div>
                   )}
-                  {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
                 </motion.div>
               );
 }, (a, b) => a.pose === b.pose && a.away === b.away && a.called === b.called && a.w === b.w && a.h === b.h && a.left === b.left && a.top === b.top && a.scale === b.scale && a.isFirst === b.isFirst && a.qNo === b.qNo && a.zIndex === b.zIndex && a.s.roseRole?.label === b.s.roseRole?.label && a.s.username === b.s.username && a.s.girl === b.s.girl && a.s.answered === b.s.answered && a.s.gain === b.s.gain && a.s.bubble === b.s.bubble && a.s.sleeping === b.s.sleeping && a.s.desk.length === b.s.desk.length && a.s.desk.every((g, i) => g.at === b.s.desk[i].at && g.icon === b.s.desk[i].icon));
+
+const SeatAvatar = memo(function SeatAvatar({ avatar, name, username, cx, cy, zIndex }: { avatar: string; name: string; username: string; cx: number; cy: number; zIndex: number }) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showImage = Boolean(avatar) && failedSrc !== avatar;
+  const initial = [...(name.trim() || username)][0]?.toLocaleUpperCase('vi') ?? '?';
+  return (
+    <div className="student-seat-avatar" style={{ left: cx, top: cy - 32, zIndex }} title={`${name} (@${username})`}>
+      {showImage ? <img src={avatar} alt={`Ảnh đại diện ${name}`} decoding="async" referrerPolicy="no-referrer" onError={() => setFailedSrc(avatar)} /> : <span aria-label={`Ảnh đại diện ${name}`}>{initial}</span>}
+    </div>
+  );
+});
+
+/** Chỉ rút gọn nhãn ghế, username và tên gốc vẫn dùng cho mọi sự kiện. */
+const seatName = (name: string) => name.trim().split(/\s+/u).slice(0, 3).join(' ');
 
 function Students({ v, now }: { v: StageView; now: number }) {
   const asking = v.phase === 'question' || v.phase === 'bonus';
@@ -1725,6 +1754,12 @@ function Students({ v, now }: { v: StageView; now: number }) {
                 <Fragment key={`chair-tag-${ri}-${k}`}>
                   <StudentChairBack cx={cx} cy={cy} scale={r.s} zIndex={baseZ + 3} />
 
+                  {s && !away && <SeatAvatar key={s.username} avatar={s.avatar} name={s.nickname || s.username} username={s.username} cx={cx} cy={cy} zIndex={60 + ri} />}
+                  {s && !away && s.bubble && (
+                    <div className="student-seat-bubble" title={s.bubble} style={{ left: cx, top: cy - SPRITE_H * r.s * 0.68 * 0.44 - 6, width: gap - 8, zIndex: 60 + ri }}>
+                      <span>{s.bubble}</span>
+                    </div>
+                  )}
                   {s && !away && (
                     <div
                       className={`nametag student-seat-tag ${s.roseRole?.label === 'Lớp trưởng' ? 'student-officer-leader' : s.roseRole?.label === 'Lớp phó' ? 'student-officer-deputy' : ''}`}
@@ -1734,11 +1769,11 @@ function Students({ v, now }: { v: StageView; now: number }) {
                         transform: 'translateX(-50%)',
                         width: maxTagW,
                         maxWidth: maxTagW,
-                        fontSize: 20,
+                        fontSize: 18,
                         zIndex: 60 + ri,
                       }}
                     >
-                      <span className="student-tag-name" title={s.nickname || s.username}>{s.nickname || s.username}</span>
+                      <span className="student-tag-name" title={s.nickname || s.username} aria-label={s.nickname || s.username} style={{ fontSize: Math.max(13, Math.min(17, 210 / Math.max(1, [...seatName(s.nickname || s.username)].length))) }}>{seatName(s.nickname || s.username)}</span>
                       <span className="student-tag-meta">
                       {s.team > 0 && (
                         <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
@@ -1773,20 +1808,6 @@ function Students({ v, now }: { v: StageView; now: number }) {
   );
 }
 
-function ChatBubble({ text, scale }: { text: string; scale: number }) {
-  return (
-    <motion.div
-      key={text}
-      initial={{ opacity: 0, y: 10, scale: 0.7 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="pointer-events-none absolute bottom-[calc(100%+2px)] left-1/2 z-30 w-max max-w-[112px] -translate-x-1/2 rounded-[12px] bg-white px-2 py-1 font-semibold leading-[16px] text-[#3b2a14] shadow-md"
-      style={{ fontSize: 18 * scale }}
-    >
-      <span className="line-clamp-2 whitespace-normal break-words" title={text}>{text}</span>
-      <div className="absolute -bottom-[7px] left-1/2 h-[14px] w-[14px] -translate-x-1/2 rotate-45 bg-white" />
-    </motion.div>
-  );
-}
 
 const FLOWER_SPOT: [number, number] = [285, 860]; // Tâm chân học sinh cạnh cô, phía trên dãy bàn đầu.
 function FlowerWalk({ v }: { v: StageView }) {
@@ -1820,7 +1841,7 @@ function FlowerWalk({ v }: { v: StageView }) {
 
 // Học sinh bị phạt đứng: đứng ở khoảng sàn bục giảng trước lớp, trước dãy ghế đầu
 const STAND_SPOTS = [300, 405, 510, 615, 720, 825];
-const STAND_FEET = ROWS[0].y - 100; // chừa chỗ cho bảng tên, không đè đầu hàng bàn đầu
+const STAND_FEET = ROWS[0].y - 130; // chừa chỗ cho bảng tên, không đè đầu hàng bàn đầu
 function Punished({ v }: { v: StageView }) {
   return (
     <>

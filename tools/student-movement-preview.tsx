@@ -16,10 +16,17 @@ function setup(leavers = 1, punish = false) {
   const start = ask - GAME.introSec * 1000;
   const oldTeam = GAME.teamPickSec;
   GAME.teamPickSec = 0;
-  const room = new Classroom(QUESTIONS, start);
+  const room = new Classroom(new URLSearchParams(window.location.search).has('short-answer')
+    ? [{ id: 'preview-short-answer', answer: 'TAY', clue: 'Bộ phận dùng để cầm bút và giơ lên trả lời cô.', kind: 'Đây là một bộ phận cơ thể.', category: 'Cơ thể', difficulty: 'easy' }]
+    : QUESTIONS, start);
   room.newRound(start);
   for (let i = 0; i < GAME.seats; i++) room.enter(person(i), start);
   room.view(start); // baseline positions never replay historical entries
+  if (new URLSearchParams(window.location.search).has('gift-board')) {
+    room.gift(person(1), 10, start + 1, 10, 'Rose', 10);
+    room.gift(person(2), 5, start + 2, 5, 'Rose', 5);
+    for (let i = 3; i <= 6; i++) room.gift(person(i), 1, start + i, 1, 'Doughnut', 1);
+  }
   room.tick(ask);
   room.showBoard(ask);
   for (let i = leavers; i < GAME.seats; i++) room.chat({ ...person(i), comment: i === leavers ? room.q!.answer : 'xin chào '.repeat(40), createTime: ask + 1000 }, ask + 1000);
@@ -67,6 +74,16 @@ function Preview() {
       const now = Date.now();
       if (room.phase !== 'reveal') room.tick(now);
       if (room.phase === 'bonus') room.tick(room.phaseEndsAt); // stress preview skips the empty-answer bonus wait
+      if (new URLSearchParams(window.location.search).has('seat-comments')) {
+        for (const student of room.students.values()) {
+          student.nickname = `Học sinh ${student.username.slice(8)} tên rất dài`;
+          student.bubble = { text: 'Cô ơi con đang trả lời câu hỏi này nè!', at: now };
+        }
+      }
+      if (new URLSearchParams(window.location.search).has('avatar-preview')) {
+        for (const [index, student] of [...room.students.values()].entries()) student.avatar = index % 3 === 0 ? '/assets/nv/nam/01-dung.webp' : index % 3 === 1 ? '' : 'data:image/png;base64,broken';
+      }
+      if (new URLSearchParams(window.location.search).has('chat-layout')) room.previewTeacherChat(model.current.deadline + 3_600_000);
       setView({ ...room.view(now), weekTop: [], todayTop: [], talkTop: [] });
     };
     update();
@@ -85,6 +102,8 @@ function Preview() {
       <button onClick={() => { const entries = model.current.room.seats(); entries.forEach((s, i) => { s.score = (i + 1) * 10; }); }} className="mt-2 rounded-lg bg-indigo-700 px-3 py-2 font-bold text-white">Thử đổi thứ hạng cả lớp</button>
       <button onClick={() => { const room = model.current.room; room.gift(person(2), 10, Date.now(), 10, 'Rose', 10); }} className="mt-2 rounded-lg bg-pink-700 px-3 py-2 font-bold text-white">Hoa hồng thay lớp trưởng</button>
       <button onClick={() => { const room = model.current.room; const id = room.students.size + 100; room.enter(person(id), Date.now()); }} className="mt-2 rounded-lg bg-sky-700 px-3 py-2 font-bold text-white">Thêm người khi lớp đầy</button>
+      <button onClick={() => { const room = model.current.room; const waiting = room.view(Date.now()).hallway[0]; if (waiting) room.students.get(waiting.username)!.score = Math.max(...room.seats().map((s) => s.score)) + 10; }} className="mt-2 rounded-lg bg-indigo-700 px-3 py-2 font-bold text-white">Người chờ vượt điểm</button>
+      <button onClick={() => { const room = model.current.room; const waiting = room.view(Date.now()).hallway[0]; if (waiting) room.follow({ ...waiting, spoken: waiting.nickname, avatar: '' }, Date.now()); }} className="mt-2 rounded-lg bg-sky-700 px-3 py-2 font-bold text-white">Người chờ follow vào ghế cuối</button>
       <p className="mt-2" role="status">Trong lớp: {view.seats.length} · Chờ: {view.hallwayTotal} · Đứng bảng: {view.punished.length} · Lớp trưởng: {view.roleHolders.find((r) => r.label === 'Lớp trưởng')?.nickname ?? 'chưa có'}</p>
       <p className="mt-2">{Object.entries(view.movements.reduce<Record<string, number>>((counts, m) => { counts[m.kind] = (counts[m.kind] ?? 0) + 1; return counts; }, {})).map(([kind, count]) => `${count} bạn: ${kind}`).join(' · ') || 'Đang chờ chốt câu'}</p>
       <p className="mt-2" aria-live="off">{perf.fps} FPS · khung chậm nhất {perf.worst} ms · {perf.longFrames} khung trên 50 ms</p>

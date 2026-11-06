@@ -135,6 +135,23 @@ assert.deepEqual(maskTiles([], 'hard'), []);
   assert.equal(c.view(at + 50_000).teacherChat, null, 'tin chờ quá lâu được bỏ');
 }
 
+// Danh sách học sinh ngoan: mọi loại quà, mỗi người một dòng, không đếm lại combo kết thúc.
+{
+  const at = 975_000;
+  const c = new Classroom([mk('BẢNG ĐEN')], at);
+  assert.equal(c.view(at).goodStudents.length, 0);
+  c.gift(who(1), 2, at + 1, 2, 'Rose', 0);
+  c.gift(who(1), 0, at + 2, 0, 'Rose', 2);
+  c.gift(who(2), 99, at + 3, 1, 'Doughnut', 1);
+  c.gift(who(1), 1, at + 4, 1, 'Rose', 1);
+  const list = c.view(at + 5).goodStudents;
+  assert.deepEqual(list.map((s) => s.username), ['u1', 'u2']);
+  assert.equal(list[0].gifts, 3);
+  assert.equal(list[1].gifts, 1);
+  c.newRound(at + 6);
+  assert.equal(c.view(at + 6).goodStudents.length, 2, 'giữ danh sách qua các tiết trong phiên');
+}
+
 // ---------- lời thoại: đủ nhiều, không trùng, bốc hết xấp mới lặp ----------
 for (const [key, list] of Object.entries(LINES)) {
   assert.ok(list.length >= 2, `${key}: ít nhất 2 câu`);
@@ -179,7 +196,7 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.phase, 'reveal');
   assert.equal(c.students.get('u299')!.score, 10);
   assert.equal(c.students.get('u299')!.session, 10);
-  assert.ok(!c.seats().some((s) => s.username === 'u299'), 'điểm cao không đẩy người đang ngồi ra');
+  assert.ok(c.seats().some((s) => s.username === 'u299'), 'người ngoài điểm cao được vào lớp');
   assert.equal(c.weekDelta.get('u299')!.points, 10);
   assert.equal(c.slots(true).join(''), 'BẢNG ĐEN');
   // hết câu (bộ chỉ 1 câu chữ + 4 câu toán tự sinh) -> tổng kết -> ra chơi -> tiết mới xoá điểm tiết, giữ điểm buổi
@@ -335,7 +352,9 @@ for (const q of BANK) {
   assert.equal(role(at + 50, 'u2')?.label, 'Lớp trưởng');
   assert.equal(c.view(at + 50).roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u2', 'bảng hiệu đổi sang lớp trưởng mới');
   assert.equal(role(at + 50)?.label, 'Lớp phó', 'vai lớp trưởng cũ được gỡ');
-  assert.equal(role(at + GAME.roseRoleMs + 60, 'u2')?.label, 'Lớp trưởng', 'lớp trưởng không hết hạn');
+  c.students.get('u1')!.lastActive = at + 100;
+  c.students.get('u2')!.lastActive = at + 100;
+  assert.equal(role(at + GAME.roseRoleMs + 60, 'u2')?.label, 'Lớp trưởng', 'lớp trưởng còn tương tác không tự hết hạn');
   c.gift(who(1), 20, at + 70, 20, 'Rose');
   const teacherSaid = c.takeRoleNotice(at + 70);
   assert.ok(teacherSaid && !teacherSaid.main && teacherSaid.text.toLowerCase().includes('cô giáo') && teacherSaid.text.toLowerCase().includes('hai phút') && teacherSaid.text.includes(who(1).spoken) && !teacherSaid.text.includes('Hoa hồng'));
@@ -544,6 +563,72 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   c.gift(who(3), 10, at + 3, 10, 'Rose', 10);
   v = c.view(at + 3);
   assert.deepEqual(v.roleHolders.filter((r) => r.label === 'Lớp trưởng').map((r) => r.username), ['u3']);
+}
+
+// Lớp trưởng/lớp phó Hoa hồng vắng mặt thì bàn giao cho người trong lớp còn hoạt động.
+{
+  const at = 650_000;
+  const c = new Classroom([mk('BẢNG ĐEN')], at);
+  for (let i = 1; i <= 4; i++) c.enter(who(i), at);
+  c.gift(who(1), 10, at + 1, 10, 'Rose', 10);
+  c.gift(who(2), 5, at + 2, 5, 'Rose', 5);
+  c.students.get('u3')!.score = 20;
+  c.students.get('u4')!.score = 10;
+  c.view(at + 3);
+  const now = at + GAME.activeWindowMs + 100;
+  chat(c, 3, 'cô ơi con còn ở đây', now, now);
+  chat(c, 4, 'con cũng ở đây', now, now);
+  for (const time of [now, now + 1, now + 7000]) {
+    const v = c.view(time);
+    assert.equal(v.roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u3');
+    assert.equal(v.roleHolders.find((r) => r.label === 'Lớp phó')?.username, 'u4');
+    assert.ok(!v.roleHolders.some((r) => r.username === 'u1' || r.username === 'u2'));
+    assert.deepEqual(v.seats.filter((s) => s.title === 'lop-truong').map((s) => s.username), ['u3']);
+  }
+  assert.equal(c.takeRoleNotice(now), null, 'bỏ lời thông báo nhận vai của người đã vắng');
+  c.gift(who(1), 10, now + 8000, 10, 'Rose', 10);
+  assert.equal(c.view(now + 8000).roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u1', 'quay lại tặng hoa vẫn thay được vai');
+}
+
+// Ngủ và ra ghế khi lớp đầy: hai cán bộ không giữ chức ở ngoài hành lang.
+{
+  const at = 655_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 2; i++) c.enter(who(i), at);
+  c.gift(who(0), 10, at + 1, 10, 'Rose', 10);
+  c.gift(who(1), 5, at + 2, 5, 'Rose', 5);
+  c.view(at + 3);
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  for (let i = 2; i < GAME.seats; i++) chat(c, i, 'xin chào '.repeat(40), ask + 1, ask + 1);
+  c.students.get('u2')!.score = 20;
+  c.students.get('u3')!.score = 10;
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  const now = c.phaseEndsAt - GAME.revealSec * 1000;
+  const v = c.view(now);
+  assert.ok(!v.seats.some((s) => s.username === 'u0' || s.username === 'u1'));
+  assert.equal(v.roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u2');
+  assert.equal(v.roleHolders.find((r) => r.label === 'Lớp phó')?.username, 'u3');
+  assert.equal(c.takeRoleNotice(now), null);
+  GAME.teamPickSec = teamSec;
+}
+
+// Chuyển cho người 0 điểm khi chưa có ai ghi điểm, không mất vai ở snapshot sau.
+{
+  const at = 660_000;
+  const c = new Classroom([mk('BẢNG ĐEN')], at);
+  c.enter(who(1), at);
+  c.enter(who(2), at);
+  c.gift(who(1), 10, at + 1, 10, 'Rose', 10);
+  c.view(at + 2);
+  const now = at + GAME.activeWindowMs + 100;
+  chat(c, 2, 'cô ơi con ở đây', now, now);
+  assert.equal(c.view(now).roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u2');
+  assert.equal(c.view(now + 1).roleHolders.find((r) => r.label === 'Lớp trưởng')?.username, 'u2');
 }
 
 // ---------- lớp trưởng: đổi người thì cô thông báo ----------
@@ -1341,12 +1426,129 @@ for (const count of [1, GAME.seats - 1]) {
   assert.ok(v.seats.some((s) => s.username === 'u1'), 'bình luận bất kỳ trong câu được tính tương tác');
   assert.ok(v.seats.some((s) => s.username === `u${GAME.seats}`), 'hàng chờ tự vào ghế');
   assert.equal(v.roster.waiting, 2);
+  assert.equal(v.hallwayTotal, 2, 'không cộng người ngủ vào tổng hàng chờ');
+  assert.ok(!v.hallway.some((s) => s.username === 'u0'), 'người ngủ đi ra, không đứng chờ để vào lại');
   assert.deepEqual(v.movements.map((m) => [m.kind, m.username]).sort(), [['enter', `u${GAME.seats}`], ['leave', 'u0']].sort(), 'chỉ người ngủ đi ra và người chờ đi vào');
   assert.equal(c.students.get('u0')!.score, 999);
   chat(c, 0, 'cô ơi', done + 1, done + 1);
   const finish = Math.max(done + 1, ...c.view(done + 1).movements.map((m) => m.startedAt + m.durationMs)) + 1;
-  assert.ok(!c.view(finish).seats.some((s) => s.username === 'u0'), 'quay lại vẫn chờ ghế trống dù điểm cao');
+  assert.ok(c.view(finish).seats.some((s) => s.username === 'u0'), 'người quay lại điểm cao được vào sau lượt đi hiện tại');
   assert.equal(c.view(done + 1).roster.waiting, 3);
+  GAME.teamPickSec = teamSec;
+}
+
+// Follow không thay bình luận; Hoa hồng là ngoại lệ đặc cách khi đang ngủ.
+{
+  const at = 9_400_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 1; i++) c.enter(who(i), at);
+  c.view(at);
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  for (let i = 1; i < GAME.seats; i++) chat(c, i, 'con ở đây nha cô', ask + 1, ask + 1);
+  c.follow(who(0), ask + 3);
+  c.attendance(who(0), 2, ask + 4);
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  const now = c.phaseEndsAt - GAME.revealSec * 1000;
+  assert.ok(!c.view(now).seats.some((s) => s.username === 'u0'), 'follow không thay cho bình luận để tránh ngủ');
+  c.follow(who(0), now + 1);
+  let v = c.view(now + 2);
+  assert.ok(!v.seats.some((s) => s.username === 'u0'), 'follow chỉ xếp hàng ưu tiên');
+  assert.equal(v.roster.waiting, 1);
+  c.gift(who(0), 1, now + 3, 1, 'Rose', 1);
+  v = c.view(now + 10_000);
+  assert.ok(v.seats.some((s) => s.username === 'u0'), 'Hoa hồng đặc cách người ngủ trở lại lớp');
+  assert.equal(v.roster.seated, GAME.seats);
+  GAME.teamPickSec = teamSec;
+}
+
+// Follow xếp trước người chờ thường, không đẩy người trong lớp ra.
+{
+  const at = 9_450_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 2; i++) c.enter(who(i), at);
+  c.view(at);
+  c.follow(who(GAME.seats + 1), at + 1);
+  const before = c.view(at + 2);
+  assert.equal(before.movements.length, 0);
+  assert.ok(!before.seats.some((s) => s.username === `u${GAME.seats + 1}`));
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  for (let i = 1; i < GAME.seats; i++) chat(c, i, 'con vẫn học đây', ask + 1, ask + 1);
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  const now = c.phaseEndsAt - GAME.revealSec * 1000;
+  const v = c.view(now);
+  assert.ok(v.seats.some((s) => s.username === `u${GAME.seats + 1}`), 'follow được ghế trống trước người chờ thường');
+  assert.ok(!v.seats.some((s) => s.username === `u${GAME.seats}`));
+  GAME.teamPickSec = teamSec;
+}
+
+// Cùng chờ một ghế: Hoa hồng đứng trước follow.
+{
+  const at = 9_470_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats + 2; i++) c.enter(who(i), at);
+  c.view(at);
+  c.follow(who(GAME.seats), at + 1);
+  c.gift(who(GAME.seats + 1), 1, at + 2, 1, 'Rose', 1);
+  c.students.delete('u0');
+  const v = c.view(at + 3);
+  assert.ok(v.seats.some((s) => s.username === `u${GAME.seats + 1}`));
+  assert.ok(!v.seats.some((s) => s.username === `u${GAME.seats}`));
+  assert.equal(v.roster.waiting, 1);
+}
+
+// Hàng chờ hết hoạt động không làm tăng số chờ hoặc tự lấp ghế.
+{
+  const at = 9_500_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats + 3; i++) c.enter(who(i), at);
+  let v = c.view(at);
+  assert.equal(v.hallwayTotal, 3);
+  assert.equal(v.roster.waiting, 3);
+  v = c.view(at + GAME.activeWindowMs + 1);
+  assert.equal(v.hallwayTotal, 0);
+  assert.equal(v.roster.waiting, 0);
+  assert.equal(v.hallway.length, 0, 'không vẽ người chờ đã lâu không có hoạt động');
+  assert.equal(v.seats.length, GAME.seats, 'không làm người trong lớp mất ghế chỉ vì dọn hàng chờ');
+  c.enter(who(GAME.seats + 1), at + GAME.activeWindowMs + 2);
+  v = c.view(at + GAME.activeWindowMs + 2);
+  assert.equal(v.hallwayTotal, 1, 'hoạt động trở lại thì vào hàng chờ thực');
+  assert.equal(v.roster.waiting, v.hallwayTotal);
+}
+
+// Nhiều người ngủ: chỉ người chờ còn thức lấp ghế, không lấy người ngủ bù số.
+{
+  const at = 9_700_000;
+  const c = new Classroom(BANK, at);
+  const teamSec = GAME.teamPickSec;
+  GAME.teamPickSec = 0;
+  c.newRound(at);
+  for (let i = 0; i < GAME.seats + 3; i++) c.enter(who(i), at);
+  c.view(at);
+  const ask = at + GAME.introSec * 1000;
+  c.tick(ask);
+  for (let i = 6; i < GAME.seats; i++) chat(c, i, 'cô ơi con đang học đây', ask + 1, ask + 1);
+  c.tick(c.phaseEndsAt);
+  if ((c.phase as string) === 'bonus') c.tick(c.phaseEndsAt);
+  const now = c.phaseEndsAt - GAME.revealSec * 1000;
+  const v = c.view(now);
+  assert.equal(v.seats.length, GAME.seats - 3);
+  assert.equal(v.roster.waiting, 0);
+  assert.equal(v.hallwayTotal, 0);
+  assert.equal(v.hallway.length, 0);
+  assert.equal(v.movements.filter((m) => m.kind === 'leave').length, 6);
+  assert.equal(v.movements.filter((m) => m.kind === 'enter').length, 3);
+  assert.ok(v.seats.every((s) => !['u0','u1','u2','u3','u4','u5'].includes(s.username)));
+  assert.equal(c.view(now + 10_000).seats.length, GAME.seats - 3, 'không tự đưa người ngủ trở lại để lấp ghế');
   GAME.teamPickSec = teamSec;
 }
 
@@ -1428,22 +1630,44 @@ for (const count of [1, GAME.seats - 1]) {
   assert.ok(v.movements[0].startedAt + v.movements[0].durationMs > at + 400);
 }
 
-// Người chờ không chiếm ghế dù điểm cao; người đang ngồi không bị thay.
+// Người ngoài điểm cao thay đúng một người; bằng điểm không đẩy người đang ngồi.
 {
   const at = 13_000_000;
   const c = new Classroom(BANK, at);
-  for (let i = 0; i < GAME.seats + 2; i++) c.enter(who(i), at + i);
-  const before = c.view(at + 100);
-  c.students.get(`u${GAME.seats}`)!.score = 999;
-  c.students.get(`u${GAME.seats + 1}`)!.score = 1000;
-  for (const time of [at + 101, at + 5000, at + 10000]) {
-    const after = c.view(time);
-    assert.deepEqual(after.seats.map((s) => [s.username, s.seatIndex]).sort(), before.seats.map((s) => [s.username, s.seatIndex]).sort());
-    assert.equal(after.movements.length, 0, 'người chờ tăng điểm không tạo di chuyển');
-  }
+  for (let i = 0; i < GAME.seats + 1; i++) c.enter(who(i), at + i);
+  c.view(at + 100);
+  assert.equal(c.view(at + 101).movements.length, 0);
+  c.students.get(`u${GAME.seats}`)!.score = 10;
+  const v = c.view(at + 102);
+  assert.ok(v.seats.some((s) => s.username === `u${GAME.seats}`));
+  assert.deepEqual(v.movements.map((m) => m.kind).sort(), ['enter', 'leave']);
+  assert.equal(new Set(v.seats.map((s) => s.seatIndex)).size, GAME.seats);
+  assert.ok(!v.movements.some((m) => m.kind === 'reseat'));
 }
 
-// Người ngoài lớp có hình ở hành lang, kể cả người ngủ; không nằm trùng trong ghế.
+// Hoa hồng nhận ghế cuối một lần, không bị đẩy ngược ra do snapshot tiếp theo.
+{
+  const at = 13_100_000;
+  const c = new Classroom(BANK, at);
+  for (let i = 0; i < GAME.seats; i++) {
+    c.enter(who(i), at + i);
+    c.students.get(`u${i}`)!.score = GAME.seats - i;
+  }
+  c.view(at + 100);
+  c.enter(who(999), at + 101);
+  c.gift(who(999), 1, at + 102, 1, 'Rose', 1);
+  const v = c.view(at + 103);
+  assert.equal(v.seats.find((s) => s.username === 'u999')?.seatIndex, GAME.seats - 1);
+  assert.deepEqual(v.movements.map((m) => m.kind).sort(), ['enter', 'leave']);
+  const end = Math.max(...v.movements.map((m) => m.startedAt + m.durationMs));
+  for (const time of [at + 104, end + 1001, end + 5000]) {
+    assert.ok(c.view(time).seats.some((s) => s.username === 'u999'), 'không đảo người liên tục sau sự kiện ưu tiên');
+  }
+  c.students.get(`u${GAME.seats - 1}`)!.score += 1;
+  assert.ok(c.view(end + 6000).seats.some((s) => s.username === `u${GAME.seats - 1}`), 'người bị thay được tranh lại khi kiếm thêm điểm');
+}
+
+// Hàng chờ có hình ở hành lang; người ngủ không nằm trong hàng chờ.
 {
   const at = 14_000_000;
   const c = new Classroom(BANK, at);
@@ -1454,8 +1678,8 @@ for (const count of [1, GAME.seats - 1]) {
   assert.ok(v.hallway.every((s) => !v.seats.some((p) => p.username === s.username)));
   c.students.get('u40')!.score = 100;
   const promoted = c.view(at + 1);
-  assert.ok(promoted.hallway.some((s) => s.username === 'u40'));
-  assert.equal(promoted.movements.length, 0, 'lớp đầy thì tiếp tục chờ dù điểm cao');
+  assert.ok(!promoted.hallway.some((s) => s.username === 'u40'));
+  assert.ok(promoted.movements.some((m) => m.kind === 'enter' && m.username === 'u40'));
 }
 
 // Lên bảng và về ghế theo thứ hạng mới, không nhân đôi hoặc đổi chỗ đứng phạt.
@@ -1469,7 +1693,6 @@ for (const count of [1, GAME.seats - 1]) {
   c.students.get('u0')!.score = 5;
   c.view(now);
   c.enter(who(GAME.seats), now);
-  c.students.get(`u${GAME.seats}`)!.score = 999;
   c.tick((now += GAME.introSec * 1000));
   c.showBoard();
   chat(c, 0, 'X'.repeat(c.answerLetters.length), now, now);

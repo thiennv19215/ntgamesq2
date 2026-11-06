@@ -175,7 +175,7 @@ export function useGame() {
       const room = roomRef.current;
       if (room && talk.follows.first(e.username)) {
         room.socialChat('follow', person(e), Date.now());
-        say([room.follow(person(e))]);
+        say([room.follow(person(e), Date.now())]);
       }
     },
 
