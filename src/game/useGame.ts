@@ -135,6 +135,7 @@ export function useGame() {
       const room = roomRef.current;
       if (!room) return;
       room.enter(person(e), Date.now());
+      room.socialChat('join', person(e), Date.now());
       dirty.current = true;
     },
 
@@ -165,18 +166,30 @@ export function useGame() {
       // Mọi lời về quà (mở chữ, nhận vai, cảm ơn) chờ cùng lượt nói thêm, không chen lời giảng.
       say(hint.map((line) => ({ ...line, main: false, warn: false, priority: true })));
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
+      if (e.repeatCount > 0) room.socialChat('gift', p, Date.now());
       const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
       if (e.repeatCount > 0 && !pendingRole && !(e.giftName.toLowerCase() === 'rose' && e.roleCount === 0) && !hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
 
     onFollow: (e) => {
       const room = roomRef.current;
-      if (room && talk.follows.first(e.username)) say([room.follow(person(e))]);
+      if (room && talk.follows.first(e.username)) {
+        room.socialChat('follow', person(e), Date.now());
+        say([room.follow(person(e))]);
+      }
+    },
+
+    onShare: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      room.socialChat('share', person(e), Date.now());
+      dirty.current = true;
     },
 
     onLike: (e) => {
       const room = roomRef.current;
       if (!room) return;
+      room.socialChat('like', { username: e.username, nickname: e.nickname || e.username, spoken: speakableName(e.nickname || e.username), avatar: '' }, Date.now());
       if (likeBase.current === null) likeBase.current = e.totalLikes - e.likeCount;
       // tim thật x GAME.heartBoost: đủ 300 tim (60 tim thật) là cả lớp vỗ tay
       const reached = (e.totalLikes - likeBase.current) * GAME.heartBoost >= GAME.likesPerClap;

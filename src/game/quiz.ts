@@ -353,6 +353,25 @@ export class Classroom {
   private roseRoles = new Map<number, { username: string; roses: number; expiresAt: number | null }>();
   private roleNotices = new Map<number, { username: string; roses: number; line: Say }>();
   private teacherChat: { text: string; at: number } | null = null;
+  private chatQueue: { kind: string; text: string; at: number }[] = [];
+  private chatCooldown = new Map<string, number>();
+  /** Tin nhắn sự kiện dùng chung một khung, không chen lời giảng hoặc thay thông báo nhận vai. */
+  socialChat(kind: 'join' | 'follow' | 'share' | 'like' | 'gift' | 'correct' | 'wrong', e: Person, now: number) {
+    const key = { join: 'chatJoin', follow: 'chatFollow', share: 'chatShare', like: 'chatLike', gift: 'chatGift', correct: 'chatCorrect', wrong: 'chatWrong' } as const;
+    if (now - (this.chatCooldown.get(kind) ?? -Infinity) < 8000) return;
+    this.chatCooldown.set(kind, now);
+    const message = { kind, text: this.line(key[kind], e.nickname), at: now };
+    this.chatQueue = this.chatQueue.filter((item) => item.kind !== kind && now - item.at < 30_000);
+    this.chatQueue.push(message);
+    this.chatQueue = this.chatQueue.slice(-6);
+    this.flushSocialChat(now);
+  }
+  private flushSocialChat(now: number) {
+    this.chatQueue = this.chatQueue.filter((item) => now - item.at < 30_000);
+    if (this.teacherChat && now - this.teacherChat.at < 7000) return;
+    const message = this.chatQueue.shift();
+    if (message) this.teacherChat = { text: message.text, at: now };
+  }
   private lastHallwayVoiceAt = -Infinity;
   previewTeacherChat(now: number) {
     this.teacherChat = { text: '😏 Giỏi quá rồi, lên đây dạy thay cô đi!', at: now };
@@ -598,6 +617,8 @@ export class Classroom {
   private monitorSaidQ = -99;
   /** Lớp trưởng đổi người thì cô thông báo */
   private checkMonitor(): Say[] {
+    // Vai nhận bằng Hoa hồng thay thế lớp trưởng theo điểm.
+    if (this.roseRoles.has(1)) return [];
     const top = this.seats(1)[0];
     if (!top || top.score <= 0 || top.username === this.monitor) return [];
     const first = this.monitor === '';
@@ -654,7 +675,7 @@ export class Classroom {
     return start;
   }
 
-  /** Giữ ghế người đang ngồi; người mới chỉ nhận ghế trống. */
+  /** Đổi ghế tức thì theo điểm; chỉ tạo đường đi khi thật sự vào/ra lớp. */
   private syncVisualSeats(ranked: Student[], now: number) {
     this.movements = this.movements.filter((m) => now < m.startedAt + m.durationMs + 1000);
     const oldStanding = new Map(this.visualStanding);
@@ -689,7 +710,7 @@ export class Classroom {
         reservedUntil.set(seatIndex, startedAt + durationMs);
       }
     }
-    // Điểm chỉ quyết định ai được vào lớp, không đổi ghế người còn ở lại.
+    // Giữ ghế trong lượt vào/ra; chỉ người đã được nhận vào lớp mới được xếp ghế.
     const plannedSeats = new Map<string, number>();
     for (const s of desired) {
       const index = this.visualSeats.get(s.username);
@@ -702,6 +723,11 @@ export class Classroom {
       plannedSeats.set(s.username, index);
       used.add(index);
     }
+    // Chờ lượt vào/ra hoàn tất rồi đổi ghế tức thì, không đổi đích người đang đi.
+    if (!this.movements.some((m) => now < m.startedAt + m.durationMs)
+      && desired.every((s) => this.visualSeats.has(s.username))) {
+      desired.forEach((s, index) => plannedSeats.set(s.username, index));
+    }
     const clearAt = Math.max(now, ...reservedUntil.values());
     const create = (s: Student, kind: StudentMovement['kind'], seatIndex: number, extra: Partial<StudentMovement> = {}) => {
       this.movements = this.movements.filter((m) => m.username !== s.username);
@@ -712,26 +738,16 @@ export class Classroom {
     for (const s of desired) {
       const seatIndex = plannedSeats.get(s.username)!;
       const previousSeat = this.visualSeats.get(s.username);
-      const pending = this.movements.find((m) => m.username === s.username && now < m.startedAt + m.durationMs);
       const standIndex = this.visualStanding.get(s.username);
       const previousStand = oldStanding.get(s.username);
       this.visualSeats.set(s.username, seatIndex);
-      if (this.visualReady && standIndex !== undefined && previousStand === undefined) {
-        create(s, 'to-board', seatIndex, { standIndex, fromSeatIndex: pending?.kind === 'enter' ? undefined : previousSeat, hallwayIndex: this.hallwayPositions.get(s.username) ?? 0 });
-      } else if (this.visualReady && previousStand !== undefined && standIndex === undefined) {
-        create(s, 'from-board', seatIndex, { standIndex: previousStand });
+      if (standIndex !== previousStand) {
+        // Lên bảng/về ghế tức thì, hủy đường đi cũ để không nhân đôi nhân vật.
+        this.movements = this.movements.filter((m) => m.username !== s.username);
       } else if (this.visualReady && previousSeat === undefined && standIndex === undefined) {
         create(s, 'enter', seatIndex, { hallwayIndex: this.hallwayPositions.get(s.username) ?? 0 });
-      } else if (pending) {
-        // Giữ nguyên đường đi và ghế đích cho đến khi kết thúc.
-
       }
       this.visualPeople.set(s.username, { username: s.username, nickname: s.nickname, girl: s.girl });
-    }
-    // Người đang ngoài hành lang cũng có thể được cô gọi lên bảng.
-    for (const s of standing) {
-      if (wanted.has(s.username) || oldStanding.has(s.username) || !this.visualReady) continue;
-      create(s, 'to-board', 0, { standIndex: this.visualStanding.get(s.username), hallwayIndex: this.hallwayPositions.get(s.username) ?? 0 });
     }
     for (const [username, standIndex] of oldStanding) {
       if (this.visualStanding.has(username) || wanted.has(username)) continue;
@@ -1147,8 +1163,10 @@ export class Classroom {
     this.stats.attempts++;
     if (!this.matches(this.q, e.comment)) {
       this.wrong.add(e.username);
+      this.socialChat('wrong', e, now);
       return []; // Hết câu cô gọi lên đứng bảng; không đuổi khỏi lớp.
     }
+    this.socialChat('correct', e, now);
     this.correct.push({ username: e.username, nickname: e.nickname, avatar: e.avatar, createTime: e.createTime, seq: ++this.seq, points: 0 });
     // xếp theo giờ TikTok gắn, không theo lúc bot nhận (comment có thể tới lệch thứ tự)
     this.correct.sort((a, b) => a.createTime - b.createTime || a.seq - b.seq);
@@ -1249,7 +1267,9 @@ export class Classroom {
     this.roseRoles.set(level, { username: e.username, roses, expiresAt: level === 2 ? now + GAME.roseRoleMs : null });
     const previous = current && current.username !== e.username && (current.expiresAt === null || current.expiresAt > now)
       ? this.students.get(current.username)?.spoken
-      : '';
+      : !current && level === 1
+        ? this.seats(1).find((s) => s.score > 0 && s.username !== e.username)?.spoken ?? ''
+        : '';
     const announcement = level === 2
       ? this.line('guestTeacher', e.spoken)
       : previous
@@ -1376,9 +1396,10 @@ export class Classroom {
   }
 
   private reveal(now: number): Say[] {
-    // Chỉ xét những bạn đã có ghế khi câu bắt đầu; không tương tác cả câu thì nhường ghế.
+    // Chỉ nhường ghế khi lớp đã đầy; lớp còn chỗ thì giữ người đang ngồi.
+    const full = this.seats(GAME.seats, now).length >= GAME.seats;
     for (const username of this.questionSeats) {
-      if (!this.questionActivity.has(username)) {
+      if (full && !this.questionActivity.has(username)) {
         this.sleepingStudents.add(username);
         this.exitReasons.set(username, 'sleep');
       }
@@ -2080,6 +2101,7 @@ export class Classroom {
   }
 
   tick(now: number): Say[] {
+    this.flushSocialChat(now);
     this.clock = Math.max(this.clock, now);
     const extra: Say[] = [];
     // lớp im quá lâu: cô nhắc 1 câu
@@ -2181,7 +2203,7 @@ export class Classroom {
       this.love = { at: now, fans: [] };
       return [{ ...this.line0('loveCall'), ttl: 6000 }];
     }
-    if (kind === 'sleep') {
+    if (kind === 'sleep' && this.seats().length >= GAME.seats) {
       // Nhắc bạn chưa tương tác trong câu hiện tại trước khi hết câu và bị nhường ghế.
       const sleepy = this.seats().filter((s) => this.questionSeats.has(s.username) && !this.questionActivity.has(s.username) && s.spoken !== 'bạn');
       if (sleepy.length) return [{ ...this.t(this.line('wakeUp', sleepy[Math.floor(this.rand() * sleepy.length)].spoken)), ttl: 8000 }];
@@ -2246,6 +2268,12 @@ export class Classroom {
     const seated = eligible.slice(0, GAME.seats + GAME.standing);
     // lớp trưởng, lớp phó: 3 bạn điểm tiết cao nhất (chỉ tính 20 câu của tiết này); dùng lại danh sách ghế, khỏi xếp lại
     const titles = new Map(seated.slice(0, 3).filter((s) => s.score > 0).map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
+    const roseLeader = this.roseRoles.get(1);
+    if (roseLeader) {
+      for (const [name, title] of titles) if (title === 'lop-truong') titles.delete(name);
+      titles.set(roseLeader.username, 'lop-truong');
+    }
+    const scoreLeader = !roseLeader ? seated.find((s) => s.score > 0) : undefined;
     const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standLeft, life, team }: Student) => ({
       team,
       desk,
@@ -2312,12 +2340,12 @@ export class Classroom {
       },
       teacherChat: this.teacherChat && now - this.teacherChat.at < 7000 ? { ...this.teacherChat } : null,
       roseSettings: { ...this.roseSettings },
-      roleHolders: [...this.roseRoles].flatMap(([level, role]) => {
+      roleHolders: [...(scoreLeader ? [{ ...GAME.roseRoles[1], username: scoreLeader.username, nickname: scoreLeader.nickname, girl: scoreLeader.girl, roses: 0, expiresAt: null as number | null, source: 'score' as const, points: scoreLeader.score }] : []), ...[...this.roseRoles].flatMap(([level, role]) => {
         const student = this.students.get(role.username);
         return student && (role.expiresAt === null || role.expiresAt > now)
-          ? [{ ...GAME.roseRoles[level], username: student.username, nickname: student.nickname, girl: student.girl, roses: role.roses, expiresAt: role.expiresAt }]
+          ? [{ ...GAME.roseRoles[level], username: student.username, nickname: student.nickname, girl: student.girl, roses: role.roses, expiresAt: role.expiresAt, source: 'rose' as const, points: student.score }]
           : [];
-      }),
+      })],
       round: this.round,
       qNo: this.qNo,
       total: this.roundQs.length,

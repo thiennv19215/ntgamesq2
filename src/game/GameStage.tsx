@@ -1106,7 +1106,7 @@ function ClassOfficers({ v }: { v: StageView }) {
         <div key={role.label} className={`my-1 rounded-lg px-1 py-1 text-center ${role.label === 'Lớp trưởng' ? 'bg-[#ffedb5] text-[#7b4306]' : 'bg-[#dcefff] text-[#20557c]'}`}>
           <div className="text-[21px] font-extrabold">{role.icon} {role.label}</div>
           <div className="truncate text-[20px] font-bold" title={role.nickname}>{role.nickname}</div>
-          <div className="text-[16px]">🌹 Combo x{role.roses}</div>
+          <div className="text-[16px]">{role.source === 'score' ? `🏆 ${role.points} điểm` : `🌹 Combo x${role.roses}`}</div>
         </div>
       ))}
     </aside>
