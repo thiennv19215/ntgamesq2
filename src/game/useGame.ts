@@ -4,7 +4,7 @@ import type { GiftEvent, LiveStatus } from '../live/types';
 import { voice, speakableName } from '../live/voice';
 import { containsBanned } from '../live/bannedWords';
 import { NameBatcher } from '../live/scoreboard';
-import { OncePerPerson } from '../live/chatter';
+import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { saveClassroomBackground } from '../live/classroomBackgrounds';
 import { GAME, type RoomCfg } from './config';
@@ -64,6 +64,7 @@ export function useGame() {
       (names) => roomRef.current && say([roomRef.current.greet(joinNames(names))]),
       () => chatter.current.length >= 2, // còn câu nói thêm đang chờ thì gom tên lượt sau
     ),
+    gifts: new GiftThanker(GAME.giftThanksCooldownMs, GAME.bigGiftCoins),
     follows: new OncePerPerson(),
   }));
 
@@ -173,11 +174,20 @@ export function useGame() {
       if (!room) return;
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
-      if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
-      room.gift(p, coins, Date.now(), e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
-      // Quà vẫn được ghi nhận và xét vai/mở chữ; cảm ơn hiện ngay bằng chữ.
-      // Chỉ báo phần quà mới, tránh báo hai lần khi combo kết thúc với delta = 0.
-      room.notifyGiftThanks(p, e.giftName, e.repeatCount, Date.now());
+      const now = Date.now();
+      if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: now });
+      const giftLines = room.gift(p, coins, now, e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
+      // Các lời cảm ơn/mở chữ/nhận vai của quà phải đi vào cùng hàng đợi giọng cô.
+      say(giftLines.map((line) => ({ ...line, main: false, warn: false, priority: true })));
+      if (e.repeatCount > 0) room.socialChat('gift', p, now);
+      // Nếu quà không tạo announcement riêng (ví dụ cô đang dẫn bạn khác lên), vẫn cảm ơn tên người tặng theo cooldown.
+      const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
+      const comboStillRunning = e.giftName.toLowerCase() === 'rose' && e.roleCount === 0;
+      if (e.repeatCount > 0 && !pendingRole && !comboStillRunning && !giftLines.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length, now)) {
+        say([room.thank(p, e.giftName, coins)]);
+      }
+      // Thông báo chữ vẫn hiện ngay, độc lập với việc audio đang bận.
+      room.notifyGiftThanks(p, e.giftName, e.repeatCount, now);
       dirty.current = true;
     },
 

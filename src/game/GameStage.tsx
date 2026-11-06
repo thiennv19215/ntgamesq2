@@ -16,6 +16,8 @@ import './stage.css';
 // Các hàng dùng chung kích thước để hàng đầu và nhân vật không bị bé hơn hàng cuối.
 const SEAT_SCALE = 1.16;
 const STUDENT_WALK_SCALE = 1.06;
+const STUDENT_BODY_SCALE = 0.78;
+const WALKER_H = 200;
 const ROWS = [
   // Chừa dải an toàn cuối sân cho thanh tiến độ và hướng dẫn lớp.
   { y: 1060, x1: 60, x2: 1020, n: GAME.rowSeats[0], s: SEAT_SCALE },
@@ -122,7 +124,6 @@ export function GameStage({ game }: { game: GameState }) {
         {/* Lớp bóng sàn gỗ ấm */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[560px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/15 to-[#3b1d07]/25 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
-        <GiftGuideStrip v={v} />
         <ClassroomGuide />
         <RoseProgress v={v} />
         <HallwayStudents v={v} />
@@ -230,7 +231,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
 function Board({ v, now }: { v: StageView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className={`chalk classroom-board absolute left-[18px] top-[210px] z-[2] h-[544px] w-[1044px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+    <div className={`chalk classroom-board absolute left-[220px] top-[210px] z-[2] h-[544px] w-[840px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
       {/* 4 Nẹp góc đồng cổ điển bo tròn */}
       <div className="board-corner board-corner-tl" />
       <div className="board-corner board-corner-tr" />
@@ -565,6 +566,7 @@ function TeacherChat({ v }: { v: StageView }) {
 function BoardSidebar({ v }: { v: StageView }) {
   const tabs = ['🏆 Điểm', '💐 Quà', '💬 Tương tác'];
   const [tab, setTab] = useState(0);
+  const hasTodayTop = (v.todayTop ?? []).some((s) => s.points > 0);
   useEffect(() => {
     const timer = window.setInterval(() => setTab((i) => (i + 1) % tabs.length), 8000);
     return () => window.clearInterval(timer);
@@ -572,14 +574,16 @@ function BoardSidebar({ v }: { v: StageView }) {
   return (
     <aside className="absolute bottom-[14px] right-[16px] top-[20px] flex w-[246px] flex-col border-l-2 border-[#ffe680]/30 pl-3" aria-label="Góc thông tin lớp">
       <div className="mb-2 flex gap-1">
-        {tabs.map((label, i) => <button key={label} type="button" onClick={() => setTab(i)} aria-label={label} aria-pressed={tab === i} className={`flex-1 rounded-lg border py-1 text-[17px] font-bold ${tab === i ? 'border-[#ffe680] bg-[#ffe680] text-[#573316]' : 'border-white/30 text-[#fff4d2]'}`}>{label.split(' ')[0]}</button>)}
+        {tabs.map((label, i) => <button key={label} type="button" title={label} onClick={() => setTab(i)} aria-label={label} aria-pressed={tab === i} className={`min-w-0 flex-1 rounded-lg border px-1 py-2 text-[13px] font-bold leading-[15px] ${tab === i ? 'border-[#ffe680] bg-[#ffe680] text-[#573316]' : 'border-white/30 text-[#fff4d2]'}`}><span aria-hidden="true">{label}</span></button>)}
       </div>
       <div className="board-sidebar min-h-0 flex-1 overflow-hidden">
         {tab === 0 ? (
-          <>
-            <div className={v.phase === 'reveal' ? 'sidebar-top-board' : 'h-full'}><DayTop v={v} /></div>
-            {v.phase === 'reveal' && <div className="sidebar-fastest-board"><FastestBoard v={v} /></div>}
-          </>
+          v.phase === 'reveal' && !hasTodayTop
+            ? <div className="sidebar-fastest-board sidebar-fastest-full"><FastestBoard v={v} /></div>
+            : <>
+              <div className={v.phase === 'reveal' ? 'sidebar-top-board' : 'h-full'}><DayTop v={v} /></div>
+              {v.phase === 'reveal' && <div className="sidebar-fastest-board"><FastestBoard v={v} /></div>}
+            </>
         ) : tab === 1 ? <ClassOfficers v={v} /> : <TalkTop v={v} />}
       </div>
     </aside>
@@ -624,7 +628,7 @@ function ClassroomGuide() {
     return () => window.clearInterval(timer);
   }, [tips.length]);
   return (
-    <div className="classroom-ribbon absolute bottom-[64px] left-[65px] z-20 flex h-[68px] w-[950px] items-center overflow-hidden px-6 text-center text-[26px] font-extrabold text-[#7c330f]" aria-label="Hướng dẫn chơi và tương tác">
+    <div className="classroom-ribbon absolute left-[220px] top-[142px] z-20 flex h-[56px] w-[840px] items-center overflow-hidden px-6 text-center text-[26px] font-extrabold text-[#fff5c4]" aria-label="Hướng dẫn chơi và tương tác">
       <div className="relative min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={index} initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -22 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="leading-[34px]">
@@ -632,7 +636,7 @@ function ClassroomGuide() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <span aria-hidden="true" className="ml-4 shrink-0 text-[17px] tabular-nums text-[#92532c]">{index + 1}/{tips.length}</span>
+      <span aria-hidden="true" className="ml-4 shrink-0 text-[17px] tabular-nums text-[#ffe680]">{index + 1}/{tips.length}</span>
     </div>
   );
 }
@@ -1178,7 +1182,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
   if (guest) {
     const g = guest.girl ? 'nu' : 'nam';
     return (
-      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[40px] top-[770px] z-[3] h-[240px] w-[132px]">
+      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[14px] top-[300px] z-[3] h-[620px] w-[170px]">
         <div className="teacher-shadow" />
         <img src={`/assets/nv/${g}/${POSE[g].tay}.webp`} alt={guest.nickname} className="h-full w-full object-contain object-bottom drop-shadow-lg" />
         <div className="absolute -bottom-1 left-1/2 w-[210px] -translate-x-1/2 rounded-xl border-2 border-[#fff6dd] bg-[#be426b] px-2 py-1 text-center text-white shadow-lg">
@@ -1195,7 +1199,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
       ? `/assets/nv/co-ngan/${teacherPose(v, now)}.webp?v=classic-restored`
       : `/assets/nv/co-ngan/${v.outfit}/${OUTFIT_POSE[teacherPose(v, now)] ?? '01-dung'}.webp`;
   return (
-    <div className="teacher-character absolute left-[25px] top-[770px] z-[3] h-[240px] w-[163px]">
+    <div className="teacher-character absolute left-[10px] top-[300px] z-[3] h-[620px] w-[180px]">
       <div className="teacher-shadow" />
       <img src={src} style={!v.show && (!v.outfit || v.outfit === 'trang') ? { clipPath: 'none' } : undefined} className="teacher-sprite h-full w-full object-contain object-bottom drop-shadow-[0_8px_6px_rgba(0,0,0,0.25)]" />
       <div className="absolute bottom-[10px] left-[12px] z-10 whitespace-nowrap rounded-full border-2 border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[2px] text-[17px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
@@ -1462,8 +1466,10 @@ type WalkPoint = { x: number; y: number; scale?: number };
 
 // Chung mặt sàn, các bạn xa đứng sau và cao chân hơn; không xếp thành ô trên tường.
 function hallwaySpot(index: number): WalkPoint & { scale: number } {
-  // Hàng chờ ở hành lang phải; tách khỏi cô và khu đứng phạt trước bảng.
-  return { x: 1030, y: 1100 + index * 125, scale: 0.68 * STUDENT_WALK_SCALE };
+  // Hàng chờ đứng thành lớp nền phía sau cô: lệch trái/phải để lộ vai và tạo cảm giác có người đang đợi.
+  const side = index % 2;
+  const depth = Math.floor(index / 2);
+  return { x: side ? 198 : 38, y: 760 + depth * 96 + side * 12, scale: 0.62 * STUDENT_WALK_SCALE };
 }
 
 function studentWalkScale(y: number) {
@@ -1539,14 +1545,14 @@ function HallwayStudents({ v }: { v: StageView }) {
     <>
       {people.slice(0, 6).map((s, i) => {
         const point = hallwaySpot(i);
-        const h = 155;
+        const h = 185;
         const w = h * 0.47;
         const g = s.girl ? 'nu' : 'nam';
         return (
           <div
             key={`hallway-person-${s.username}`}
             data-hallway-person={s.username}
-            className="pointer-events-none absolute z-[16]"
+            className="pointer-events-none absolute z-[2]"
             style={{ left: point.x, top: point.y, width: w, height: h, marginLeft: -w / 2, marginTop: -h, transform: `scale(${point.scale})`, transformOrigin: '50% 100%' }}
           >
             <div className="student-walker-shadow" />
@@ -1574,7 +1580,7 @@ function StudentMovements({ v, now }: { v: StageView; now: number }) {
 const QueuedStudent = memo(function QueuedStudent({ movement: m }: { movement: MovingStudent }) {
   const point = studentRoute(m)[0];
   const scale = point.scale ?? studentWalkScale(point.y);
-  const H = 185;
+  const H = WALKER_H;
   const W = H * 0.47;
   const g = m.girl ? 'nu' : 'nam';
   return <div data-student-queued={m.kind} className="pointer-events-none absolute" style={{ left: point.x, top: point.y, width: W, height: H, marginLeft: -W / 2, marginTop: -H, transform: `scale(${scale})`, transformOrigin: '50% 100%', zIndex: point.x > 960 && point.y < 900 ? 1 : 12 + Math.max(0, ROWS.filter((r) => point.y > r.y + 90 * r.s).length - 1) * 6 }}>
@@ -1595,7 +1601,7 @@ const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { 
   const back = !sideways && position.dy < 0;
   const g = m.girl ? 'nu' : 'nam';
   const hd = HEAD[g];
-  const H = 185;
+  const H = WALKER_H;
   const W = H * 0.47;
   const perspective = (y: number) => studentWalkScale(y);
   useEffect(() => {
@@ -1775,7 +1781,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
             {/* Lớp 2: Học sinh ngồi vào bàn */}
             {rowSeats.map(({ rank, student: s, cx, cy }) => {
               if (!s) return null;
-              const scale = r.s * 0.68;
+              const scale = r.s * STUDENT_BODY_SCALE;
               const w = SPRITE_H * 0.47 * scale;
               const h = SPRITE_H * scale;
               const left = cx - w / 2;
@@ -1790,6 +1796,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
 
             {/* Lớp 3: Lưng ghế (che thân dưới) và Bảng tên */}
             {rowSeats.map(({ rank, student: s, cx, cy, k }) => {
+              const scale = r.s * STUDENT_BODY_SCALE;
               const maxTagW = gap - 4;
               const called = s ? v.recess?.game === 'callup' && v.recess.callUser === s.username : false;
               const away = s && (isGuestTeacher(v, s.username) || s.standing || called || v.walk?.username === s.username || (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs));
@@ -1799,7 +1806,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
 
                   {s && !away && <SeatAvatar key={s.username} avatar={s.avatar} name={s.nickname || s.username} username={s.username} cx={cx} cy={cy} zIndex={60 + ri} />}
                   {s && !away && s.bubble && (
-                    <div className="student-seat-bubble" title={s.bubble} style={{ left: cx, top: cy - SPRITE_H * r.s * 0.68 * 0.44 - 6, width: gap - 8, zIndex: 60 + ri }}>
+                    <div className="student-seat-bubble" title={s.bubble} style={{ left: cx, top: cy - SPRITE_H * scale * 0.44 - 6, width: gap - 8, zIndex: 60 + ri }}>
                       <span>{s.bubble}</span>
                     </div>
                   )}
@@ -1857,7 +1864,7 @@ function FlowerWalk({ v }: { v: StageView }) {
   const w = v.walk;
   if (!w || isGuestTeacher(v, w.username) || (v.movements ?? []).some((m) => m.username === w.username && Date.now() < m.startedAt + m.durationMs)) return null;
   const i = v.seats.find((s) => s.username === w.username)?.seatIndex ?? -1;
-  const H = 140;
+  const H = 190;
   const target: [number, number] = [FLOWER_SPOT[0] - H * 0.235, FLOWER_SPOT[1] - H];
   const seat = i >= 0 ? movementSeat(i) : null;
   const from: [number, number] = seat ? [seat.cx - H * 0.235, seat.feet - H] : [65, 870];
@@ -1894,7 +1901,7 @@ function Punished({ v }: { v: StageView }) {
         .slice(0, STAND_SPOTS.length)
         .map((s) => {
           const i = s.standIndex ?? 0;
-          const H = 120;
+          const H = 190;
           const g = s.girl ? 'nu' : 'nam';
           return (
             <motion.div
@@ -1939,7 +1946,7 @@ function CallupStudent({ v }: { v: StageView }) {
       : stage === 'play'
       ? POSE[g].nghi
       : POSE[g].dung;
-  const H = 140;
+  const H = 190;
   const cx = 490; // Giữa sàn, tách cô bên trái và khu đứng phạt bên phải.
   const feet = 940;
 
@@ -2000,7 +2007,7 @@ function GiftGuideStrip({ v }: { v: StageView }) {
     { amount: settings.teacher, label: 'Cô giáo · 2′' },
   ];
   return (
-    <aside aria-label="Hướng dẫn quà hoa hồng" className="absolute left-[18px] top-[142px] z-20 grid h-[56px] w-[1044px] grid-cols-3 gap-3">
+    <aside aria-label="Hướng dẫn tặng quà" className="absolute bottom-[8px] left-[18px] z-20 grid h-[56px] w-[1044px] grid-cols-3 gap-3">
       {gifts.map((gift) => (
         <div key={gift.label} className="flex min-w-0 items-center justify-center gap-3 rounded-[12px] border-[3px] border-[#cf7891] bg-[#fff1e8] px-3 text-[#84294b] shadow-[0_3px_0_#87445c]">
           <b className="shrink-0 whitespace-nowrap text-[25px]">🌹 ×{gift.amount}</b>
