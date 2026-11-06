@@ -2,9 +2,20 @@
 //  CẤU HÌNH LỚP HỌC CHỮ: số liệu. Câu cô đọc nằm ở loi-thoai.ts, câu hỏi ở cau-hoi/*.txt
 // =====================================================
 
+/** Cài đặt lớp ở trang điều khiển (lưu settings.json): tên + giọng cô giáo, chữ bảng đỏ, bật tắt 2 game lớn, ảnh nền riêng */
+export interface RoomCfg {
+  teacherName: string;
+  teacherVoice: 'nu' | 'nam';
+  motto: string;
+  everest: boolean;
+  chuong: boolean;
+  bg: string; // tên file ảnh nền riêng trong data/nen-lop/, rỗng = nền gốc
+}
+
 export const GAME = {
   // Tên lớp mặc định (hiện trên bảng hiệu). Chủ kênh đổi ở ô "Tên lớp" trang điều khiển.
   defaultChannelName: 'Lớp Học Chữ',
+  defaultRoom: { teacherName: 'Cô Ngân', teacherVoice: 'nu', motto: '', everest: true, chuong: true, bg: '' } as RoomCfg,
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,

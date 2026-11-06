@@ -36,6 +36,7 @@ export function useLiveEvents(handlers: LiveHandlers) {
       on('like', (d) => ref.current.onLike?.(d));
       on('roomUser', (d) => ref.current.onViewers?.(d.viewerCount));
       on('control', (d) => ref.current.onControl?.(d));
+      on('roomCfg', (d) => ref.current.onRoomCfg?.(d));
       on('gamestate', (d) => ref.current.onGameState?.(d));
       on('speaker', (d) => {
         // trang stage bị trang mới hơn thay chỗ: im lặng hẳn (cả giọng lẫn nhạc)

@@ -59,6 +59,7 @@ export interface LiveHandlers {
   onShare?: (e: UserEvent) => void;
   onLike?: (e: LikeEvent) => void;
   onViewers?: (count: number) => void;
+  onRoomCfg?: (cfg: Record<string, unknown>) => void; // cài đặt lớp đổi ở trang điều khiển
   onControl?: (c: ControlCommand) => void;
   onGameState?: (s: any) => void; // ảnh chụp trạng thái game từ trang stage
   onSpeaker?: (d: { id: string | null; count: number }) => void; // trang stage nào đang được phát tiếng

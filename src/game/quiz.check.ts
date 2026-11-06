@@ -22,6 +22,23 @@ GAME.teamPickSec = 0;
 const FAST = { quickRead: GAME.quickRead, closeAfterTopN: GAME.closeAfterTopN, praiseShort: GAME.praiseShort, praiseEvery: GAME.praiseEvery, showEvery: GAME.showEvery, teamPickEvery: GAME.teamPickEvery };
 Object.assign(GAME, { quickRead: false, closeAfterTopN: 0, praiseShort: false, praiseEvery: 5, showEvery: 2, teamPickEvery: 1 });
 
+// Cảm ơn quà bằng bảng: gộp người tặng, không xếp hàng và không báo lại delta 0.
+{
+  const c = new Classroom([mk('BẢNG ĐEN')], 1000);
+  c.notifyGiftThanks(who(1), 'Rose', 1, 1000);
+  assert.ok(c.view(1000).teacherChat?.text.includes('Cô cảm ơn Bạn 1'));
+  c.notifyGiftThanks(who(2), 'Doughnut', 1, 1001);
+  assert.ok(c.view(1001).teacherChat?.text.includes('Bạn 1, Bạn 2'));
+  const previous = c.view(1001).teacherChat;
+  c.notifyGiftThanks(who(2), 'Doughnut', 0, 1002);
+  assert.deepEqual(c.view(1002).teacherChat, previous);
+  c.socialChat('like', who(3), 1003);
+  assert.deepEqual(c.view(1003).teacherChat, previous);
+  c.notifyGiftThanks(who(4), 'Rose', 2, 9000);
+  assert.ok(!c.view(9000).teacherChat?.text.includes('Bạn 1'));
+  assert.equal(c.view(16000).teacherChat, null);
+}
+
 // ---------- chữ ----------
 assert.equal(compactVi('  Bảng   Đen! '), 'bảngđen');
 assert.equal(plain('Vào Lớp'), 'vaolop');
@@ -1288,6 +1305,22 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   chat(c, 9, c.q!.answer, t - delay, t); // xem live thấy bảng rồi mới gõ
   assert.equal(c.correct.length, 1, 'không mất lượt: gõ lại sau khi bảng hiện thì được tính');
   assert.ok(c.view(t).fastest.length === 0 || c.view(t).fastest[0].ms > 0);
+}
+
+// ---------- cài đặt lớp: đổi tên cô giáo, bật tắt 2 game lớn ----------
+{
+  const c = new Classroom(BANK, t);
+  c.newRound(t);
+  c.teacherName = 'Cô Lan';
+  const said = LINES.teamIntro.map(() => c.newRound(t)).flat().map((l) => l.text).join(' ');
+  assert.ok(!said.includes('Ngân'), 'đổi tên: lời thoại không còn đọc tên cũ');
+  c.show = null;
+  c.showBank = { mc: [{ id: 'x' } as never], codes: [] }; // nextShow chỉ cần có câu
+  assert.equal(c.nextShow()?.kind, 'everest');
+  c.showsOn = { everest: false, chuong: true };
+  assert.equal(c.nextShow()?.kind, 'chuong', 'tắt Everest: game kế tiếp là Rung Chuông Đồng');
+  c.showsOn = { everest: false, chuong: false };
+  assert.equal(c.nextShow(), null, 'tắt cả 2: không còn game lớn');
 }
 
 // ---------- nút "Chào tạm biệt": cô chào cuối buổi (có tên bạn dẫn đầu), biểu ngữ tan lớp ----------

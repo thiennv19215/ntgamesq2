@@ -34,6 +34,8 @@ class Voice {
   rate = readRate(); // mặc định 1.25: MC nói nhanh cho tiết tấu dồn dập (chủ kênh chốt); chỉnh ở trang điều khiển
   volume = 1;
   enabled = IS_STAGE;
+  /** giọng cô giáo chọn ở trang điều khiển: 'f' nữ HoaiMy, 'm' nam NamMinh */
+  teacher: 'f' | 'm' = 'f';
   /** báo MC nào đang nói (để nhân vật MC trên sân khấu nhún nhảy) */
   onSpeaker?: (who: 'M' | 'F' | null) => void;
 
@@ -99,7 +101,7 @@ class Voice {
   }
 
   private urlOf(p: { who: Who; hype: boolean; text: string }) {
-    const v = p.who === 'F' ? '&v=f' : p.who === 'E' ? '&v=en' : '';
+    const v = p.who === 'F' ? `&v=${this.teacher}` : p.who === 'E' ? '&v=en' : '';
     return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
   }
 

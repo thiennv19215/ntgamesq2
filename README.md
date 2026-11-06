@@ -81,6 +81,12 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
 ## Trang điều khiển
 
 - **Tên lớp**: đổi chữ trên bảng hiệu.
+- **🏫 Cài đặt lớp** (đổi là màn hình đổi ngay, không cần tải lại, tắt máy vẫn nhớ):
+  - **Tên cô giáo**: bảng tên trên ngực và những câu cô tự xưng tên.
+  - **Giọng cô giáo**: nữ (HoaiMy) hoặc nam (NamMinh).
+  - **Chữ bảng đỏ**: dòng khẩu hiệu phía trên bảng đen, tối đa 40 ký tự; bấm **Luân phiên** để dùng lại các khẩu hiệu có sẵn.
+  - **Cuộc thi**: bật tắt Everest, Rung Chuông Đồng ngay trong buổi live. Tắt cả 2 thì chỉ có giờ ra chơi. Game đang chơi dở vẫn chơi hết.
+  - **Nền lớp học**: chọn ảnh dọc 9:16 (PNG, JPG, WEBP, tối đa 12 MB). Game tự vẽ tấm bảng đen lên ảnh mới. Bấm **Về nền gốc** để quay lại bộ nền đang chọn.
 - **Giọng đọc trên stage**: gõ câu cho cô đọc ngay.
 - **Tốc độ giọng**: kéo thanh trượt, có tác dụng ngay khi đang live.
 - **⏭ Qua phần tiếp / 🔄 Ván mới / 🚫 Bỏ câu này**: điều khiển lớp bằng tay. Câu bị bỏ sẽ không bao giờ hỏi lại.
@@ -125,7 +131,7 @@ TTS_PITCH=+6%
 
 `PORT` đổi ở đây thì nhớ sửa cả dòng `set PORT=3006` trong `BAT-LIVE.bat` và đường dẫn trong LIVE Studio.
 
-Dữ liệu buổi live (câu đã hỏi, điểm, học bạ, báo cáo) nằm ở thư mục `data/`. Xoá thư mục đó là làm lại từ đầu.
+Dữ liệu buổi live (câu đã hỏi, điểm, học bạ, báo cáo, ảnh nền riêng) nằm ở thư mục `data/`. Xoá thư mục đó là làm lại từ đầu.
 
 ## Mac / Linux
 

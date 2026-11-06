@@ -115,18 +115,19 @@ export function GameStage({ game }: { game: GameState }) {
   }
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+      {v.cfg.bg && <img alt="" src={`/room-bg/${encodeURIComponent(v.cfg.bg)}`} className="absolute inset-0 h-full w-full object-cover" />}
       <motion.div className="absolute inset-0" style={{ transformOrigin: '330px 700px' }} animate={{ scale: 1 }}>
         {/* Lớp bóng sàn gỗ ấm */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[560px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/15 to-[#3b1d07]/25 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
-        <Motto gift={game.lastGift} now={now} />
+        <Motto gift={game.lastGift} now={now} customText={v.cfg.motto} />
         <ClassroomGuide />
         <RoseProgress v={v} />
         <HallwayStudents v={v} />
         <Board v={v} now={now} />
         <DayTop v={v} />
         <ClassOfficers v={v} />
-        {!isFastestNotice(v) && !v.teacherChat && (['team', 'intro', 'question', 'bonus'] as string[]).includes(v.phase) && <HintGuide v={v} />}
+        {(['team', 'intro', 'question', 'bonus'] as string[]).includes(v.phase) && <HintGuide v={v} />}
         <Teacher v={v} now={now} />
         <Punished v={v} />
         <CallupStudent v={v} />
@@ -134,6 +135,7 @@ export function GameStage({ game }: { game: GameState }) {
         <Students v={v} now={now} />
         <StudentMovements v={v} now={now} />
         <FlowerWalk v={v} />
+        {v.teacherChat && !isFastestNotice(v) && <TeacherChat v={v} />}
       </motion.div>
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
@@ -236,7 +238,6 @@ function Board({ v, now }: { v: StageView; now: number }) {
       <div className="board-corner board-corner-tr" />
       <div className="board-corner board-corner-bl" />
       <div className="board-corner board-corner-br" />
-      {v.teacherChat && !isFastestNotice(v) && <TeacherChat v={v} insideBoard />}
 
       {/* 2 Móc treo bằng đồng nối khẩu hiệu phía trên với đỉnh bảng đen */}
       <div className="pointer-events-none absolute -top-[18px] left-[120px] h-[20px] w-[14px] rounded-t-sm border-[2.5px] border-[#6f2c07] bg-gradient-to-b from-[#ffe07a] to-[#d4972c] shadow" />
@@ -536,21 +537,27 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
         ))}
       </div>
       <div className="mt-auto text-[24px] leading-tight opacity-85">
-        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô Ngân xếp giùm` : 'Chưa chọn thì cô Ngân tự xếp vào tổ ít người'}
+        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô xếp giùm` : 'Chưa chọn thì cô tự xếp vào tổ ít người'}
       </div>
     </div>
   );
 }
 
-function TeacherChat({ v, insideBoard = false }: { v: StageView; insideBoard?: boolean }) {
+function TeacherChat({ v }: { v: StageView }) {
   if (!v.teacherChat) return null;
-  const placement = insideBoard
-    ? 'absolute bottom-[22px] left-[28px] z-30 w-[360px] rounded-[14px] border-2 border-[#d65b88] bg-[#fffaf6]/95 px-3 py-2 text-[#73324a] shadow-lg'
-    : 'teacher-notice pointer-events-none absolute right-[18px] top-[560px] z-20 w-[225px] rounded-[14px] border-2 border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg';
+  const thanking = v.teacherChat.text.startsWith('Cô cảm ơn ');
   return (
-    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className={`${placement} pointer-events-none`} role="status">
-      <div className="text-[17px] font-extrabold leading-[20px] text-[#9b2852]">💬 Thông báo · Cô Ngân</div>
-      <div className="mt-0.5 line-clamp-2 break-words text-[20px] font-bold leading-[22px]">{v.teacherChat.text}</div>
+    <motion.aside initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="teacher-notice pointer-events-none absolute left-[18px] top-[380px] z-40 w-[225px] overflow-hidden rounded-[18px] border-[3px] border-[#cf7891] bg-[#fffaf3] text-[#73324a] shadow-[0_5px_0_#9b5366,0_9px_16px_#56203326]" role="status" aria-live="polite" aria-atomic="true">
+      <div className="flex items-center gap-2 border-b border-[#edc3c8] bg-[#fbe3e7] px-3 py-2">
+        <span aria-hidden="true" className="text-[23px]">{thanking ? '💝' : '💬'}</span>
+        <div className="min-w-0">
+          <div className="text-[12px] font-bold uppercase tracking-wide text-[#a25a70]">Lời nhắn từ</div>
+          <div className="truncate text-[18px] font-extrabold leading-[23px]" title={v.cfg.teacherName}>{v.cfg.teacherName}</div>
+        </div>
+      </div>
+      <div className="px-3 py-3">
+        <div className="line-clamp-4 min-h-[96px] break-words text-[18px] font-semibold leading-[24px]">{v.teacherChat.text}</div>
+      </div>
     </motion.aside>
   );
 }
@@ -568,10 +575,10 @@ function HintGuide({ v }: { v: StageView }) {
     { label: 'Mời cô giáo', amount: settings.teacher },
   ];
   return (
-    <aside className="hint-sign pointer-events-none absolute right-0 top-[590px] z-20 w-[240px] px-3 py-3 text-[#9b2852]">
+    <aside aria-label="Gợi ý quà hoa hồng" className="hint-sign pointer-events-none absolute right-[18px] top-[420px] z-20 w-[225px] px-2 py-2 text-[#9b2852]">
       <div className="text-center text-[19px] font-extrabold">🌹 Tặng hoa hồng</div>
       <div className="mb-2 text-center text-[14px] font-bold text-[#a85b72]">Hoa giúp mở chữ và nhận vai trong lớp</div>
-      {rows.map((row) => <div key={row.label} className="flex h-[28px] items-center justify-between gap-1 text-[17px] font-bold"><span>🌹 {row.label}</span><span className="whitespace-nowrap">x{row.amount} 🌹</span></div>)}
+      {rows.map((row) => <div key={row.label} className="flex min-h-[28px] items-center justify-between gap-1 text-[16px] font-bold leading-[22px]"><span className="whitespace-nowrap">{row.label}</span><span className="shrink-0 whitespace-nowrap">x{row.amount} 🌹</span></div>)}
       <div className="mt-2 text-center text-[13px]">Vai cô giáo kéo dài 2 phút</div>
     </aside>
   );
@@ -1124,7 +1131,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
       <div className="teacher-shadow" />
       <img src={src} style={!v.show && (!v.outfit || v.outfit === 'trang') ? { clipPath: 'none' } : undefined} className="teacher-sprite h-full w-full object-contain object-bottom drop-shadow-[0_8px_6px_rgba(0,0,0,0.25)]" />
       <div className="absolute bottom-[10px] left-[35px] z-10 whitespace-nowrap rounded-full border-2 border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[2px] text-[17px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
-        🌸 Cô Ngân
+        🌸 {v.cfg.teacherName}
       </div>
       <AnimatePresence>
         {gotFlower && (
@@ -1927,7 +1934,7 @@ function DeskGifts({ desk, scale }: { desk: StageView['seats'][number]['desk']; 
   );
 }
 
-function Motto({ gift, now }: { gift: GameState['lastGift']; now: number }) {
+function Motto({ gift, now, customText }: { gift: GameState['lastGift']; now: number; customText: string }) {
   const messages = [
     'ĐIỀU 1 · YÊU TỔ QUỐC, YÊU ĐỒNG BÀO',
     'ĐIỀU 2 · HỌC TẬP TỐT, LAO ĐỘNG TỐT',
@@ -1950,7 +1957,7 @@ function Motto({ gift, now }: { gift: GameState['lastGift']; now: number }) {
   const giftText = gift
     ? `🌹 ${gift.nickname} vừa tặng cô ${gift.repeatCount > 1 ? `${gift.repeatCount} × ` : ''}${giftOf(gift.giftName)?.say ?? gift.giftName}`
     : '';
-  const text = giftActive ? giftText : messages[index];
+  const text = giftActive ? giftText : customText || messages[index];
   return (
     <div className="motto absolute left-1/2 top-[142px] z-10 flex h-[48px] w-[550px] -translate-x-1/2 items-center justify-center overflow-hidden whitespace-nowrap px-4 text-center text-[22px] font-extrabold tracking-wide">
       <AnimatePresence mode="wait" initial={false}>

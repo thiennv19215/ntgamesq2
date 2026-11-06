@@ -67,7 +67,7 @@ function Preview() {
     return () => cancelAnimationFrame(frame);
   }, [run]);
   const [model] = useState(() => ({ current: setup() }));
-  const [view, setView] = useState<StageView>(() => ({ ...model.current.room.view(Date.now()), weekTop: [], todayTop: [], talkTop: [] }));
+  const [view, setView] = useState<StageView>(() => ({ ...model.current.room.view(Date.now()), cfg: GAME.defaultRoom, weekTop: [], todayTop: [], talkTop: [] }));
   useEffect(() => {
     const update = () => {
       const { room } = model.current;
@@ -84,7 +84,7 @@ function Preview() {
         for (const [index, student] of [...room.students.values()].entries()) student.avatar = index % 3 === 0 ? '/assets/nv/nam/01-dung.webp' : index % 3 === 1 ? '' : 'data:image/png;base64,broken';
       }
       if (new URLSearchParams(window.location.search).has('chat-layout')) room.previewTeacherChat(model.current.deadline + 3_600_000);
-      setView({ ...room.view(now), weekTop: [], todayTop: [], talkTop: [] });
+      setView({ ...room.view(now), cfg: GAME.defaultRoom, weekTop: [], todayTop: [], talkTop: [] });
     };
     update();
     const timer = setInterval(update, 100);

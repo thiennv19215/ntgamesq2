@@ -4,10 +4,10 @@ import type { GiftEvent, LiveStatus } from '../live/types';
 import { voice, speakableName } from '../live/voice';
 import { containsBanned } from '../live/bannedWords';
 import { NameBatcher } from '../live/scoreboard';
-import { GiftThanker, OncePerPerson } from '../live/chatter';
+import { OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { saveClassroomBackground } from '../live/classroomBackgrounds';
-import { GAME } from './config';
+import { GAME, type RoomCfg } from './config';
 import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
 import type { ShowKind } from './show';
@@ -17,7 +17,7 @@ import { sfx } from './sfx';
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
 
 export type WeekRow = { username: string; nickname: string; points: number };
-export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[]; talkTop: WeekRow[] };
+export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[]; talkTop: WeekRow[]; cfg: RoomCfg };
 
 /** Top 5 hôm nay: điểm server đã lưu + điểm vừa ghi chưa kịp gửi lên (bảng cập nhật ngay, không chờ 20 giây) */
 function dayBoard(saved: WeekRow[], pending: Map<string, { nickname: string; points: number }>): WeekRow[] {
@@ -43,6 +43,13 @@ export function useGame() {
   const [channelName, setChannelName] = useState(GAME.defaultChannelName);
 
   const roomRef = useRef<Classroom | null>(null);
+  const cfg = useRef<RoomCfg>(GAME.defaultRoom); // cài đặt lớp (trang điều khiển)
+  const applyCfg = (room: Classroom | null) => {
+    voice.teacher = cfg.current.teacherVoice === 'nam' ? 'm' : 'f';
+    if (!room) return;
+    room.teacherName = cfg.current.teacherName;
+    room.showsOn = { everest: cfg.current.everest, chuong: cfg.current.chuong };
+  };
   const weekTop = useRef<WeekRow[]>([]);
   const todayTop = useRef<WeekRow[]>([]); // điểm cả ngày (server), cho bảng Học sinh xuất sắc hôm nay
   const talkTop = useRef<WeekRow[]>([]); // tương tác cả ngày (server), cho bảng Top tương tác
@@ -57,7 +64,6 @@ export function useGame() {
       (names) => roomRef.current && say([roomRef.current.greet(joinNames(names))]),
       () => chatter.current.length >= 2, // còn câu nói thêm đang chờ thì gom tên lượt sau
     ),
-    gifts: new GiftThanker(GAME.giftThanksCooldownMs, GAME.bigGiftCoins),
     follows: new OncePerPerson(),
   }));
 
@@ -129,7 +135,12 @@ export function useGame() {
     onStatus: setStatus,
     onSpeaker: (d) => setStageCount(d.count),
     onGameState: (s) => {
-      if (!IS_STAGE) setView(s as StageView);
+      if (!IS_STAGE) setView({ ...s, cfg: { ...GAME.defaultRoom, ...s.cfg } } as StageView);
+    },
+    onRoomCfg: (c) => {
+      cfg.current = { ...GAME.defaultRoom, ...(c as Partial<RoomCfg>) };
+      applyCfg(roomRef.current);
+      dirty.current = true;
     },
 
     onMember: (e) => {
@@ -163,13 +174,11 @@ export function useGame() {
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
       if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
-      const hint = room.gift(p, coins, Date.now(), e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
-      // Mọi lời về quà (mở chữ, nhận vai, cảm ơn) chờ cùng lượt nói thêm, không chen lời giảng.
-      say(hint.map((line) => ({ ...line, main: false, warn: false, priority: true })));
-      // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
-      if (e.repeatCount > 0) room.socialChat('gift', p, Date.now());
-      const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
-      if (e.repeatCount > 0 && !pendingRole && !(e.giftName.toLowerCase() === 'rose' && e.roleCount === 0) && !hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
+      room.gift(p, coins, Date.now(), e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
+      // Quà vẫn được ghi nhận và xét vai/mở chữ; cảm ơn hiện ngay bằng chữ.
+      // Chỉ báo phần quà mới, tránh báo hai lần khi combo kết thúc với delta = 0.
+      room.notifyGiftThanks(p, e.giftName, e.repeatCount, Date.now());
+      dirty.current = true;
     },
 
     onFollow: (e) => {
@@ -306,6 +315,7 @@ export function useGame() {
       room.showBank = SHOW_BANK;
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
+      applyCfg(room);
       say(room.newRound(Date.now()));
 
       // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
@@ -331,7 +341,7 @@ export function useGame() {
           sfx.music(sh?.kind ?? null, !sh || busy ? 0 : room.showAsking() ? (room.phaseEndsAt - now <= 5000 ? 2 : 1) : step === 'gather' || step === 'honor' ? 1 : 0);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
-          const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };
+          const v = { ...room.view(now), cfg: cfg.current, weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };
           sfx.watch(prevView, v);
           prevView = v;
           setView(v);

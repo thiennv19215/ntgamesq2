@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { RoseSettings } from './quiz';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
-import { GAME } from './config';
+import { GAME, type RoomCfg } from './config';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -10,6 +10,91 @@ const TEN = ['Lan Anh', 'Minh Tuấn', 'Thu Trang', 'Quốc Bảo', 'Ngọc Hân
 const CHAT = ['khó quá cô ơi', 'chữ gì vậy trời', 'hay quá', 'vào lớp', 'cô xinh quá', 'ủa là gì', '???', 'hihi'];
 const fake = (i: number) => ({ username: `hs${i}`, nickname: `${HO[i % HO.length]} ${TEN[i % TEN.length]}`, avatar: '' });
 const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('');
+
+// Cài đặt lớp: tên + giọng cô giáo, chữ bảng đỏ, bật tắt 2 game lớn, ảnh nền. Đổi là trang stage đổi ngay, không cần tải lại
+function RoomSettings() {
+  const [cfg, setCfg] = useState<RoomCfg>(GAME.defaultRoom);
+  const [name, setName] = useState('');
+  const [motto, setMotto] = useState('');
+  const [msg, setMsg] = useState('');
+  const file = useRef<HTMLInputElement>(null);
+  const load = (r: Partial<RoomCfg>) => setCfg({ ...GAME.defaultRoom, ...r });
+  useEffect(() => {
+    fetch('/api/room-settings').then((r) => r.json()).then(load).catch(() => {});
+  }, []);
+  const save = async (patch: Partial<RoomCfg>, done: string) => {
+    const r = await fetch('/api/room-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) }).then((x) => x.json()).catch(() => ({ success: false, error: 'Không kết nối được máy chủ' }));
+    setMsg(r.success ? done : r.error);
+    if (r.success) load(r.room);
+    return r.success as boolean;
+  };
+  const upload = async (f: File | undefined) => {
+    if (!f) return;
+    setMsg('Đang tải ảnh lên...');
+    const r = await fetch('/api/room-bg', { method: 'POST', headers: { 'Content-Type': f.type }, body: f })
+      .then((x) => x.json())
+      .catch(() => ({ success: false, error: 'Ảnh quá lớn hoặc không đúng loại (PNG, JPG, WEBP, tối đa 12 MB)' }));
+    setMsg(r.success ? 'Đã đổi nền lớp' : r.error);
+    if (r.success) load(r.room);
+    if (file.current) file.current.value = '';
+  };
+  const resetBg = async () => {
+    const r = await fetch('/api/room-bg', { method: 'DELETE' }).then((x) => x.json()).catch(() => ({ success: false, error: 'Không kết nối được máy chủ' }));
+    setMsg(r.success ? 'Đã về nền đang chọn' : r.error);
+    if (r.success) load(r.room);
+  };
+  const input = 'min-w-0 flex-1 rounded-lg bg-slate-800 px-2 py-1';
+  const row = 'flex items-center gap-1.5';
+  const label = 'w-24 shrink-0 text-slate-400';
+  return (
+    <div className="space-y-2 rounded-2xl bg-slate-900 p-3 text-xs ring-1 ring-slate-800">
+      <div className="flex justify-between font-semibold text-slate-200">
+        <span>🏫 Cài đặt lớp</span>
+        <span role="status" className="font-normal text-amber-300">{msg}</span>
+      </div>
+      <div className={row}>
+        <label htmlFor="room-teacher" className={label}>Tên cô giáo</label>
+        <input id="room-teacher" className={input} placeholder={cfg.teacherName} maxLength={24} value={name} onChange={(e) => setName(e.target.value)} />
+        <Btn disabled={!name.trim()} onClick={() => save({ teacherName: name }, 'Đã đổi tên cô giáo').then((ok) => ok && setName(''))}>
+          Lưu
+        </Btn>
+      </div>
+      <div className={row}>
+        <label htmlFor="room-voice" className={label}>Giọng cô giáo</label>
+        <select id="room-voice" className={input} value={cfg.teacherVoice} onChange={(e) => save({ teacherVoice: e.target.value as RoomCfg['teacherVoice'] }, 'Đã đổi giọng')}>
+          <option value="nu">Nữ (HoaiMy)</option>
+          <option value="nam">Nam (NamMinh)</option>
+        </select>
+      </div>
+      <div className={row}>
+        <label htmlFor="room-motto" className={label}>Chữ bảng đỏ</label>
+        <input id="room-motto" className={input} placeholder={cfg.motto || 'Đang luân phiên khẩu hiệu'} maxLength={40} value={motto} onChange={(e) => setMotto(e.target.value)} />
+        <Btn disabled={!motto.trim()} onClick={() => save({ motto }, 'Đã đổi chữ bảng đỏ').then((ok) => ok && setMotto(''))}>
+          Lưu
+        </Btn>
+        {cfg.motto && <Btn onClick={() => save({ motto: '' }, 'Đã bật khẩu hiệu luân phiên')}>Luân phiên</Btn>}
+      </div>
+      <div className={row}>
+        <span className={label}>Cuộc thi</span>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={cfg.everest} onChange={(e) => save({ everest: e.target.checked }, e.target.checked ? 'Đã bật Everest' : 'Đã tắt Everest')} />
+          🏔️ Everest
+        </label>
+        <label className="ml-2 flex items-center gap-1">
+          <input type="checkbox" checked={cfg.chuong} onChange={(e) => save({ chuong: e.target.checked }, e.target.checked ? 'Đã bật Rung Chuông Đồng' : 'Đã tắt Rung Chuông Đồng')} />
+          🔔 Rung Chuông Đồng
+        </label>
+      </div>
+      <div className={row}>
+        <span className={label}>Nền lớp học</span>
+        <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+        <Btn onClick={() => file.current?.click()}>Chọn ảnh...</Btn>
+        {cfg.bg && <Btn onClick={resetBg}>Về nền gốc</Btn>}
+        <span className="text-slate-500">Ảnh dọc 9:16, tối đa 12 MB</span>
+      </div>
+    </div>
+  );
+}
 
 export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
   const [sent, setSent] = useState(0);
@@ -55,6 +140,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
   return (
     <div className="space-y-3">
       {stageCount > 1 && <div className="rounded-lg bg-red-600 p-2 text-white">Đang mở {stageCount} trang stage, sẽ có 2 giọng. Đóng bớt đi.</div>}
+      <RoomSettings />
       {view && (
         <div className="rounded-lg bg-slate-800 p-3 text-sm leading-6">
           <div>

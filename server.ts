@@ -76,7 +76,9 @@ const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 let lastNameControl: { action: string; text: string } | null = null;
 // tài khoản TikTok đang cần giữ kết nối: rớt thì tự kết nối lại, tắt server bật lại cũng tự kết nối
 let wantUser = '';
-let settings: { channelName?: string; tiktokUser?: string; classroomTheme?: string } = {};
+// cài đặt lớp ở trang điều khiển: tên + giọng cô giáo, chữ bảng đỏ, bật tắt 2 game lớn, ảnh nền riêng (thiếu mục nào thì dùng GAME.defaultRoom)
+type RoomSettings = { teacherName?: string; teacherVoice?: 'nu' | 'nam'; motto?: string; everest?: boolean; chuong?: boolean; bg?: string };
+let settings: { channelName?: string; tiktokUser?: string; classroomTheme?: string; room?: RoomSettings } = {};
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
@@ -118,6 +120,7 @@ app.get('/api/tiktok/events', (req, res) => {
   if (lastRateControl) res.write(`event: control\ndata: ${JSON.stringify(lastRateControl)}\n\n`);
   if (lastNameControl) res.write(`event: control\ndata: ${JSON.stringify(lastNameControl)}\n\n`);
   if (lastThemeControl) res.write(`event: control\ndata: ${JSON.stringify(lastThemeControl)}\n\n`);
+  res.write(`event: roomCfg\ndata: ${JSON.stringify(settings.room ?? {})}\n\n`);
   sseClients.push(res);
   const stageId = typeof req.query.stage === 'string' ? req.query.stage.slice(0, 40) : '';
   if (stageId) {
@@ -486,9 +489,9 @@ app.get('/api/tts', async (req, res) => {
     if (!text) return res.status(400).send('Thiếu text');
     const rate = Math.min(1.5, Math.max(0.5, Number(req.query.rate) || 1));
     const hype = req.query.hype === '1';
-    // 2 MC: nam (mặc định) và nữ, thêm giọng tiếng Anh để đọc từ tiếng Anh cho chuẩn.
+    // Giọng nữ, giọng nam (chọn ở trang điều khiển), thêm giọng tiếng Anh để đọc từ tiếng Anh cho chuẩn.
     // Chỉ nhận các giọng này, không cho truyền tên giọng tuỳ ý.
-    const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : TTS_VOICE;
+    const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'm' ? 'vi-VN-NamMinhNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : TTS_VOICE;
     const key = `${voiceName}|${rate}|${hype}|${text}`;
     let audio = ttsCache.get(key);
     let fallback = false;
@@ -527,6 +530,66 @@ app.post('/api/game/state', (req, res) => {
 // Sổ lớp lưu ra file (tắt máy vẫn còn): câu nào hỏi lúc nào + bảng vàng tuần
 // DATA_DIR: chạy thử ở thư mục khác để khỏi lẫn tên giả vào sổ lớp thật
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+
+// Cài đặt lớp (trang điều khiển): lưu settings.json, báo ngay cho trang stage. Ảnh nền riêng lưu ở data/nen-lop/ (không lên git)
+const BG_DIR = path.join(DATA_DIR, 'nen-lop');
+app.use('/room-bg', express.static(BG_DIR));
+const cleanText = (v: unknown, max: number) => String(v ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, max);
+const saveRoom = (patch: RoomSettings) => {
+  saveSettings({ room: { ...settings.room, ...patch } });
+  broadcast('roomCfg', settings.room);
+};
+const removeRoomBg = () => {
+  if (!settings.room?.bg) return;
+  fs.rm(path.join(BG_DIR, path.basename(settings.room.bg)), { force: true }, () => {});
+};
+app.get('/api/room-settings', (_req, res) => res.json(settings.room ?? {}));
+app.post('/api/room-settings', (req, res) => {
+  const b = req.body || {};
+  const patch: RoomSettings = {};
+  if (typeof b.teacherName === 'string') {
+    const name = cleanText(b.teacherName, 24);
+    if (!name) return res.status(400).json({ success: false, error: 'Chưa nhập tên cô giáo' });
+    patch.teacherName = name;
+  }
+  if (b.teacherVoice === 'nu' || b.teacherVoice === 'nam') patch.teacherVoice = b.teacherVoice;
+  if (typeof b.motto === 'string') {
+    const motto = cleanText(b.motto, 40);
+    patch.motto = motto;
+  }
+  if (typeof b.everest === 'boolean') patch.everest = b.everest;
+  if (typeof b.chuong === 'boolean') patch.chuong = b.chuong;
+  saveRoom(patch);
+  res.json({ success: true, room: settings.room });
+});
+// Tải ảnh nền lên: chỉ nhận PNG, JPG, WEBP (xét cả nội dung file), tên file do server đặt
+const imageExt = (b: Buffer) => {
+  if (b.length > 12 && b[0] === 0x89 && b.toString('latin1', 1, 4) === 'PNG') return 'png';
+  if (b.length > 12 && b[0] === 0xff && b[1] === 0xd8) return 'jpg';
+  if (b.length > 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+  return '';
+};
+app.post('/api/room-bg', express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: '12mb' }), (req, res) => {
+  const body = req.body as Buffer;
+  const ext = Buffer.isBuffer(body) ? imageExt(body) : '';
+  if (!ext) return res.status(400).json({ success: false, error: 'Chỉ nhận ảnh PNG, JPG, WEBP' });
+  try {
+    fs.mkdirSync(BG_DIR, { recursive: true });
+    const file = `nen-${Date.now()}.${ext}`;
+    fs.writeFileSync(path.join(BG_DIR, file), body);
+    removeRoomBg();
+    saveRoom({ bg: file });
+    res.json({ success: true, room: settings.room });
+  } catch (err) {
+    console.error('Không lưu được ảnh nền:', err);
+    res.status(500).json({ success: false, error: 'Không lưu được ảnh nền' });
+  }
+});
+app.delete('/api/room-bg', (_req, res) => {
+  removeRoomBg();
+  saveRoom({ bg: '' });
+  res.json({ success: true, room: settings.room });
+});
 const SAVE_FILE = path.join(DATA_DIR, 'so-lop.json');
 interface SoLop {
   used: Record<string, number>; // id câu -> lần hỏi gần nhất (ms)
