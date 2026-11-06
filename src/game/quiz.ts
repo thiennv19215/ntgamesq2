@@ -415,6 +415,7 @@ export class Classroom {
   correct: Answerer[] = [];
   private tried = new Set<string>(); // ai đã trả lời câu này (đúng hay sai)
   private wrong = new Set<string>();
+  private standQueue = new Set<string>();
   private seq = 0;
   stats = { received: 0, attempts: 0 };
   flowers = 0;
@@ -1538,9 +1539,14 @@ export class Classroom {
     let free = GAME.standMax - [...this.students.values()].filter((s) => s.standLeft > 0 && !this.sleepingStudents.has(s.username)).length;
     const sentUp: Student[] = [];
     for (const username of this.wrong) {
+      if (this.standQueue.size >= 100) break;
+      if (!this.students.get(username)?.standLeft) this.standQueue.add(username);
+    }
+    for (const username of this.standQueue) {
       if (free <= 0) break;
+      this.standQueue.delete(username);
       const s = this.students.get(username);
-      if (!s || s.standLeft > 0) continue;
+      if (!s || s.standLeft > 0 || this.sleepingStudents.has(username)) continue;
       s.standLeft = GAME.standQuestions;
       sentUp.push(s);
       free--;
@@ -1571,6 +1577,7 @@ export class Classroom {
   private startResults(now: number, outOfQuestions = false): Say[] {
     this.setPhase('results', now, GAME.resultsSec);
     // phạt đứng chỉ tính trong giờ học: hết tiết thì cả lớp về chỗ, ra chơi / game lớn không ai đứng phạt
+    this.standQueue.clear();
     for (const s of this.students.values()) s.standLeft = 0;
     // hết 20 câu: cô thay bộ trang phục khác (bốc ngẫu nhiên, không trùng bộ đang mặc)
     const others = GAME.outfits.filter((o) => o !== this.outfit);
@@ -2144,6 +2151,7 @@ export class Classroom {
   }
 
   newRound(now: number): Say[] {
+    this.standQueue.clear();
     const voted = this.phase === 'vote' ? this.closeVote() : [];
     if (this.phase !== 'vote') this.topic = '';
     this.round++;

@@ -64,7 +64,7 @@ export const GAME = {
   sleepAfterMs: 5 * 60_000, // ngồi im chừng này thì ngủ gật 💤, thỉnh thoảng cô gọi dậy
   // gõ sai: lên đứng cạnh cô (học sinh cá biệt) chừng này câu rồi về chỗ; tối đa standMax bạn cùng lúc, ai sai trước lên trước
   standQuestions: 3,
-  standMax: 6, // 6 chỗ đứng trên sàn giữa cô và dãy bàn đầu
+  standMax: 3, // Ba chỗ bên phải sàn; các bạn khác chờ lượt.
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
   praiseEvery: 10, // cứ chừng này câu cô dừng lại điểm danh top 3, tặng quà (chế độ nhanh: chỉ sau câu 10; trước là 5)
   praiseSec: 3, // đọc xong còn dừng chừng này giây để các bạn nhỏ chào cô, thả tim rồi mới ra câu tiếp

@@ -84,7 +84,21 @@ function Preview() {
         for (const [index, student] of [...room.students.values()].entries()) student.avatar = index % 3 === 0 ? '/assets/nv/nam/01-dung.webp' : index % 3 === 1 ? '' : 'data:image/png;base64,broken';
       }
       if (new URLSearchParams(window.location.search).has('chat-layout')) room.previewTeacherChat(model.current.deadline + 3_600_000);
-      setView({ ...room.view(now), cfg: GAME.defaultRoom, weekTop: [], todayTop: [], talkTop: [] });
+      const next: StageView = { ...room.view(now), cfg: GAME.defaultRoom, weekTop: [], todayTop: [], talkTop: [] };
+      const review = new URLSearchParams(window.location.search).get('review');
+      if (review) {
+        next.todayTop = ['Lê Khánh Linh', 'Hoàng Lan Anh', 'Vũ Bảo Ngọc', 'Nguyễn Lan Anh', 'Bùi Hải Yến'].map((nickname, i) => ({ username: `review-${i}`, nickname, points: 20 - i * 2 }));
+        next.phase = review === 'reveal' ? 'reveal' : review === 'team' ? 'team' : 'question';
+        next.endsAt = now + 20_000;
+        next.movements = [];
+        next.walk = null;
+        next.teacherChat = { text: 'Cô cảm ơn Khánh Linh, Lan Anh và Bảo Ngọc đã tặng hoa 💕', at: now };
+        if (review === 'punished') {
+          next.punished = [1, 2, 3].map((i) => ({ username: person(i).username, nickname: `Học sinh ${i}`, girl: i % 2 === 0, left: 3, standIndex: i - 1 }));
+          next.seats = next.seats.map((s) => ({ ...s, standing: next.punished.some((p) => p.username === s.username) }));
+        } else next.punished = [];
+      }
+      setView(next);
     };
     update();
     const timer = setInterval(update, 100);

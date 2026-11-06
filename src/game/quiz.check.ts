@@ -1358,13 +1358,18 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   for (let i = 1; i <= 5; i++) chat(c, i, 'X'.repeat(c.answerLetters.length), t, t);
   assert.equal(c.view(t).seats.length, 5, 'sai không rời lớp');
   reveal();
-  assert.equal(c.view(t).punished.length, 5);
-  assert.ok(c.view(t).seats.every((s) => s.standing));
-  for (let q = 2; q <= GAME.standQuestions + 1; q++) {
+  assert.equal(c.view(t).punished.length, GAME.standMax, 'chỉ ba bạn đứng bên phải cùng lúc');
+  assert.equal(c.view(t).seats.filter((s) => s.standing).length, GAME.standMax, 'hai bạn còn lại ngồi chờ lượt');
+  const firstGroup = new Set(c.view(t).punished.map((s) => s.username));
+  for (let q = 2; q <= 2 * GAME.standQuestions + 1; q++) {
     ask();
     for (let i = 1; i <= 5; i++) chat(c, i, 'xin chào '.repeat(40), t, t);
     reveal();
-    if (q <= GAME.standQuestions) assert.equal(c.view(t).punished.length, 5);
+    if (q <= GAME.standQuestions) assert.equal(c.view(t).punished.length, GAME.standMax);
+    else if (q <= 2 * GAME.standQuestions) {
+      assert.equal(c.view(t).punished.length, 5 - GAME.standMax, 'nhóm chờ lên khi nhóm đầu về chỗ');
+      assert.ok(c.view(t).punished.every((s) => !firstGroup.has(s.username)), 'không phạt lại nhóm đã xong lượt');
+    }
   }
   assert.equal(c.view(t).punished.length, 0, 'đủ lượt thì về chỗ');
 }
