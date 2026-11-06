@@ -124,6 +124,8 @@ export function GameStage({ game }: { game: GameState }) {
         {/* Lớp bóng sàn gỗ ấm */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[560px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/15 to-[#3b1d07]/25 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
+        <ClassOfficers v={v} />
+        <BoardSidebar v={v} />
         <ClassroomGuide />
         <RoseProgress v={v} />
         <HallwayStudents v={v} />
@@ -261,7 +263,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           <div className="absolute left-[180px] -top-1 h-[8px] w-[20px] rounded-full border border-[#34d399] bg-[#a7f3d0] shadow-sm" />
         </div>
       </div>
-      <div className="absolute bottom-[120px] left-[22px] right-[280px] top-[20px] overflow-hidden">
+      <div className="absolute bottom-[120px] left-[22px] right-[22px] top-[20px] overflow-hidden">
       {v.phase === 'intro' && v.round % 2 === 0 && v.weekTop.length > 0 && <WeekBoard v={v} left={left} />}
       {v.phase === 'intro' && !(v.round % 2 === 0 && v.weekTop.length > 0) && (
         <div className="flex h-full flex-col items-center justify-center text-center">
@@ -368,8 +370,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
       {v.phase === 'results' && <Results v={v} />}
       {v.phase === 'recess' && v.recess && <Recess v={v} left={left} />}
       </div>
-      <BoardSidebar v={v} />
-      <div className="absolute bottom-[14px] left-[22px] right-[280px] h-[100px] overflow-hidden rounded-[12px] border border-[#ffe680]/35 bg-[#092f24] px-4 py-2">
+      <div className="absolute bottom-[14px] left-[22px] right-[22px] h-[100px] overflow-hidden rounded-[12px] border border-[#ffe680]/35 bg-[#092f24] px-4 py-2">
         {v.teacherChat && !isFastestNotice(v)
           ? <TeacherChat v={v} />
           : <div className="flex h-full items-center text-[24px] font-bold text-[#fff0ba]">💬 Gõ đáp án trong bình luận · Cùng cô học vui mỗi ngày!</div>}
@@ -564,27 +565,19 @@ function TeacherChat({ v }: { v: StageView }) {
 }
 
 function BoardSidebar({ v }: { v: StageView }) {
-  const tabs = ['🏆 Điểm', '💐 Quà', '💬 Tương tác'];
+  const tabs = ['🏆 Điểm', '💬 Tương tác', '⚡ Nhanh nhất'];
   const [tab, setTab] = useState(0);
-  const hasTodayTop = (v.todayTop ?? []).some((s) => s.points > 0);
   useEffect(() => {
     const timer = window.setInterval(() => setTab((i) => (i + 1) % tabs.length), 8000);
     return () => window.clearInterval(timer);
   }, [tabs.length]);
   return (
-    <aside className="absolute bottom-[14px] right-[16px] top-[20px] flex w-[246px] flex-col border-l-2 border-[#ffe680]/30 pl-3" aria-label="Góc thông tin lớp">
+    <aside className="floating-info-rail absolute right-[18px] top-[20px] z-20 w-[210px]" aria-label="Góc thông tin lớp">
       <div className="mb-2 flex gap-1">
         {tabs.map((label, i) => <button key={label} type="button" title={label} onClick={() => setTab(i)} aria-label={label} aria-pressed={tab === i} className={`min-w-0 flex-1 rounded-lg border px-1 py-2 text-[13px] font-bold leading-[15px] ${tab === i ? 'border-[#ffe680] bg-[#ffe680] text-[#573316]' : 'border-white/30 text-[#fff4d2]'}`}><span aria-hidden="true">{label}</span></button>)}
       </div>
-      <div className="board-sidebar min-h-0 flex-1 overflow-hidden">
-        {tab === 0 ? (
-          v.phase === 'reveal' && !hasTodayTop
-            ? <div className="sidebar-fastest-board sidebar-fastest-full"><FastestBoard v={v} /></div>
-            : <>
-              <div className={v.phase === 'reveal' ? 'sidebar-top-board' : 'h-full'}><DayTop v={v} /></div>
-              {v.phase === 'reveal' && <div className="sidebar-fastest-board"><FastestBoard v={v} /></div>}
-            </>
-        ) : tab === 1 ? <ClassOfficers v={v} /> : <TalkTop v={v} />}
+      <div className="board-sidebar">
+        {tab === 0 ? <DayTop v={v} floating /> : tab === 1 ? <TalkTop v={v} floating /> : <FastestBoard v={v} floating />}
       </div>
     </aside>
   );
@@ -628,7 +621,7 @@ function ClassroomGuide() {
     return () => window.clearInterval(timer);
   }, [tips.length]);
   return (
-    <div className="classroom-ribbon absolute left-[220px] top-[142px] z-20 flex h-[56px] w-[840px] items-center overflow-hidden px-6 text-center text-[26px] font-extrabold text-[#fff5c4]" aria-label="Hướng dẫn chơi và tương tác">
+    <div className="classroom-ribbon absolute left-[220px] top-[142px] z-20 flex h-[56px] w-[620px] items-center overflow-hidden px-4 text-center text-[24px] font-extrabold text-[#fff5c4]" aria-label="Hướng dẫn chơi và tương tác">
       <div className="relative min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={index} initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -22 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="leading-[34px]">
@@ -1020,10 +1013,10 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
   );
 }
 
-function DayTop({ v }: { v: StageView }) {
+function DayTop({ v, floating = false }: { v: StageView; floating?: boolean }) {
   const rows = [...(v.todayTop ?? [])].filter((s) => s.points > 0).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username)).slice(0, 5);
   return (
-    <aside className="classroom-panel honor-board absolute left-[18px] top-[25px] z-20 w-[210px] side-rail-board" aria-label="Top 5 học sinh xuất sắc hôm nay">
+    <aside className={`classroom-panel honor-board side-rail-board ${floating ? 'relative inset-auto z-auto w-full' : 'absolute left-[18px] top-[25px] z-20 w-[210px]'}`} aria-label="Top 5 học sinh xuất sắc hôm nay">
       <h2 className="honor-board-title">🏆 Top hôm nay</h2>
       <div className="honor-board-body">
         {rows.length === 0 && <p className="honor-board-empty">Trả lời đúng để ghi tên<br />lên bảng vàng nhé!</p>}
@@ -1040,13 +1033,13 @@ function DayTop({ v }: { v: StageView }) {
   );
 }
 
-function TalkTop({ v }: { v: StageView }) {
+function TalkTop({ v, floating = false }: { v: StageView; floating?: boolean }) {
   const rows = [...(v.talkTop ?? [])]
     .filter((s) => s.points > 0)
     .sort((a, b) => b.points - a.points || a.username.localeCompare(b.username))
     .slice(0, 5);
   return (
-    <aside className="classroom-panel honor-board absolute left-[18px] top-[25px] z-20 w-[210px] side-rail-board" aria-label="Top 5 bạn tương tác hôm nay">
+    <aside className={`classroom-panel honor-board side-rail-board ${floating ? 'relative inset-auto z-auto w-full' : 'absolute left-[18px] top-[25px] z-20 w-[210px]'}`} aria-label="Top 5 bạn tương tác hôm nay">
       <h2 className="honor-board-title">💬 Top tương tác</h2>
       <div className="honor-board-body">
         {rows.length === 0 && <p className="honor-board-empty">Bình luận, tim và follow<br />để lên bảng tương tác nhé!</p>}
@@ -1156,7 +1149,7 @@ function ClassOfficers({ v }: { v: StageView }) {
   }, [pages]);
   const start = (page % pages) * 3;
   return (
-    <aside className="classroom-panel honor-board flower-board absolute right-[18px] top-[25px] z-20 w-[210px] side-rail-board" aria-label="Bảng tặng quà và cán bộ lớp">
+    <aside className="gift-corner-board classroom-panel honor-board flower-board absolute left-[18px] top-[20px] z-20 w-[210px] side-rail-board" aria-label="Góc tặng hoa và cán bộ lớp">
       <h2 className="honor-board-title">💐 Tặng hoa cho cô<span>TẤM LÒNG HỌC TRÒ</span></h2>
       <div className="honor-board-body">
         {donors.length ? donors.slice(start, start + 3).map((student, i) => (
@@ -1223,13 +1216,13 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 }
 
 const secText = (ms: number) => `${(ms / 1000).toFixed(3).replace('.', ',')} giây`;
-function FastestBoard({ v }: { v: StageView }) {
+function FastestBoard({ v, floating = false }: { v: StageView; floating?: boolean }) {
   const reveal = v.phase === 'reveal';
   return (
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`fastest-board absolute right-0 z-30 overflow-hidden rounded-[14px] border-[3px] border-[#99521f] bg-[#fffbe7] shadow-lg ${reveal ? 'top-[650px] w-[300px]' : 'top-[330px] w-[280px]'}`}
+      className={`fastest-board ${floating ? 'relative inset-auto z-auto w-full' : `absolute right-0 z-30 ${reveal ? 'top-[650px] w-[300px]' : 'top-[330px] w-[280px]'}`} overflow-hidden rounded-[14px] border-[3px] border-[#99521f] bg-[#fffbe7] shadow-lg`}
     >
       <div className={`flex items-center justify-between bg-[#7a2e0e] px-3 font-bold text-[#ffe9b8] ${reveal ? 'h-[30px] text-[18px]' : 'h-[34px] text-[20px]'}`}>
         <span>⚡ Nhanh nhất</span>

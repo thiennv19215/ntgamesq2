@@ -326,23 +326,19 @@
 .side-rail-board .honor-officers > div { font-size: 16px; line-height: 24px; }
 .side-rail-board .honor-officers b { font-size: 17px; }
 .side-rail-board .honor-board-footer { font-size: 14px; }
-.board-sidebar > aside { position: relative; inset: auto; display: flex; flex-direction: column; width: 100%; height: 100%; transform: none; box-shadow: none; }
-.board-sidebar .sidebar-top-board { height: 53%; min-height: 0; overflow: hidden; }
-.board-sidebar .sidebar-top-board > aside { position: relative; inset: auto; width: 100%; height: 100%; transform: none; box-shadow: none; }
-.board-sidebar .sidebar-fastest-board { height: 47%; min-height: 0; margin-top: 8px; overflow: hidden; }
-.board-sidebar .sidebar-fastest-full { height: 100%; margin-top: 0; }
-.board-sidebar .honor-board-body { display: flex; flex-direction: column; padding: 8px; }
-.board-sidebar .honor-board-empty { display: grid; flex: 1; align-content: center; }
-.board-sidebar .honor-board-footer { display: none; }
-.board-sidebar .honor-board-title { font-size: 24px; line-height: 28px; }
-.board-sidebar .honor-board-title > span { display: none; }
-.board-sidebar .honor-row { flex: 0 0 auto; min-height: 74px; font-size: 28px; line-height: 34px; }
-.board-sidebar .honor-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; padding-bottom: 4px; white-space: normal; overflow-wrap: anywhere; }
-.board-sidebar .honor-value { font-size: 26px; }
-.board-sidebar .honor-officers > div { flex-wrap: nowrap; }
-.board-sidebar .hint-sign { justify-content: space-evenly; padding: 10px; }
-.board-sidebar .fastest-board { position: relative; inset: auto; width: 100%; height: 100%; box-shadow: none; }
-.board-sidebar .fastest-board > div:first-child { height: auto; min-height: 48px; flex-wrap: wrap; padding: 8px; font-size: 24px; line-height: 28px; }
-.board-sidebar .fastest-board > div.grid { min-height: 82px; font-size: 26px; line-height: 30px; }
-.board-sidebar .fastest-board > div.grid > span:nth-child(3) { font-size: 20px; }
-.board-sidebar .fastest-board > div.grid > b { font-size: 28px; }
+.gift-corner-board { display: flex; height: 252px; flex-direction: column; overflow: hidden; }
+.gift-corner-board .honor-board-body { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.gift-corner-board .honor-board-footer { flex: 0 0 auto; }
+.floating-info-rail { display: flex; height: 222px; flex-direction: column; gap: 6px; }
+.floating-info-rail > div:first-child { flex: 0 0 36px; }
+.floating-info-rail .board-sidebar { min-height: 0; flex: 1 1 auto; overflow: hidden; }
+.floating-info-rail .board-sidebar > aside { position: relative; inset: auto; width: 100%; height: 180px; transform: none; box-shadow: 0 4px 12px rgba(65, 26, 6, 0.3); }
+.floating-info-rail .honor-board { display: flex; flex-direction: column; }
+.floating-info-rail .honor-board-title { padding: 5px 4px 4px; font-size: 18px; line-height: 22px; }
+.floating-info-rail .honor-board-title > span { display: none; }
+.floating-info-rail .honor-board-body { flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 4px 5px; }
+.floating-info-rail .honor-row { min-height: 22px; font-size: 16px; line-height: 20px; }
+.floating-info-rail .honor-rank { flex-basis: 18px; font-size: 14px; }
+.floating-info-rail .honor-value { font-size: 16px; }
+.floating-info-rail .honor-board-footer { flex: 0 0 auto; padding: 3px 2px; font-size: 11px; line-height: 15px; }
+.floating-info-rail .fastest-board { position: relative; inset: auto; width: 100%; height: 180px; box-shadow: 0 4px 12px rgba(65, 26, 6, 0.3); }
