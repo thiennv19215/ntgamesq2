@@ -1592,16 +1592,15 @@ const StudentBody = memo(function StudentBody({ s, pose, away, called, w, h, lef
   return (
                 <motion.div
                   key={s.username}
-                  initial={{ opacity: 0, left, top: top + 30 }}
+                  initial={false}
                   animate={{
                     opacity: away ? 0 : 1,
-                    left,
-                    top: isFirst ? [top, top - 30, top, top - 15, top] : top,
+                    y: isFirst ? [0, -30, 0, -15, 0] : 0,
                     x: s.answered === 'wrong' ? [-5, 5, -4, 4, -2, 2, 0] : 0,
                   }}
-                  transition={isFirst ? { top: { duration: 0.9 } } : { type: 'spring', stiffness: 120, damping: 18 }}
+                  transition={isFirst ? { y: { duration: 0.9 } } : { type: 'spring', stiffness: 120, damping: 18 }}
                   className={`absolute ${called ? 'called-up' : ''}`}
-                  style={{ width: w, height: h, zIndex: zIndex }}
+                  style={{ left, top, width: w, height: h, zIndex: zIndex }}
                 >
                   <div className="absolute inset-0 overflow-hidden" style={{ clipPath: 'inset(0 0 38% 0)' }}>
                     <img src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`} style={{ width: w, height: h }} className="max-w-none" />
@@ -1826,7 +1825,7 @@ function Punished({ v }: { v: StageView }) {
   return (
     <>
       {v.punished
-        .filter((s) => !isGuestTeacher(v, s.username) && !(v.movements ?? []).some((m) => m.username === s.username && Date.now() < m.startedAt + m.durationMs))
+        .filter((s) => v.walk?.username !== s.username && !isGuestTeacher(v, s.username) && !(v.movements ?? []).some((m) => m.username === s.username && Date.now() < m.startedAt + m.durationMs))
         .slice(0, STAND_SPOTS.length)
         .map((s) => {
           const i = s.standIndex ?? 0;
@@ -1835,7 +1834,7 @@ function Punished({ v }: { v: StageView }) {
           return (
             <motion.div
               key={s.username}
-              initial={{ opacity: 0, y: 30 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               className="pointer-events-none absolute z-30 flex flex-col items-center"
               style={{ left: STAND_SPOTS[i] - (H * 0.47) / 2, top: STAND_FEET - H, width: H * 0.47, height: H, transformOrigin: '50% 100%' }}

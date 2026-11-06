@@ -83,6 +83,9 @@ function Preview() {
       <button onClick={() => reset(GAME.standMax, true)} className="mt-2 rounded-lg bg-rose-700 px-3 py-2 font-bold text-white">Thử học sinh lên đứng bảng</button>
       <button disabled={!view.punished.length} onClick={() => { for (const s of model.current.room.students.values()) s.standLeft = 0; }} className="mt-2 rounded-lg bg-emerald-700 px-3 py-2 font-bold text-white disabled:opacity-40">Cho học sinh về ghế</button>
       <button onClick={() => { const entries = model.current.room.seats(); entries.forEach((s, i) => { s.score = (i + 1) * 10; }); }} className="mt-2 rounded-lg bg-indigo-700 px-3 py-2 font-bold text-white">Thử đổi thứ hạng cả lớp</button>
+      <button onClick={() => { const room = model.current.room; room.gift(person(2), 10, Date.now(), 10, 'Rose', 10); }} className="mt-2 rounded-lg bg-pink-700 px-3 py-2 font-bold text-white">Hoa hồng thay lớp trưởng</button>
+      <button onClick={() => { const room = model.current.room; const id = room.students.size + 100; room.enter(person(id), Date.now()); }} className="mt-2 rounded-lg bg-sky-700 px-3 py-2 font-bold text-white">Thêm người khi lớp đầy</button>
+      <p className="mt-2" role="status">Trong lớp: {view.seats.length} · Chờ: {view.hallwayTotal} · Đứng bảng: {view.punished.length} · Lớp trưởng: {view.roleHolders.find((r) => r.label === 'Lớp trưởng')?.nickname ?? 'chưa có'}</p>
       <p className="mt-2">{Object.entries(view.movements.reduce<Record<string, number>>((counts, m) => { counts[m.kind] = (counts[m.kind] ?? 0) + 1; return counts; }, {})).map(([kind, count]) => `${count} bạn: ${kind}`).join(' · ') || 'Đang chờ chốt câu'}</p>
       <p className="mt-2" aria-live="off">{perf.fps} FPS · khung chậm nhất {perf.worst} ms · {perf.longFrames} khung trên 50 ms</p>
       <p className="mt-1" data-fps-summary>Trong chuyển động: thấp nhất {perf.motionMin || '—'} FPS · tối đa {perf.peakActors} nhân vật · {perf.motionSlowFrames} khung trên 50 ms</p>
@@ -91,4 +94,4 @@ function Preview() {
     <StageFrame><GameStage game={game} /></StageFrame>
   </div>;
 }
-if (import.meta.env.DEV) createRoot(document.getElementById('root')!).render(<Preview />);
+if (import.meta.env.DEV || import.meta.env.MODE === 'preview-test') createRoot(document.getElementById('root')!).render(<Preview />);
