@@ -93,7 +93,7 @@ function Preview() {
   const reset = (leavers = 1, punish = false) => { model.current = setup(leavers, punish); setRun((n) => n + 1); };
   const game = { view, channelName: GAME.defaultChannelName, lastGift: null } as GameState;
   return <div className="flex h-screen items-center justify-center bg-[#1c1715]">
-    <aside className="fixed left-3 top-3 z-[100] max-w-[245px] rounded-xl bg-white p-3 text-sm text-stone-800 shadow-lg">
+    {!new URLSearchParams(window.location.search).has('clean') && <aside className="fixed left-3 top-3 z-[100] max-w-[245px] rounded-xl bg-white p-3 text-sm text-stone-800 shadow-lg">
       <b>Thử chuyển động riêng</b><p className="my-2">40 học sinh + 1 bạn chờ. Khi hết câu, bạn ngủ đi ra, người chờ vào đúng ghế trống.</p>
       <button onClick={() => reset()} className="rounded-lg bg-amber-700 px-3 py-2 font-bold text-white">Chạy lại chuyển động</button>
       <button onClick={() => reset(GAME.seats)} className="mt-2 rounded-lg bg-stone-700 px-3 py-2 font-bold text-white">Thử cả lớp cùng ra / vào</button>
@@ -109,7 +109,7 @@ function Preview() {
       <p className="mt-2" aria-live="off">{perf.fps} FPS · khung chậm nhất {perf.worst} ms · {perf.longFrames} khung trên 50 ms</p>
       <p className="mt-1" data-fps-summary>Trong chuyển động: thấp nhất {perf.motionMin || '—'} FPS · tối đa {perf.peakActors} nhân vật · {perf.motionSlowFrames} khung trên 50 ms</p>
       <small>Không kết nối TikTok hoặc ghi dữ liệu thật.</small>
-    </aside>
+    </aside>}
     <StageFrame><GameStage game={game} /></StageFrame>
   </div>;
 }

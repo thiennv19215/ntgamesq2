@@ -7,7 +7,8 @@ export function StageFrame({ children, maxHeight }: { children: ReactNode; maxHe
   useEffect(() => {
     const fit = () => {
       const h = Math.min(window.innerHeight, maxHeight ?? Infinity);
-      setScale(Math.min(window.innerWidth / STAGE_W, h / STAGE_H));
+      // Zoom nhẹ để góc nhìn bớt lùi nhưng vẫn giữ toàn bộ khung dọc trong vùng an toàn.
+      setScale(Math.min(window.innerWidth / STAGE_W, h / STAGE_H) * 1.02);
     };
     fit();
     window.addEventListener('resize', fit);
