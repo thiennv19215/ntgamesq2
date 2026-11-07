@@ -178,13 +178,16 @@ export function useGame() {
       if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: now });
       const giftLines = room.gift(p, coins, now, e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
       // Các lời cảm ơn/mở chữ/nhận vai của quà phải đi vào cùng hàng đợi giọng cô.
-      say(giftLines.map((line) => ({ ...line, main: false, warn: false, priority: true })));
+      // Quà phải được đọc ngay: `room.gift()` đánh dấu lời cảm ơn bằng `warn`.
+      // Không xoá cờ này, nếu không câu bị đẩy vào cửa sổ nói chuyện và có thể hết hạn
+      // trước khi cô kịp đọc.
+      say(giftLines.map((line) => ({ ...line, main: false, priority: true })));
       if (e.repeatCount > 0) room.socialChat('gift', p, now);
       // Nếu quà không tạo announcement riêng (ví dụ cô đang dẫn bạn khác lên), vẫn cảm ơn tên người tặng theo cooldown.
       const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
       const comboStillRunning = e.giftName.toLowerCase() === 'rose' && e.roleCount === 0;
       if (e.repeatCount > 0 && !pendingRole && !comboStillRunning && !giftLines.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length, now)) {
-        say([room.thank(p, e.giftName, coins)]);
+        say([{ ...room.thank(p, e.giftName, coins), warn: true }]);
       }
       // Thông báo chữ vẫn hiện ngay, độc lập với việc audio đang bận.
       room.notifyGiftThanks(p, e.giftName, e.repeatCount, now);
