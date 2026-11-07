@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { LiveStatus } from './types';
 import { emitTest, sendControl } from './page';
 import { CLASSROOM_BACKGROUNDS, classroomBackgroundStyle, readClassroomBackgroundId, saveClassroomBackground } from './classroomBackgrounds';
+import { GAME_REGISTRY, readGameId, saveGameId, type GameId } from '../game/gameRegistry';
 
 const FAKE_NAMES = ['Lan Anh', 'Minh Tuấn', 'Bé Na 🌸', 'Hoàng Long', 'Thu Trang', 'Quốc Bảo', 'duyanh99', '𝑵𝒈𝒐̣𝒄 𝑨𝒏𝒉'];
 const pick = () => {
@@ -141,6 +142,8 @@ export function Dashboard({
 
           <BackgroundPicker />
 
+          <GamePicker />
+
           {extra}
 
           <details className="rounded-2xl bg-slate-900 p-3 ring-1 ring-slate-800">
@@ -172,6 +175,41 @@ export function Dashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+function GamePicker() {
+  const [selected, setSelected] = useState<GameId>(readGameId);
+  const [message, setMessage] = useState('');
+  const choose = (gameId: GameId) => {
+    setSelected(gameId);
+    saveGameId(gameId);
+    setMessage('Đang đồng bộ game lên LIVE...');
+    void sendControl('custom', `game:${gameId}`).then((result) => {
+      setMessage(result.success === false ? 'Chưa đồng bộ được lên màn LIVE.' : 'Đã đổi game trên màn LIVE.');
+    }).catch(() => setMessage('Mất kết nối, kiểu màn hình chỉ đổi ở màn điều khiển.'));
+  };
+  const options: { id: GameId; label: string; description: string; preview: string }[] = [
+    { id: 'classroom', label: GAME_REGISTRY.classroom.name, description: GAME_REGISTRY.classroom.description, preview: '🏫' },
+    { id: 'scoreboard', label: GAME_REGISTRY.scoreboard.name, description: GAME_REGISTRY.scoreboard.description, preview: '📊' },
+  ];
+  return (
+    <Card title="🎮 Game đang phát trên LIVE">
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Chọn kiểu màn hình LIVE">
+        {options.map((option) => {
+          const active = selected === option.id;
+          return (
+            <button key={option.id} type="button" role="radio" aria-checked={active} onClick={() => choose(option.id)}
+              className={`rounded-xl border p-3 text-left transition ${active ? 'border-amber-400 bg-amber-400/10 ring-1 ring-amber-400' : 'border-slate-700 bg-slate-800 hover:border-slate-500'}`}>
+              <span className="mr-2 text-2xl" aria-hidden="true">{option.preview}</span>
+              <span className="font-semibold">{option.label}</span>
+              <span className="mt-1 block text-xs text-slate-400">{option.description}</span>
+            </button>
+          );
+        })}
+      </div>
+      {message && <p role="status" className="mt-2 text-xs text-amber-300">{message}</p>}
+    </Card>
   );
 }
 

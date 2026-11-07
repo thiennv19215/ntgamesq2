@@ -1,0 +1,319 @@
+﻿diff --git a/src/game/GameStage.tsx b/src/game/GameStage.tsx
+index 8507801..fc2a78f 100644
+--- a/src/game/GameStage.tsx
++++ b/src/game/GameStage.tsx
+@@ -122,7 +122,7 @@ export function GameStage({ game }: { game: GameState }) {
+                 <Motto />
+         <ClassroomGuide />
+         <RoseProgress v={v} />
+-        <HallwayStudents v={v} now={now} />
++        <HallwayStudents v={v} />
+         <Board v={v} now={now} />
+         <DayTop v={v} />
+         <ClassOfficers v={v} />
+@@ -260,7 +260,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
+ function Board({ v, now }: { v: StageView; now: number }) {
+   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
+   return (
+-    <div className={`chalk classroom-board absolute left-1/2 top-[196px] z-[2] h-[544px] w-[840px] -translate-x-1/2 px-[26px] pt-[20px] text-[#f4f1e6] ${['question', 'bonus', 'reveal'].includes(v.phase) ? 'pb-[190px]' : 'pb-[60px]'} ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
++    <div className={`chalk classroom-board absolute left-1/2 top-[210px] z-[2] h-[544px] w-[840px] -translate-x-1/2 origin-top scale-[0.66] px-[26px] pt-[20px] text-[#f4f1e6] pb-[60px] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+       {/* 4 Nß║╣p g├│c ─æß╗ông cß╗ò ─æiß╗ân bo tr├▓n */}
+       <div className="board-corner board-corner-tl" />
+       <div className="board-corner board-corner-tr" />
+@@ -574,7 +574,7 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
+ function TeacherChat({ v }: { v: StageView }) {
+   if (!v.teacherChat) return null;
+   return (
+-    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="teacher-notice pointer-events-none absolute left-[215px] top-[560px] z-20 w-[310px] rounded-[14px] border-2 border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg" role="status">
++    <motion.aside key={v.teacherChat.at} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="teacher-notice pointer-events-none absolute right-[18px] top-[560px] z-20 w-[225px] rounded-[14px] border-2 border-[#d65b88] bg-[#fffaf6] px-3 py-2 text-[#73324a] shadow-lg" role="status">
+       <div className="text-[17px] font-extrabold leading-[20px] text-[#9b2852]">≡ƒÆ¼ Th├┤ng b├ío ┬╖ C├┤ Ng├ón</div>
+       <div className="mt-0.5 line-clamp-3 break-words text-[20px] font-bold leading-[22px]">{v.teacherChat.text}</div>
+     </motion.aside>
+@@ -584,27 +584,17 @@ function TeacherChat({ v }: { v: StageView }) {
+ function HintGuide({ v }: { v: StageView }) {
+   const settings = v.roseSettings;
+   if (!settings?.visible) return null;
+-  const thresholds = [settings.deputy, settings.leader, settings.teacher];
++  const rows = [
++    { label: 'Mß╗ƒ 1 chß╗»', amount: settings.hint },
++    { label: 'Ph├ío hoa nhß║╣', amount: 3 },
++    ...GAME.roseRoles.map((role, i) => ({ label: role.label, amount: [settings.deputy, settings.leader, settings.teacher][i] })),
++  ];
+   return (
+-    <>
+-    <div className="hint-sign pointer-events-none absolute right-[130px] top-[750px] z-20 w-[540px] whitespace-nowrap px-3 py-1 text-center text-[27px] font-extrabold leading-[32px] text-[#9b2852]">
+-      ≡ƒî╣ {settings.hint} Hoa hß╗ông ΓåÆ mß╗ƒ 1 chß╗» gß╗úi ├╜
+-    </div>
+-    <aside className="hint-sign pointer-events-none absolute right-[130px] top-[804px] z-20 w-[540px] px-3 py-1 text-center">
+-      <div className="grid grid-cols-4 gap-1.5">
+-        <div className="min-w-0 rounded-[14px] border border-[#b6a0db] bg-[#f2eaff] px-1 py-1 text-[#61418a] shadow-sm">
+-          <div className="whitespace-nowrap text-[18px] font-bold leading-[25px]">Ph├ío hoa nhß║╣</div>
+-          <div className="text-[20px] font-extrabold leading-[25px]">x3 ≡ƒî╣</div>
+-        </div>
+-        {GAME.roseRoles.map((role, index) => (
+-          <div key={role.roses} className={`min-w-0 rounded-[14px] border px-1 py-1 shadow-sm ${index === 2 ? 'border-[#c64172] bg-[#bd3d6a] text-white' : index === 1 ? 'border-[#edc36b] bg-[#fff0c7] text-[#783f0a]' : 'border-[#9bc9dd] bg-[#e2f3fb] text-[#245873]'}`}>
+-            <div className="whitespace-nowrap text-[18px] font-bold leading-[25px]">{role.label}</div>
+-            <div className="whitespace-nowrap text-[19px] font-extrabold leading-[25px]">x{thresholds[index]} ≡ƒî╣{index === 2 && <span className="text-[15px] font-semibold"> ┬╖ 2 ph├║t</span>}</div>
+-          </div>
+-        ))}
+-      </div>
++    <aside className="hint-sign pointer-events-none absolute right-[18px] top-[470px] z-20 w-[225px] px-2 py-2 text-[#9b2852]">
++      <div className="mb-1 text-center text-[17px] font-extrabold">≡ƒî╣ T╞░╞íng t├íc c├╣ng lß╗¢p</div>
++      {rows.map((row) => <div key={row.label} className="flex h-[24px] items-center justify-between gap-1 text-[15px] font-bold"><span>{row.label}</span><span className="whitespace-nowrap">x{row.amount} ≡ƒî╣</span></div>)}
++      <div className="mt-1 text-center text-[13px]">Vai c├┤ gi├ío k├⌐o d├ái 2 ph├║t</div>
+     </aside>
+-    </>
+   );
+ }
+ 
+@@ -996,22 +986,22 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
+ }
+ 
+ function DayTop({ v }: { v: StageView }) {
+-  const rows = v.seats.filter((s) => s.score > 0).slice(0, 4).map((s) => ({ username: s.username, nickname: s.nickname, points: s.score }));
++  const rows = [...(v.todayTop ?? [])].filter((s) => s.points > 0).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username)).slice(0, 5);
+   return (
+-    <div className="classroom-panel absolute left-[18px] top-[25px] z-20 min-h-[200px] w-[225px] px-3 pb-3 pt-3 text-[#4a2c0e]">
+-      <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 text-[26px] drop-shadow-sm">≡ƒôî</div>
+-      <div className="text-center text-[19px] font-extrabold leading-tight text-[#b45309]">≡ƒÅå Hß╗ìc sinh xuß║Ñt sß║»c</div>
+-      {rows.length === 0 && <div className="py-4 text-center text-[17px] leading-snug text-[#8a6a3a]">Ch╞░a c├│ ai, trß║ú lß╗¥i ─æ├║ng l├á l├¬n bß║úng!</div>}
+-      <div className="mt-1 space-y-[2px]">
++    <aside className="classroom-panel honor-board absolute left-[18px] top-[25px] z-20 w-[225px]" aria-label="Top 5 hß╗ìc sinh xuß║Ñt sß║»c h├┤m nay">
++      <h2 className="honor-board-title">≡ƒÅå Hß╗ìc sinh xuß║Ñt sß║»c<span>H├öM NAY</span></h2>
++      <div className="honor-board-body">
++        {rows.length === 0 && <p className="honor-board-empty">Trß║ú lß╗¥i ─æ├║ng ─æß╗â ghi t├¬n<br />l├¬n bß║úng v├áng nh├⌐!</p>}
+         {rows.map((r, i) => (
+-          <motion.div key={r.username} layout className="flex items-center gap-2 text-[22px] leading-[28px]">
+-            <span className="w-6 text-center">{['≡ƒÑç', '≡ƒÑê', '≡ƒÑë', '4'][i]}</span>
+-            <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
+-            <b className="text-[#c2410c]">{r.points}</b>
+-          </motion.div>
++          <div key={r.username} className="honor-row" title={`${r.nickname} ┬╖ ${r.points} ─æiß╗âm`}>
++            <span className={`honor-rank honor-rank-${i + 1}`}>{i + 1}</span>
++            <span className="honor-name">{r.nickname}</span>
++            <b className="honor-value">{r.points}</b>
++          </div>
+         ))}
+       </div>
+-    </div>
++      <div className="honor-board-footer">Mß╗ùi c├óu ─æ├║ng ┬╖ th├¬m ─æiß╗âm hay</div>
++    </aside>
+   );
+ }
+ 
+@@ -1098,33 +1088,33 @@ function isGuestTeacher(v: StageView, username: string) {
+ 
+ function ClassOfficers({ v }: { v: StageView }) {
+   const officers = v.roleHolders?.filter((role) => role.expiresAt === null).sort((a, b) => Number(b.label === 'Lß╗¢p tr╞░ß╗ƒng') - Number(a.label === 'Lß╗¢p tr╞░ß╗ƒng')) ?? [];
+-  const donors = v.goodStudents ?? [];
+-  const pages = Math.max(1, Math.ceil(donors.length / 3));
++  const donors = [...(v.goodStudents ?? [])].sort((a, b) => b.gifts - a.gifts || a.username.localeCompare(b.username));
++  const pages = Math.max(1, Math.ceil(donors.length / 5));
+   const [page, setPage] = useState(0);
+   useEffect(() => {
+     if (pages <= 1) return;
+     const timer = setInterval(() => setPage((n) => (n + 1) % pages), 5000);
+     return () => clearInterval(timer);
+   }, [pages]);
+-  const start = (page % pages) * 3;
++  const start = (page % pages) * 5;
+   return (
+-    <aside className="classroom-panel absolute right-[18px] top-[25px] z-20 w-[225px] px-2 py-1.5 text-[#73324a]" aria-label="C├ín bß╗Ö lß╗¢p v├á hß╗ìc sinh ngoan">
+-      {officers.map((role) => (
+-        <div key={role.label} title={`${role.nickname} ┬╖ ${role.source === 'score' ? `${role.points} ─æiß╗âm` : `Hoa hß╗ông x${role.roses}`}`} className={`mb-0.5 flex h-[22px] items-center gap-1 rounded-lg px-1 ${role.label === 'Lß╗¢p tr╞░ß╗ƒng' ? 'bg-[#ffedb5] text-[#7b4306]' : 'bg-[#dcefff] text-[#20557c]'}`}>
+-          <span className="shrink-0 text-[14px] font-extrabold">{role.icon} {role.label}</span>
+-          <span className="min-w-0 flex-1 truncate text-right text-[16px] font-bold">{seatName(role.nickname)}</span>
+-        </div>
+-      ))}
+-      <div className={`${officers.length ? 'mt-0.5 border-t border-[#d9ba7f] pt-0.5' : ''}`}>
+-        <div className="text-center text-[17px] font-extrabold leading-[20px] text-[#865520]">≡ƒîƒ Hß╗ìc sinh ngoan</div>
+-        {donors.length ? donors.slice(start, start + 3).map((student) => (
+-          <div key={student.username} className="flex h-[18px] items-center gap-1 text-[15px] leading-[18px]" title={`${student.nickname} (@${student.username}) ┬╖ ${student.gifts} m├│n qu├á`}>
+-            <span className="shrink-0 text-[13px]">≡ƒÄü</span>
+-            <span className="min-w-0 truncate font-bold text-[#774a25]">{seatName(student.nickname || student.username)}</span>
++    <aside className="classroom-panel honor-board flower-board absolute right-[18px] top-[25px] z-20 w-[225px]" aria-label="Bß║úng tß║╖ng qu├á v├á c├ín bß╗Ö lß╗¢p">
++      <h2 className="honor-board-title">≡ƒÆÉ Tß║╖ng hoa cho c├┤<span>Tß║ñM L├ÆNG Hß╗îC TR├Æ</span></h2>
++      <div className="honor-board-body">
++        {donors.length ? donors.slice(start, start + 5).map((student, i) => (
++          <div key={student.username} className="honor-row" title={`${student.nickname} (@${student.username}) ┬╖ ${student.gifts} m├│n qu├á`}>
++            <span className={`honor-rank honor-rank-${start + i + 1}`}>{start + i + 1}</span>
++            <span className="honor-name">{student.nickname || student.username}</span>
++            <b className="honor-value">{student.gifts}<small> qu├á</small></b>
+           </div>
+-        )) : <div className="py-1 text-center text-[14px] text-[#966f48]">Ch╞░a c├│ bß║ín tß║╖ng qu├á</div>}
+-        {pages > 1 && <div className="text-center text-[11px] leading-[12px] text-[#966f48]">{start + 1}ΓÇô{Math.min(start + 3, donors.length)} / {donors.length} bß║ín</div>}
++        )) : <p className="honor-board-empty">B├┤ng hoa ─æß║ºu ti├¬n<br />─æang chß╗¥ bß║ín trao c├┤!</p>}
+       </div>
++      {officers.length > 0 && <div className="honor-officers">{officers.map((role) => (
++        <div key={role.label} title={`${role.nickname} ┬╖ ${role.source === 'score' ? `${role.points} ─æiß╗âm` : `Hoa hß╗ông x${role.roses}`}`}>
++          <span>{role.icon} {role.label}</span><b>{seatName(role.nickname)}</b>
++        </div>
++      ))}</div>}
++      <div className="honor-board-footer">{pages > 1 ? `${start + 1}ΓÇô${Math.min(start + 5, donors.length)} / ${donors.length} bß║ín ┬╖ Cß║úm ╞ín cß║ú lß╗¢p!` : 'C├┤ cß║úm ╞ín nhß╗»ng m├│n qu├á!'} </div>
+     </aside>
+   );
+ }
+@@ -1134,7 +1124,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
+   if (guest) {
+     const g = guest.girl ? 'nu' : 'nam';
+     return (
+-      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[40px] top-[550px] z-[3] h-[320px] w-[170px]">
++      <motion.div key={guest.username} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="absolute left-[455px] top-[535px] z-[3] h-[310px] w-[170px]">
+         <div className="teacher-shadow" />
+         <img src={`/assets/nv/${g}/${POSE[g].tay}.webp`} alt={guest.nickname} className="h-full w-full object-contain object-bottom drop-shadow-lg" />
+         <div className="absolute -bottom-1 left-1/2 w-[210px] -translate-x-1/2 rounded-xl border-2 border-[#fff6dd] bg-[#be426b] px-2 py-1 text-center text-white shadow-lg">
+@@ -1151,7 +1141,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
+       ? `/assets/nv/co-ngan/${teacherPose(v, now)}.webp?v=classic-restored`
+       : `/assets/nv/co-ngan/${v.outfit}/${OUTFIT_POSE[teacherPose(v, now)] ?? '01-dung'}.webp`;
+   return (
+-    <div className="teacher-character absolute left-[6px] top-[420px] z-[3] h-[450px] w-[250px]">
++    <div className="teacher-character absolute left-[435px] top-[535px] z-[3] h-[310px] w-[210px]">
+       <div className="teacher-shadow" />
+       <img src={src} style={!v.show && (!v.outfit || v.outfit === 'trang') ? { clipPath: 'none' } : undefined} className="teacher-sprite h-full w-full object-contain object-bottom drop-shadow-[0_8px_6px_rgba(0,0,0,0.25)]" />
+       <div className="absolute bottom-[10px] left-[35px] z-10 whitespace-nowrap rounded-full border-2 border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[2px] text-[17px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
+@@ -1180,10 +1170,10 @@ function FastestBoard({ v }: { v: StageView }) {
+     <motion.div
+       initial={{ opacity: 0, y: -6 }}
+       animate={{ opacity: 1, y: 0 }}
+-      className="absolute right-[140px] top-[560px] z-30 w-[390px] overflow-hidden rounded-[12px] border-2 border-[#7a2e0e] bg-[#fff6dd]/98 shadow-lg"
++      className="absolute right-[18px] top-[340px] z-30 w-[225px] overflow-hidden rounded-[12px] border-2 border-[#7a2e0e] bg-[#fff6dd]/98 shadow-lg"
+     >
+-      <div className="flex h-[24px] items-center justify-between bg-[#7a2e0e] px-3 text-[20px] font-bold text-[#ffe9b8]">
+-        <span>ΓÜí Top 3 nhanh nhß║Ñt</span>
++      <div className="flex h-[24px] items-center justify-between bg-[#7a2e0e] px-3 text-[16px] font-bold text-[#ffe9b8]">
++        <span>ΓÜí Nhanh nhß║Ñt</span>
+         <span>{v.correctCount} bß║ín ─æ├║ng</span>
+       </div>
+       {v.fastest.length === 0 && <div className="py-3 text-center text-[22px] text-[#8a6a3a]">Ch╞░a ai ─æ├║ng c├óu n├áy</div>}
+@@ -1193,16 +1183,16 @@ function FastestBoard({ v }: { v: StageView }) {
+           initial={{ opacity: 0, x: -30 }}
+           animate={{ opacity: 1, x: 0 }}
+           transition={{ delay: 0.15 * i }}
+-          className={`flex h-[22px] items-center gap-2 px-3 text-[20px] leading-[22px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
++          className={`grid min-h-[46px] grid-cols-[24px_1fr_34px] items-center gap-x-1 px-2 py-1 text-[17px] leading-[20px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
+         >
+           <span className="w-6 shrink-0 text-center text-[20px]">{['≡ƒÑç', '≡ƒÑê', '≡ƒÑë', '4', '5'][i]}</span>
+           <span className="min-w-0 flex-1 truncate font-semibold">{a.nickname}</span>
+-          <span className="shrink-0 whitespace-nowrap text-right text-[19px] font-bold tabular-nums text-[#6b4a22]">{secText(a.ms)}</span>
+-          <b className="w-[48px] shrink-0 text-right text-[21px] text-[#c2410c]">+{a.points}</b>
++          <span className="col-start-2 row-start-2 whitespace-nowrap text-[13px] font-bold tabular-nums text-[#6b4a22]">{secText(a.ms)}</span>
++          <b className="col-start-3 row-span-2 row-start-1 text-right text-[19px] text-[#c2410c]">+{a.points}</b>
+         </motion.div>
+       ))}
+       {v.laterCount > 0 && (
+-        <div className="h-[20px] border-t border-[#e9d8a6] px-3 text-center text-[17px] font-semibold leading-[19px] text-[#6b4a22]">
++        <div className="border-t border-[#e9d8a6] px-2 py-1 text-center text-[13px] font-semibold leading-[16px] text-[#6b4a22]">
+           {v.laterCount} bß║ín ─æ├║ng kh├íc ┬╖ +{v.laterPoints} ─æiß╗âm/bß║ín
+         </div>
+       )}
+@@ -1212,7 +1202,7 @@ function FastestBoard({ v }: { v: StageView }) {
+ 
+ function Podium({ v }: { v: StageView }) {
+   if (v.phase === 'show' && v.show) return v.show.kind === 'everest' ? <Mountain v={v} /> : <BellBoard v={v} />;
+-  if (v.phase === 'reveal') return <FastestBoard v={v} />;
++  if (['question', 'bonus', 'reveal'].includes(v.phase)) return <FastestBoard v={v} />;
+   return null;
+ }
+ 
+@@ -1420,7 +1410,7 @@ type WalkPoint = { x: number; y: number; scale?: number };
+ function hallwaySpot(index: number): WalkPoint & { scale: number } {
+   const depth = Math.floor(index / 2);
+   const side = index % 2;
+-  return { x: 990 + side * 48 - depth * 2, y: 766 + depth * 23 + side * 9, scale: 0.68 + depth * 0.025 };
++  return { x: 48 + side * 48 + depth * 2, y: 766 + depth * 23 + side * 9, scale: 0.68 + depth * 0.025 };
+ }
+ 
+ /** Feet positions share the same physical seat index as the reserved chair. */
+@@ -1446,7 +1436,7 @@ function seatToFront(index: number): WalkPoint[] {
+ }
+ function studentRoute(m: MovingStudent): WalkPoint[] {
+   const hall = hallwaySpot(m.hallwayIndex ?? 0);
+-  const frontHall = [{ x: 1048, y: 850 }, { x: 1015, y: 800 }, hall];
++  const frontHall = [{ x: 28, y: 850 }, { x: 65, y: 800 }, hall];
+   const target = boardSpot(m.standIndex);
+   const seatPath = seatToFront(m.seatIndex);
+   if (m.kind === 'to-board') {
+@@ -1485,39 +1475,27 @@ function routeSample(points: WalkPoint[], times: number[], progress: number) {
+   return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, dx: b.x - a.x, dy: b.y - a.y };
+ }
+ 
+-/** B├¬n phß║úi bß║úng l├á h├ánh lang; chß╗ë vß║╜ tß╗æi ─æa t├ím bß║ín ─æß╗â giß╗» nhß║╣ khi ph├▓ng ─æ├┤ng. */
+-function HallwayStudents({ v, now }: { v: StageView; now: number }) {
++/** H├áng chß╗¥ thß║¡t ─æß║╖t b├¬n tr├íi bß║úng, c├╣ng bß╗æ cß╗Ñc vß╗¢i bß║úng th├ánh t├¡ch. */
++function HallwayStudents({ v }: { v: StageView }) {
+   const people = v.hallway ?? [];
+   const total = v.hallwayTotal ?? people.length;
+   return (
+-    <aside aria-label={`H├ánh lang: ${total} hß╗ìc sinh`} className="pointer-events-none absolute inset-0 z-[1]">
+-      <div className="absolute left-[966px] top-[448px] w-[108px] rounded-xl border-2 border-[#bd6280] bg-[#fff2f6] px-1 py-1 text-center text-[17px] font-semibold leading-[20px] text-[#87324f] shadow-sm">
+-        ≡ƒÆ¼ G├╡<br /><strong className="text-[20px] font-extrabold">v├áo lß╗¢p</strong><br /><strong>+ Follow</strong><br />─æß╗â tham gia
+-      </div>
+-      {total > 0 && <div className="absolute left-[966px] top-[550px] w-[108px] rounded-xl border-2 border-[#c18139] bg-[#fff0cc] px-1 py-1 text-center text-[17px] font-extrabold leading-tight text-[#794319] shadow-sm">H├ÇNH LANG<br />{total} bß║ín</div>}
+-      {people.map((s, i) => {
+-        const moving = (v.movements ?? []).some((m) => m.username === s.username && now < m.startedAt + m.durationMs);
+-        if (isGuestTeacher(v, s.username) || moving || v.punished.some((p) => p.username === s.username)) return null;
+-        return <HallwayPerson key={s.username} person={s} index={s.hallwayIndex ?? i} />;
+-      })}
+-      {total > people.length && <div className="absolute left-[970px] top-[860px] w-[104px] rounded-lg bg-[#fff0cc] text-center text-[17px] font-bold text-[#794319]">+{total - people.length} bß║ín</div>}
++    <aside aria-label={`H├áng chß╗¥: ${total} hß╗ìc sinh`} className="classroom-panel pointer-events-none absolute left-[18px] top-[270px] z-20 w-[225px] px-3 py-3 text-[#794319]">
++      <div className="text-center text-[21px] font-extrabold">≡ƒÜ¬ Chß╗¥ v├áo lß╗¢p</div>
++      <div className="mb-2 text-center text-[27px] font-extrabold">{total} bß║ín</div>
++      {people.slice(0, 6).map((s, i) => (
++        <div key={s.username} className="flex h-[25px] items-center gap-1 text-[17px]" title={s.nickname}>
++          <span className="w-4 shrink-0 text-[13px] text-[#ae8756]">{i + 1}</span>
++          <span className="min-w-0 flex-1 truncate font-bold">{seatName(s.nickname || s.username)}</span>
++          {s.score > 0 && <b className="text-[#ba5c23]">{s.score}</b>}
++        </div>
++      ))}
++      {total > 6 && <div className="mt-1 text-center text-[14px]">C├▓n {total - 6} bß║ín ─æang chß╗¥</div>}
++      <div className="mt-2 border-t border-[#e0bd83] pt-2 text-center text-[15px] leading-[20px]">G├╡ ΓÇ£v├áo lß╗¢pΓÇ¥ ─æß╗â tham gia<br />Follow ─æß╗â ─æ╞░ß╗úc ╞░u ti├¬n h├áng chß╗¥</div>
+     </aside>
+   );
+ }
+ 
+-const HallwayPerson = memo(function HallwayPerson({ person: s, index }: { person: StageView['hallway'][number]; index: number }) {
+-  const g = s.girl ? 'nu' : 'nam';
+-  const spot = hallwaySpot(index);
+-  return (
+-    <div className="absolute" style={{ left: spot.x, top: spot.y, width: 185 * 0.47, height: 185, marginLeft: -185 * 0.47 / 2, marginTop: -185, transform: `scale(${spot.scale})`, transformOrigin: '50% 100%', zIndex: index + 1 }}>
+-      <div className="student-walker-shadow" />
+-      <img src={`/assets/nv/${g}/${POSE[g].dung}.webp`} alt={s.nickname} className="relative h-full w-full object-contain" />
+-      <span className="hallway-name" title={s.nickname || s.username}>{s.nickname || s.username}</span>
+-      <span className="absolute -top-2 right-0 text-[17px]">{s.sleeping ? '≡ƒÆñ' : 'ΓÅ│'}</span>
+-    </div>
+-  );
+-}, (a, b) => a.index === b.index && a.person.username === b.person.username && a.person.nickname === b.person.nickname && a.person.girl === b.person.girl && a.person.sleeping === b.person.sleeping);
+-
+ function StudentMovements({ v, now }: { v: StageView; now: number }) {
+   const events = (v.movements ?? []).filter((m) => !isGuestTeacher(v, m.username));
+   const moving = events.filter((m) => now >= m.startedAt && now < m.startedAt + m.durationMs);
+@@ -1809,7 +1787,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
+ }
+ 
+ 
+-const FLOWER_SPOT: [number, number] = [285, 860]; // T├óm ch├ón hß╗ìc sinh cß║ính c├┤, ph├¡a tr├¬n d├úy b├án ─æß║ºu.
++const FLOWER_SPOT: [number, number] = [400, 840]; // T├óm ch├ón hß╗ìc sinh cß║ính c├┤, ph├¡a tr├¬n d├úy b├án ─æß║ºu.
+ function FlowerWalk({ v }: { v: StageView }) {
+   const w = v.walk;
+   if (!w || isGuestTeacher(v, w.username) || (v.movements ?? []).some((m) => m.username === w.username && Date.now() < m.startedAt + m.durationMs)) return null;
+@@ -1840,7 +1818,7 @@ function FlowerWalk({ v }: { v: StageView }) {
+ }
+ 
+ // Hß╗ìc sinh bß╗ï phß║ít ─æß╗⌐ng: ─æß╗⌐ng ß╗ƒ khoß║úng s├án bß╗Ñc giß║úng tr╞░ß╗¢c lß╗¢p, tr╞░ß╗¢c d├úy ghß║┐ ─æß║ºu
+-const STAND_SPOTS = [300, 405, 510, 615, 720, 825];
++const STAND_SPOTS = [235, 325, 405, 675, 755, 845];
+ const STAND_FEET = ROWS[0].y - 130; // chß╗½a chß╗ù cho bß║úng t├¬n, kh├┤ng ─æ├¿ ─æß║ºu h├áng b├án ─æß║ºu
+ function Punished({ v }: { v: StageView }) {
+   return (
+@@ -1972,9 +1950,9 @@ function DeskGifts({ desk, scale }: { desk: StageView['seats'][number]['desk'];
+ 
+ function Motto() {
+   return (
+-    <div className="motto absolute left-1/2 top-[134px] z-10 flex w-[840px] -translate-x-1/2 items-center justify-center gap-2 whitespace-nowrap px-4 py-[7px] text-center text-[26px] font-extrabold tracking-wide">
++    <div className="motto absolute left-1/2 top-[142px] z-10 flex w-[550px] -translate-x-1/2 items-center justify-center gap-2 whitespace-nowrap px-4 py-[7px] text-center text-[22px] font-extrabold tracking-wide">
+       <span>≡ƒî╕</span>
+-      <span>NGHE Hß║╛T ─Éß╗Ç ΓÇô G├ò Mß╗ÜI ─éN ─ÉIß╗éM</span>
++      <span>TI├èN Hß╗îC Lß╗ä ΓÇô Hß║¼U Hß╗îC V─éN</span>
+       <span>≡ƒî╕</span>
+     </div>
+   );

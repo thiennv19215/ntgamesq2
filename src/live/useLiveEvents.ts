@@ -7,9 +7,10 @@ import { voice } from './voice';
  * Nghe sự kiện live từ server. Handler luôn là bản mới nhất (không lo state cũ),
  * tự kết nối lại khi rớt mạng.
  */
-export function useLiveEvents(handlers: LiveHandlers) {
+export function useLiveEvents(handlers: LiveHandlers, options: { trackStage?: boolean } = {}) {
   const ref = useRef(handlers);
   ref.current = handlers;
+  const trackStage = options.trackStage ?? true;
 
   useEffect(() => {
     let source: EventSource | null = null;
@@ -26,7 +27,7 @@ export function useLiveEvents(handlers: LiveHandlers) {
       });
 
     const connect = () => {
-      source = new EventSource(IS_STAGE ? `/api/tiktok/events?stage=${STAGE_ID}` : '/api/tiktok/events');
+      source = new EventSource(IS_STAGE && trackStage ? `/api/tiktok/events?stage=${STAGE_ID}` : '/api/tiktok/events');
       on('status', (d) => ref.current.onStatus?.(d));
       on('chat', (d) => ref.current.onChat?.(d));
       on('gift', (d) => ref.current.onGift?.(d));
@@ -40,7 +41,7 @@ export function useLiveEvents(handlers: LiveHandlers) {
       on('gamestate', (d) => ref.current.onGameState?.(d));
       on('speaker', (d) => {
         // trang stage bị trang mới hơn thay chỗ: im lặng hẳn (cả giọng lẫn nhạc)
-        if (IS_STAGE) {
+        if (IS_STAGE && trackStage) {
           const mine = d.id === STAGE_ID;
           if (!mine && voice.enabled) voice.stop();
           voice.enabled = mine;
@@ -59,5 +60,5 @@ export function useLiveEvents(handlers: LiveHandlers) {
       clearTimeout(retry);
       source?.close();
     };
-  }, []);
+  }, [trackStage]);
 }

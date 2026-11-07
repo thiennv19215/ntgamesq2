@@ -702,18 +702,10 @@ export class Classroom {
   private movements: StudentMovement[] = [];
   private movementSerial = 0;
 
-  /** Bound concurrent moving sprites; static queued actors retain their place. */
+  /** Serialize entry/exit walks so the class changes calmly, one student at a time. */
   private movementStart(requested: number, duration: number) {
-    let start = requested;
-    const limit = 12;
-    for (let attempt = 0; attempt <= this.movements.length; attempt++) {
-      const overlapping = this.movements.filter((m) => m.startedAt < start + duration && m.startedAt + m.durationMs > start);
-      const checkpoints = [start, ...overlapping.map((m) => m.startedAt).filter((t) => t > start && t < start + duration)].sort((a, b) => a - b);
-      const crowded = checkpoints.find((t) => overlapping.filter((m) => m.startedAt <= t && m.startedAt + m.durationMs > t).length >= limit);
-      if (crowded === undefined) return start;
-      start = Math.min(...overlapping.filter((m) => m.startedAt <= crowded && m.startedAt + m.durationMs > crowded).map((m) => m.startedAt + m.durationMs));
-    }
-    return start;
+    const latestEnd = this.movements.reduce((end, m) => Math.max(end, m.startedAt + m.durationMs), requested);
+    return latestEnd;
   }
 
   /** Đổi ghế tức thì theo điểm; chỉ tạo đường đi khi thật sự vào/ra lớp. */
@@ -744,7 +736,7 @@ export class Classroom {
       this.visualPeople.delete(username);
       this.movements = this.movements.filter((m) => m.username !== username);
       if (person && this.visualReady && !stillEntering && !this.visualStanding.has(username)) {
-        const durationMs = 1800;
+        const durationMs = 2600;
         const startedAt = this.movementStart(now, durationMs);
         this.movements.push({ ...person, id: `leave-${++this.movementSerial}`, kind: 'leave', standIndex: oldStanding.get(username), reason: this.exitReasons.get(username) ?? 'rank', seatIndex, startedAt, durationMs });
         this.exitReasons.delete(username);
@@ -772,7 +764,7 @@ export class Classroom {
     const clearAt = Math.max(now, ...reservedUntil.values());
     const create = (s: Student, kind: StudentMovement['kind'], seatIndex: number, extra: Partial<StudentMovement> = {}) => {
       this.movements = this.movements.filter((m) => m.username !== s.username);
-      const movement: StudentMovement = { username: s.username, nickname: s.nickname, girl: s.girl, id: `${kind}-${++this.movementSerial}`, kind, seatIndex, startedAt: kind === 'enter' ? clearAt : now, durationMs: kind === 'leave' ? 1800 : 2200, ...extra };
+      const movement: StudentMovement = { username: s.username, nickname: s.nickname, girl: s.girl, id: `${kind}-${++this.movementSerial}`, kind, seatIndex, startedAt: kind === 'enter' ? clearAt : now, durationMs: kind === 'leave' ? 2600 : 3000, ...extra };
       movement.startedAt = this.movementStart(movement.startedAt, movement.durationMs);
       this.movements.push(movement);
     };

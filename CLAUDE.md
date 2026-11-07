@@ -26,6 +26,18 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - `src/game/math.ts`: sinh câu toán nhẩm 4 cấp (cộng trừ 1 chữ số, 2 chữ số, nhân chia, 2 bước). Tự sinh nên không hết câu, không ghi vào sổ lớp.
 - `src/game/loi-thoai.ts`: toàn bộ lời cô (khoảng 330 câu, bốc kiểu xáo bài nên ít lặp). `src/game/config.ts`: số liệu.
 - `src/game/sfx.ts`: hiệu ứng âm thanh tự tạo (ting, trống, tích tắc, chuông, bụp quà, vỗ tay, kèn). Bỏ file mp3 cùng tên vào `public/assets/sfx/` là dùng file thay.
+
+## Kiến trúc sân khấu
+
+- Quy tắc chung dành cho agent nằm ở `AGENTS.md`.
+- `src/game/stage/classroomLayout.ts`: tọa độ canvas 1080×1920, hàng ghế, tỷ lệ học sinh và màu tổ. Đổi bố cục lớp hiện tại tại đây.
+- `src/game/stage/characterAssets.ts`: ánh xạ pose và asset của học sinh/cô giáo. Đổi sprite hoặc pose tại đây; ảnh ở `public/assets/nv/`.
+- `src/game/stage/UploadedRoomBackground.tsx`: render ảnh nền tải lên phía sau nội dung.
+- `src/live/stageLayouts.ts`: lựa chọn bố cục sân khấu được lưu qua localStorage và đồng bộ giữa Dashboard với stage. Bố cục mới phải có lựa chọn ở Dashboard và CSS scope theo `data-stage-layout`.
+- `src/live/classroomBackgrounds.ts`: nền preset của StageFrame/dashboard. `RoomCfg.bg` là ảnh tải riêng lên từ GameControls; hai cơ chế nền này độc lập.
+- `src/game/GameStage.tsx`: bộ ghép sân khấu; các component render cũ vẫn còn ở đây. Khi tách thêm, chuyển từng component sang `src/game/stage/` và giữ props rõ ràng, không thay đổi tọa độ/logic cùng lúc.
+- Mỗi game thật có gói riêng trong `src/game/modes/<game-id>/` gồm state/luật và scene riêng. `stageLayouts.ts` chỉ là bố cục trình bày, không đại diện cho game thứ hai.
+- Stage host chọn game qua registry. Không dùng chung state runtime; chỉ chia sẻ kho câu hỏi/cơ chế thuần/asset qua `src/game/shared/` khi game chủ động yêu cầu.
 - Trang báo cáo sau buổi live: http://localhost:3006/bao-cao (nút 📊 ở trang điều khiển). File `data/bao-cao/<ngày>.json`.
 - Chạy thử không đụng sổ lớp thật: đặt biến `DATA_DIR` sang thư mục khác.
 - `data/so-lop.json`: câu nào hỏi lúc nào (game ưu tiên câu lâu chưa hỏi; khoảng 50 tiết liền không lặp (câu đố mẹo hết trước)) + điểm tuần. Không đưa lên git.
@@ -144,3 +156,5 @@ Khách chủ yếu vào chơi lúc nghỉ ngơi, chỉ muốn trả lời và th
 - Nút "👋 Chào tạm biệt (xuống live)" ở trang điều khiển (2026-11-05): cô nói 1 câu chào cuối buổi (nhóm `goodbye`; có bạn dẫn đầu tiết thì `goodbyeTop` nhắc tên), cả lớp vỗ tay, biểu ngữ "Tan lớp rồi! Hẹn gặp lại cả lớp nha 💕 · Nhớ theo dõi kênh..." hiện 25 giây (`goodbyeBannerSec`). Game vẫn chạy tiếp, chủ kênh tự tắt live.
 - Chặn đáp án gửi sớm (2026-11-05): ngoài việc bảng chưa hiện thì không nhận, còn xét GIỜ GỬI TikTok (createTime + độ lệch đồng hồ đo từ bình luận): gửi sớm hơn lúc bảng hiện quá 0,5 giây (`earlySendGraceMs`) thì không tính, không mất lượt, dù bình luận tới server sau khi bảng hiện. Trước đây người đoán trước lúc cô đọc, bình luận tới trễ, vẫn được tính và xếp nhất "0,000 giây". Người xem thật thấy bảng trên điện thoại trễ vài giây nên không bị chặn nhầm. Chỉ áp cho câu hỏi tiết học (chưa áp cho 2 game lớn).
 - 2 giọng đè nhau (sửa 2026-11-05): voice.ts bỏ câu sau 8 giây chưa phát được (giọng tạo chậm khi Edge bị chặn) nhưng câu đó vẫn tự thử phát lại rồi phát chồng lên câu sau. Giờ bỏ câu là huỷ hẳn (dừng tải, không thử lại, lỡ phát thì tắt). Chỉ mở trang stage ở MỘT chỗ (LIVE Studio), mở thêm ở Chrome cũng nghe đôi giọng.
+- Bảng thi đấu là game mode độc lập (2026-11-07): có registry/game selector, runtime và scene riêng trong `src/game/modes/scoreboard/`; không còn là `stage.layout` CSS của game lớp học. Dashboard gửi lựa chọn `game:<id>` để stage host chuyển scene, còn asset scoreboard giữ trong `public/assets/generated/scoreboard-classroom-v2.png` và `public/assets/nv/scoreboard/`.
+- Bảng thi đấu chỉ có đúng 3 bên (Bên 1, Bên 2, Bên 3), mỗi bên tối đa 10 người và toàn ván tối đa 30 người (2026-11-07). Người mới được tự cân vào bên ít người nhất; người xem có thể comment `bên 1`, `bên 2` hoặc `bên 3` để chọn/đổi bên. Khi bên hoặc toàn ván đầy, đăng ký mới bị từ chối. Chỉ áp dụng cho scoreboard, không ảnh hưởng game lớp học cũ.

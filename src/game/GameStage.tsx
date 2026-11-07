@@ -4,6 +4,10 @@ import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
 import { giftOf } from './quiz';
+import { ROWS, SPRITE_H, STUDENT_BODY_SCALE, STUDENT_WALK_SCALE, TEAM_COLOR, TEAM_ICON, WALKER_H } from './stage/classroomLayout';
+import { CHUONG_POSES, EVEREST_POSES, HEAD, OUTFIT_POSE, POSE, type StudentPoseKey } from './stage/characterAssets';
+import { UploadedRoomBackground } from './stage/UploadedRoomBackground';
+import { readStageLayout, STAGE_LAYOUT_EVENT, STAGE_LAYOUT_KEY, type StageLayout } from '../live/stageLayouts';
 import './stage.css';
 
 /**
@@ -14,59 +18,7 @@ import './stage.css';
  */
 
 // Các hàng dùng chung kích thước để hàng đầu và nhân vật không bị bé hơn hàng cuối.
-const SEAT_SCALE = 1.16;
-const STUDENT_WALK_SCALE = 1.06;
-const STUDENT_BODY_SCALE = 0.78;
-const WALKER_H = 200;
-const ROWS = [
-  // Chừa dải an toàn cuối sân cho thanh tiến độ và hướng dẫn lớp.
-  { y: 1060, x1: 60, x2: 1020, n: GAME.rowSeats[0], s: SEAT_SCALE },
-  { y: 1205, x1: 60, x2: 1020, n: GAME.rowSeats[1], s: SEAT_SCALE },
-  { y: 1350, x1: 60, x2: 1020, n: GAME.rowSeats[2], s: SEAT_SCALE },
-  { y: 1495, x1: 60, x2: 1020, n: GAME.rowSeats[3], s: SEAT_SCALE },
-  { y: 1640, x1: 60, x2: 1020, n: GAME.rowSeats[4], s: SEAT_SCALE },
-];
-const SPRITE_H = 250; // chiều cao sprite học sinh
-// khung đầu đã xoá khỏi ảnh thân sau lưng (tools/tach-nen.py)
-const HEAD = { nam: { x: 0.136, y: 0, w: 0.682, h: 0.284 }, nu: { x: 0.174, y: 0, w: 0.668, h: 0.248 } };
-// màu 4 tổ
-const TEAM_COLOR = ['#ef4444', '#3b82f6', '#16a34a', '#f59e0b'];
-const TEAM_ICON = ['🔴', '🔵', '🟢', '🟡'];
-
-const POSE = {
-  nam: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
-  nu: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
-};
-type PoseKey = keyof typeof POSE.nam;
-
-// Trang phục cô Ngân
-const OUTFIT_POSE: Record<string, string> = {
-  '01-dung': '01-dung',
-  '02-gioi-thieu': '02-giang-bai',
-  '03-chi-bang': '04-chi-phai',
-  '04-vay-chao': '13-vay-chao',
-  '05-dang-tay': '15-chao-don',
-  '06-cuoi': '06-cuoi-che-mieng',
-  '07-tay-nguc': '05-cuoi-tuoi',
-  '08-ngon-cai': '08-like',
-  '09-mung': '14-co-vu',
-  '10-vo-tay': '07-vo-tay',
-  '11-nhun-vai': '12-nhun-vai',
-  '12-gai-dau': '11-suy-nghi',
-  '13-ngac-nhien': '10-bat-ngo',
-  '14-ngon-tro': '09-nghiem-nhe',
-  '15-chong-hong': '16-tu-tin',
-  '16-chi-trai': '03-chi-trai',
-};
-const EVEREST_POSES = [
-  '01-dung-san-sang', '02-chi-len-dinh', '03-chi-lo-trinh', '04-chao-doan-leo', '05-doc-ban-do', '06-suy-nghi', '07-like', '08-co-vu',
-  '09-bat-ngo', '10-cuoi-vui', '11-nhac-nho-an-toan', '12-vay-chao', '13-cam-co-dinh', '14-dong-vien', '15-vo-tay', '16-tu-tin',
-];
-const CHUONG_POSES = [
-  '01-cam-chuong-san-sang', '02-rung-chuong-ben', '03-rung-chuong-cao', '04-rung-chuong-hai-tay', '05-rung-chuong-nghieng-nguoi',
-  '06-rung-chuong-cuoi-tuoi', '07-rung-chuong-hao-hung', '08-rung-chuong-nghiem-tuc', '09-bao-hieu-bat-dau', '10-mung-chien-thang',
-  '11-bat-ngo-nghe-chuong', '12-moi-thi-sinh', '13-vay-chao-cam-chuong', '14-tu-hao-gio-chuong', '15-chuan-bi-rung', '16-nghi-thang-tran',
-];
+type PoseKey = StudentPoseKey;
 
 // Decode at most two images at once; never load every teacher outfit on first paint.
 const imageQueue: string[] = [];
@@ -98,7 +50,18 @@ function useNow(ms = 250) {
 
 export function GameStage({ game }: { game: GameState }) {
   const now = useNow();
+  const [layout, setLayout] = useState<StageLayout>(readStageLayout);
   const v = game.view;
+  useEffect(() => {
+    const onLayout = (event: Event) => setLayout((event as CustomEvent<StageLayout>).detail || readStageLayout());
+    const onStorage = (event: StorageEvent) => { if (event.key === STAGE_LAYOUT_KEY) setLayout(readStageLayout()); };
+    window.addEventListener(STAGE_LAYOUT_EVENT, onLayout);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(STAGE_LAYOUT_EVENT, onLayout);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
   useEffect(() => {
     const timer = window.setTimeout(() => warmImages(['nam', 'nu'].flatMap((g) =>
       Object.values(POSE[g as 'nam' | 'nu']).flatMap((p) => [`/assets/nv/${g}/${p}.webp`, `/assets/nv/${g}/sau-${p}.webp`]))), 500);
@@ -118,8 +81,8 @@ export function GameStage({ game }: { game: GameState }) {
     );
   }
   return (
-    <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
-      {v.cfg.bg && <img alt="" src={`/room-bg/${encodeURIComponent(v.cfg.bg)}`} className="absolute inset-0 h-full w-full object-cover" />}
+    <div data-stage-layout={layout} className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+      <UploadedRoomBackground image={v.cfg.bg} />
       <motion.div className="absolute inset-0" style={{ transformOrigin: '330px 700px' }} animate={{ scale: 1 }}>
         {/* Lớp bóng sàn gỗ ấm */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[560px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/15 to-[#3b1d07]/25 mix-blend-multiply" />
@@ -263,7 +226,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           <div className="absolute left-[180px] -top-1 h-[8px] w-[20px] rounded-full border border-[#34d399] bg-[#a7f3d0] shadow-sm" />
         </div>
       </div>
-      <div className="absolute bottom-[120px] left-[22px] right-[22px] top-[20px] overflow-hidden">
+      <div className="board-content absolute bottom-[120px] left-[22px] right-[22px] top-[20px] overflow-hidden">
       {v.phase === 'intro' && v.round % 2 === 0 && v.weekTop.length > 0 && <WeekBoard v={v} left={left} />}
       {v.phase === 'intro' && !(v.round % 2 === 0 && v.weekTop.length > 0) && (
         <div className="flex h-full flex-col items-center justify-center text-center">
@@ -370,7 +333,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
       {v.phase === 'results' && <Results v={v} />}
       {v.phase === 'recess' && v.recess && <Recess v={v} left={left} />}
       </div>
-      <div className="absolute bottom-[14px] left-[22px] right-[22px] h-[100px] overflow-hidden rounded-[12px] border border-[#ffe680]/35 bg-[#092f24] px-4 py-2">
+      <div className="board-footer absolute bottom-[14px] left-[22px] right-[22px] h-[100px] overflow-hidden rounded-[12px] border border-[#ffe680]/35 bg-[#092f24] px-4 py-2">
         {v.teacherChat && !isFastestNotice(v)
           ? <TeacherChat v={v} />
           : <div className="flex h-full items-center text-[24px] font-bold text-[#fff0ba]">💬 Gõ đáp án trong bình luận · Cùng cô học vui mỗi ngày!</div>}
@@ -1520,12 +1483,13 @@ function HallwayStudents({ v }: { v: StageView }) {
 
 function StudentMovements({ v, now }: { v: StageView; now: number }) {
   const events = v.movements ?? [];
-  const moving = events.filter((m) => now >= m.startedAt && now < m.startedAt + m.durationMs);
+  const paused = (v.phase === 'question' && v.boardShown) || v.phase === 'bonus' || (v.phase === 'show' && v.show?.stage === 'ask' && v.boardShown);
+  const moving = events.filter((m) => now >= m.startedAt && (paused || now < m.startedAt + m.durationMs));
   const queued = events.filter((m) => now < m.startedAt);
-  const compact = moving.length > 8;
+  const compact = moving.length > 1;
   return <>
     {queued.map((m) => <QueuedStudent key={m.id} movement={m} />)}
-    {moving.map((m) => <WalkingStudent key={m.id} movement={m} compact={compact} />)}
+    {moving.map((m) => <WalkingStudent key={m.id} movement={m} compact={compact} paused={paused} />)}
   </>;
 }
 const QueuedStudent = memo(function QueuedStudent({ movement: m }: { movement: MovingStudent }) {
@@ -1540,8 +1504,9 @@ const QueuedStudent = memo(function QueuedStudent({ movement: m }: { movement: M
   </div>;
 }, (a, b) => a.movement.id === b.movement.id && a.movement.girl === b.movement.girl && a.movement.seatIndex === b.movement.seatIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.standIndex === b.movement.standIndex && a.movement.hallwayIndex === b.movement.hallwayIndex);
 
-const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { movement: MovingStudent; compact: boolean }) {
+const WalkingStudent = memo(function WalkingStudent({ movement: m, compact, paused }: { movement: MovingStudent; compact: boolean; paused: boolean }) {
   const element = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<Animation | null>(null);
   const journey = useMemo(() => {
     const points = studentRoute(m);
     return { points, times: routeTimes(points) };
@@ -1565,15 +1530,23 @@ const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { 
       transform: `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.scale ?? studentWalkScale(p.y)})`,
       offset: journey.times[i],
     })), { duration: m.durationMs, delay: Math.max(0, m.startedAt - now), easing: 'linear', fill: 'both' });
+    animationRef.current = animation;
     if (elapsed > 0) animation.currentTime = elapsed;
+    if (paused) animation.pause();
     // Only path corners update React; animation frames run in the browser compositor.
     const timers = journey.times.slice(0, -1).flatMap((t) => {
       const wait = m.startedAt + t * m.durationMs - now;
       return wait > 0 ? [window.setTimeout(() => setProgress(Math.min(0.999, t + 0.00001)), wait)] : [];
     });
     animation.onfinish = () => { node.style.visibility = 'hidden'; };
-    return () => { animation.cancel(); timers.forEach(clearTimeout); };
+    return () => { animation.cancel(); animationRef.current = null; timers.forEach(clearTimeout); };
   }, [journey, m.startedAt, m.durationMs]);
+  useEffect(() => {
+    const animation = animationRef.current;
+    if (!animation) return;
+    if (paused) animation.pause();
+    else animation.play();
+  }, [paused]);
   const zIndex = position.x > 960 && position.y < 900 ? 1 : 12 + Math.max(0, ROWS.filter((r) => position.y > r.y + 90 * r.s).length - 1) * 6;
   const waiting = progress === 0 && Date.now() < m.startedAt;
   return (
@@ -1595,7 +1568,7 @@ const WalkingStudent = memo(function WalkingStudent({ movement: m, compact }: { 
       <div className={`student-walker-label ${compact ? 'student-walker-label-compact' : ''}`} title={m.nickname || m.username}><span>{m.nickname || m.username}</span>{!compact && <small>{movementLabel(m)}</small>}</div>
     </div>
   );
-}, (a, b) => a.compact === b.compact && a.movement.id === b.movement.id && a.movement.username === b.movement.username && a.movement.startedAt === b.movement.startedAt && a.movement.durationMs === b.movement.durationMs && a.movement.seatIndex === b.movement.seatIndex && a.movement.kind === b.movement.kind && a.movement.reason === b.movement.reason && a.movement.hallwayIndex === b.movement.hallwayIndex && a.movement.standIndex === b.movement.standIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.nickname === b.movement.nickname && a.movement.girl === b.movement.girl);
+}, (a, b) => a.compact === b.compact && a.paused === b.paused && a.movement.id === b.movement.id && a.movement.username === b.movement.username && a.movement.startedAt === b.movement.startedAt && a.movement.durationMs === b.movement.durationMs && a.movement.seatIndex === b.movement.seatIndex && a.movement.kind === b.movement.kind && a.movement.reason === b.movement.reason && a.movement.hallwayIndex === b.movement.hallwayIndex && a.movement.standIndex === b.movement.standIndex && a.movement.fromSeatIndex === b.movement.fromSeatIndex && a.movement.nickname === b.movement.nickname && a.movement.girl === b.movement.girl);
 
 type StudentBodyProps = {
   s: StageView['seats'][number]; pose: PoseKey; away: boolean; called: boolean;

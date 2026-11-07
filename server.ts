@@ -70,6 +70,7 @@ const announceSpeaker = () => broadcast('speaker', { id: stageIds[stageIds.lengt
 let activeConn: InstanceType<typeof TikTokLiveConnection> | null = null;
 let lastRateControl: { action: string; text: string } | null = null;
 let lastThemeControl: { action: string; text: string } | null = null;
+let lastGameControl: { action: 'custom'; text: string } | null = null;
 
 // Tên kênh (giọng đọc + tiêu đề) lưu ở settings.json cạnh file này, tắt server mở lại vẫn còn
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
@@ -78,7 +79,7 @@ let lastNameControl: { action: string; text: string } | null = null;
 let wantUser = '';
 // cài đặt lớp ở trang điều khiển: tên + giọng cô giáo, chữ bảng đỏ, bật tắt 2 game lớn, ảnh nền riêng (thiếu mục nào thì dùng GAME.defaultRoom)
 type RoomSettings = { teacherName?: string; teacherVoice?: 'nu' | 'nam'; motto?: string; everest?: boolean; chuong?: boolean; bg?: string };
-let settings: { channelName?: string; tiktokUser?: string; classroomTheme?: string; room?: RoomSettings } = {};
+let settings: { channelName?: string; tiktokUser?: string; classroomTheme?: string; gameId?: 'classroom' | 'scoreboard'; room?: RoomSettings } = {};
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
@@ -86,6 +87,9 @@ try {
   }
   if (typeof settings.classroomTheme === 'string' && /^[a-z0-9-]{1,40}$/i.test(settings.classroomTheme)) {
     lastThemeControl = { action: 'custom', text: `theme:${settings.classroomTheme}` };
+  }
+  if (settings.gameId === 'classroom' || settings.gameId === 'scoreboard') {
+    lastGameControl = { action: 'custom', text: `game:${settings.gameId}` };
   }
   if (typeof settings.tiktokUser === 'string') wantUser = settings.tiktokUser;
 } catch {
@@ -120,6 +124,7 @@ app.get('/api/tiktok/events', (req, res) => {
   if (lastRateControl) res.write(`event: control\ndata: ${JSON.stringify(lastRateControl)}\n\n`);
   if (lastNameControl) res.write(`event: control\ndata: ${JSON.stringify(lastNameControl)}\n\n`);
   if (lastThemeControl) res.write(`event: control\ndata: ${JSON.stringify(lastThemeControl)}\n\n`);
+  if (lastGameControl) res.write(`event: control\ndata: ${JSON.stringify(lastGameControl)}\n\n`);
   res.write(`event: roomCfg\ndata: ${JSON.stringify(settings.room ?? {})}\n\n`);
   sseClients.push(res);
   const stageId = typeof req.query.stage === 'string' ? req.query.stage.slice(0, 40) : '';
@@ -377,6 +382,13 @@ app.post('/api/control', (req, res) => {
     payload.text = `theme:${theme}`;
     lastThemeControl = { action: 'custom', text: payload.text };
     saveSettings({ classroomTheme: theme });
+  }
+  if (action === 'custom' && payload.text?.startsWith('game:')) {
+    const gameId = payload.text.slice('game:'.length).trim();
+    if (gameId !== 'classroom' && gameId !== 'scoreboard') return res.status(400).json({ success: false, error: 'Game không hợp lệ' });
+    payload.text = `game:${gameId}`;
+    lastGameControl = { action: 'custom', text: payload.text };
+    saveSettings({ gameId });
   }
   broadcast('control', payload);
   res.json({ success: true, pages: sseClients.length });

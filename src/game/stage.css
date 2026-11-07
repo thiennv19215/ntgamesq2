@@ -326,3 +326,16 @@
 .floating-info-rail .honor-value { font-size: 16px; }
 .floating-info-rail .honor-board-footer { flex: 0 0 auto; padding: 3px 2px; font-size: 11px; line-height: 15px; }
 .floating-info-rail .fastest-board { position: relative; inset: auto; width: 100%; height: 180px; box-shadow: 0 4px 12px rgba(65, 26, 6, 0.3); }
+
+/* Kiểu sân khấu tùy chọn: bảng thi đấu rộng phía trên, điểm riêng bên phải, lớp học phía dưới. */
+[data-stage-layout="scoreboard"] .classroom-board { left: 30px !important; top: 210px !important; width: 1020px !important; height: 730px !important; }
+[data-stage-layout="scoreboard"] .board-content { right: 270px; }
+[data-stage-layout="scoreboard"] .floating-info-rail { top: 280px; right: 46px; width: 238px; height: 460px; }
+[data-stage-layout="scoreboard"] .floating-info-rail .board-sidebar > aside,
+[data-stage-layout="scoreboard"] .floating-info-rail .fastest-board { height: 388px; }
+[data-stage-layout="scoreboard"] .floating-info-rail .honor-row { min-height: 34px; font-size: 19px; line-height: 24px; }
+[data-stage-layout="scoreboard"] .floating-info-rail .honor-rank { flex-basis: 26px; font-size: 17px; }
+[data-stage-layout="scoreboard"] .floating-info-rail .honor-value { font-size: 19px; }
+[data-stage-layout="scoreboard"] .classroom-ribbon,
+[data-stage-layout="scoreboard"] .gift-corner-board { display: none; }
+[data-stage-layout="scoreboard"] .teacher-character { top: 408px; transform: scale(.48); transform-origin: left bottom; }

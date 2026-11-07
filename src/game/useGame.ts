@@ -7,6 +7,7 @@ import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { saveClassroomBackground } from '../live/classroomBackgrounds';
+import { saveStageLayout, type StageLayout } from '../live/stageLayouts';
 import { GAME, type RoomCfg } from './config';
 import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
@@ -35,7 +36,7 @@ function dayBoard(saved: WeekRow[], pending: Map<string, { nickname: string; poi
  * Trang stage chạy game thật (lõi ở quiz.ts), đọc/ghi sổ lớp trên server và gửi ảnh chụp trạng thái lên.
  * Trang điều khiển không tự chạy game, chỉ vẽ lại ảnh chụp đó, nên xem trước luôn khớp với live.
  */
-export function useGame() {
+export function useGame(active = true) {
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [view, setView] = useState<StageView | null>(null);
   const [lastGift, setLastGift] = useState<(GiftEvent & { at: number }) | null>(null);
@@ -130,15 +131,17 @@ export function useGame() {
     onStatus: setStatus,
     onSpeaker: (d) => setStageCount(d.count),
     onGameState: (s) => {
-      if (!IS_STAGE) setView({ ...s, cfg: { ...GAME.defaultRoom, ...s.cfg } } as StageView);
+      if (active && !IS_STAGE) setView({ ...s, cfg: { ...GAME.defaultRoom, ...s.cfg } } as StageView);
     },
     onRoomCfg: (c) => {
+      if (!active) return;
       cfg.current = { ...GAME.defaultRoom, ...(c as Partial<RoomCfg>) };
       applyCfg(roomRef.current);
       dirty.current = true;
     },
 
     onMember: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (!room) return;
       room.enter(person(e), Date.now());
@@ -147,6 +150,7 @@ export function useGame() {
     },
 
     onChat: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (!room) return;
       const p = person(e);
@@ -164,6 +168,7 @@ export function useGame() {
     },
 
     onGift: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (!room) return;
       const p = person(e);
@@ -187,6 +192,7 @@ export function useGame() {
     },
 
     onFollow: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (room && talk.follows.first(e.username)) {
         room.socialChat('follow', person(e), Date.now());
@@ -195,6 +201,7 @@ export function useGame() {
     },
 
     onShare: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (!room) return;
       room.socialChat('share', person(e), Date.now());
@@ -202,6 +209,7 @@ export function useGame() {
     },
 
     onLike: (e) => {
+      if (!active) return;
       const room = roomRef.current;
       if (!room) return;
       room.socialChat('like', { username: e.username, nickname: e.nickname || e.username, spoken: speakableName(e.nickname || e.username), avatar: '' }, Date.now());
@@ -213,10 +221,15 @@ export function useGame() {
     },
 
     onControl: (c) => {
+      if (!active) return;
       if (c.action === 'setName' && c.text) setChannelName(c.text);
       if (c.action === 'custom' && c.text?.startsWith('theme:')) {
         saveClassroomBackground(c.text.slice('theme:'.length));
         dirty.current = true;
+      }
+      if (c.action === 'custom' && c.text?.startsWith('layout:')) {
+        const layout = c.text.slice('layout:'.length);
+        if (layout === 'classroom' || layout === 'scoreboard') saveStageLayout(layout as StageLayout);
       }
       const room = roomRef.current;
       if (!room) return;
@@ -243,11 +256,15 @@ export function useGame() {
       if (c.action === 'custom' && c.text?.startsWith('recess:')) say(room.forceRecess(c.text.slice(7) as RecessGame, Date.now()));
       if (c.action === 'custom' && c.text?.startsWith('show:')) say(room.forceShow(c.text.slice(5) as ShowKind, Date.now()));
     },
-  });
+  }, { trackStage: active });
 
   // Mở trang stage: đọc sổ lớp (câu đã hỏi, bảng vàng tuần) rồi mới vào học
   useEffect(() => {
-    if (!IS_STAGE) return;
+    roomRef.current = null;
+    if (!active || !IS_STAGE) {
+      setView(null);
+      return;
+    }
     if (MUTED) {
       voice.volume = 0;
       sfx.volume = 0;
@@ -355,9 +372,10 @@ export function useGame() {
     return () => {
       stop = true;
       timers.forEach(clearInterval);
+      roomRef.current = null;
       window.removeEventListener('beforeunload', save);
     };
-  }, []);
+  }, [active]);
 
   return { status, view, lastGift, stageCount, channelName };
 }
