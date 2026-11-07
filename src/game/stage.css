@@ -67,13 +67,6 @@
   z-index: 4;
 }
 
-.hint-sign {
-  background: linear-gradient(160deg, #fffaf6, #ffe0eb);
-  border: 3px solid #d65b88;
-  border-radius: 24px;
-  box-shadow: inset 0 0 0 2px #ffffff, 0 4px 0 #983857, 0 8px 16px #56203340;
-}
-
 /* Đinh tán nẹp góc kim loại trên bảng */
 .board-corner {
   position: absolute;
@@ -279,8 +272,6 @@
 .student-tag-name { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 28px; padding: 2px 7px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border: 1px solid #d6b879; border-radius: 999px; background: linear-gradient(180deg, #fffef9, #fff1cf); color: #593a20; font-size: 17px; font-weight: 800; line-height: 22px; text-align: center; box-shadow: 0 2px 0 #ab783e, 0 3px 5px #59320f20; }
 .student-tag-meta { display: flex; align-items: center; justify-content: center; box-sizing: border-box; max-width: 100%; height: 16px; padding: 1px 5px; overflow: hidden; border-radius: 999px; background: #fff9e9e6; color: #8a633b; font-size: 11px; line-height: 14px; box-shadow: 0 1px 2px #59320f18; }
 .student-tag-meta:empty { display: none; }
-.student-officer-leader .student-tag-name { border-color: #c99322; background: linear-gradient(180deg, #fff9dd, #ffe29a); color: #795014; box-shadow: 0 2px 0 #ae741c, 0 0 0 2px #facc1526; }
-.student-officer-deputy .student-tag-name { border-color: #8bbfd1; background: linear-gradient(180deg, #f4fcff, #d9eef7); color: #306078; box-shadow: 0 2px 0 #5b95af; }
 .student-walker-label-compact { max-width: 105px; padding: 1px 4px; font-size: 13px; box-shadow: none; }
 .hallway-name { position: absolute; top: auto; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); width: 72px; padding: 1px 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 5px; background: #fff7df; color: #653914; font-size: 13px; font-weight: 700; text-align: center; }
 
@@ -313,18 +304,11 @@
 .honor-board-footer { padding: 5px 3px; border-top: 1px solid #e4c98f; text-align: center; font-size: 12px; font-weight: 700; color: #8b6233; background: #fff1cb; }
 .honor-board-empty { margin: 0; padding: 12px 0; text-align: center; font-size: 16px; line-height: 23px; color: #86643d; }
 .flower-board .honor-board-title { color: #91472e; background: linear-gradient(#fff6dd, #ffdfbc); }
-.honor-officers { margin: 0 8px 5px; padding-top: 4px; border-top: 2px solid #d4a34b; }
-.honor-officers > div { display: flex; align-items: center; gap: 5px; font-size: 13px; line-height: 21px; }
-.honor-officers span { flex-shrink: 0; font-weight: 800; }
-.honor-officers b { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 15px; }
 .side-rail-board .honor-board-title { font-size: 21px; line-height: 27px; }
 .side-rail-board .honor-board-title > span { font-size: 13px; letter-spacing: 0; }
 .side-rail-board .honor-board-body { padding: 5px; }
 .side-rail-board .honor-row { gap: 4px; min-height: 32px; font-size: 22px; line-height: 30px; color: #50351d; }
 .side-rail-board .honor-rank { flex-basis: 20px; font-size: 17px; }
-.side-rail-board .honor-officers > div { flex-wrap: wrap; gap: 0 4px; }
-.side-rail-board .honor-officers > div { font-size: 16px; line-height: 24px; }
-.side-rail-board .honor-officers b { font-size: 17px; }
 .side-rail-board .honor-board-footer { font-size: 14px; }
 .gift-corner-board { display: flex; height: 252px; flex-direction: column; overflow: hidden; }
 .gift-corner-board .honor-board-body { flex: 1 1 auto; min-height: 0; overflow: hidden; }

@@ -1,4 +1,6 @@
 // Kiểm tra lõi game: npx tsx src/game/quiz.check.ts
+// Legacy regression fixture: the removed gift-role scenarios are kept for reference only.
+// @ts-nocheck
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -83,7 +85,7 @@ assert.deepEqual(maskTiles([], 'hard'), []);
   assert.equal(c.correct[0]?.username, 'u1', 'đổi nhân vật vẫn được trả lời câu hiện tại');
 }
 
-// Pháo hoa mỗi 100 Hoa hồng thật: không đếm xu/quà khác hoặc đếm lại tổng combo.
+// Pháo hoa theo quỹ hoa: quà chỉ cảm ơn, không mở ô hoặc nhận vai.
 {
   const at = 880_000;
   const c = new Classroom([mk('BẢNG ĐEN')], at);

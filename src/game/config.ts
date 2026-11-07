@@ -193,14 +193,8 @@ export const GAME = {
   giftPileMax: 18, // bàn quà sau lưng cô bày tối đa chừng này món (mới nhất)
 
   // ---------- Quà / tim ----------
-  // 0 = tắt mở ô bằng hoa; chỉ Hoa hồng mở ô, các món khác vẫn dùng lời cảm ơn.
-  hintGiftCoins: 1, // Hoa hồng từ 1 xu mở 1 ô chữ cho cả lớp khi đang trả lời.
-  roseRoleMs: 120_000,
-  roseRoles: [
-    { roses: 5, label: 'Lớp phó', icon: '⭐' },
-    { roses: 10, label: 'Lớp trưởng', icon: '👑' },
-    { roses: 20, label: 'Cô giáo', icon: '👩‍🏫' },
-  ],
+  // Quà chỉ để cảm ơn, không mở ô và không đổi vai trong lớp.
+  hintGiftCoins: 0,
   likesPerClap: 300, // đủ 300 tim: cả lớp vỗ tay
   likesPerFirework: 100, // đủ 100 tim thật: bắn pháo hoa
   clapSec: 5,

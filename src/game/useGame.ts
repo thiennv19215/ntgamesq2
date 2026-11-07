@@ -110,12 +110,6 @@ export function useGame() {
     if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow(now)) return;
     // cảm ơn quà trước; câu thường mỗi phần chỉ nói GAME.chatterPerPhase câu, còn lại chờ phần sau hoặc hết hạn thì bỏ
     const giftTurn = now - lastGiftSpeechAt.current >= 15_000;
-    const notice = giftTurn ? room.takeRoleNotice(now) : null;
-    if (notice) {
-      lastGiftSpeechAt.current = now;
-      voice.say(notice.text); // Nhận vai dùng cùng lượt nói thêm như cảm ơn quà, không giữ đồng hồ.
-      return;
-    }
     const p = giftTurn ? chatter.current.findIndex((c) => c.priority) : -1;
     const i = p >= 0 ? p : room.chatterAllowed(false) ? chatter.current.findIndex((c) => !c.priority) : -1;
     if (i < 0) return;
@@ -176,17 +170,15 @@ export function useGame() {
       const coins = e.diamondCount * e.repeatCount;
       const now = Date.now();
       if (e.repeatCount > 0) setLastGift({ ...e, nickname: p.nickname, at: now });
-      const giftLines = room.gift(p, coins, now, e.repeatCount, e.giftName, e.roleCount ?? e.repeatCount);
-      // Các lời cảm ơn/mở chữ/nhận vai của quà phải đi vào cùng hàng đợi giọng cô.
+      const giftLines = room.gift(p, coins, now, e.repeatCount, e.giftName);
+      // Lời cảm ơn quà đi vào cùng hàng đợi giọng cô.
       // Quà phải được đọc ngay: `room.gift()` đánh dấu lời cảm ơn bằng `warn`.
       // Không xoá cờ này, nếu không câu bị đẩy vào cửa sổ nói chuyện và có thể hết hạn
       // trước khi cô kịp đọc.
       say(giftLines.map((line) => ({ ...line, main: false, priority: true })));
       if (e.repeatCount > 0) room.socialChat('gift', p, now);
       // Nếu quà không tạo announcement riêng (ví dụ cô đang dẫn bạn khác lên), vẫn cảm ơn tên người tặng theo cooldown.
-      const pendingRole = e.giftName.toLowerCase() === 'rose' && (e.roleCount ?? e.repeatCount) >= room.roseSettings.deputy;
-      const comboStillRunning = e.giftName.toLowerCase() === 'rose' && e.roleCount === 0;
-      if (e.repeatCount > 0 && !pendingRole && !comboStillRunning && !giftLines.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length, now)) {
+      if (e.repeatCount > 0 && !giftLines.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length, now)) {
         say([{ ...room.thank(p, e.giftName, coins), warn: true }]);
       }
       // Thông báo chữ vẫn hiện ngay, độc lập với việc audio đang bận.
@@ -231,14 +223,6 @@ export function useGame() {
       if (c.action === 'custom' && c.text === 'teacherChatTest') {
         room.previewTeacherChat(Date.now());
         dirty.current = true;
-      }
-      if (c.action === 'custom' && c.text?.startsWith('roseSettings:')) {
-        try {
-          if (room.setRoseSettings(JSON.parse(c.text.slice('roseSettings:'.length)))) {
-            localStorage.setItem('classroom.roseSettings', JSON.stringify(room.roseSettings));
-            dirty.current = true;
-          }
-        } catch { /* Bỏ qua thiết lập không hợp lệ. */ }
       }
       if (c.action === 'speak' && c.text) voice.say(c.text, true);
       if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
@@ -323,7 +307,6 @@ export function useGame() {
       }
       if (stop) return;
       const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
-      try { room.setRoseSettings(JSON.parse(localStorage.getItem('classroom.roseSettings') ?? 'null')); } catch { /* Dùng mặc định. */ }
       room.setFlowersSaved(flowersSaved);
       room.showBank = SHOW_BANK;
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';

@@ -270,7 +270,6 @@ async function connectTikTok(cleanUser: string) {
       giftId,
       diamondCount: data?.gift?.diamondCount || data?.diamondCount || data?.giftDetails?.diamondCount || 1,
       repeatCount: Math.max(0, delta),
-      roleCount: comboDone ? total : 0, // Xét vai bằng tổng một combo hoàn tất, không cộng các combo riêng.
       avatar: avatarOf(data),
       timestamp: Date.now(),
     });

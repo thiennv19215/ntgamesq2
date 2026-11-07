@@ -26,7 +26,6 @@ export interface GiftEvent {
   giftId: number;
   diamondCount: number; // xu của 1 món
   repeatCount: number; // số món MỚI trong lần này (server đã trừ phần combo cũ)
-  roleCount?: number; // tổng combo đã kết thúc; 0 khi combo còn đang chạy
   avatar: string;
   timestamp: number;
 }

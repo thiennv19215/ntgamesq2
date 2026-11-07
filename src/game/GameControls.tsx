@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { RoseSettings } from './quiz';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
 import { GAME, type RoomCfg } from './config';
@@ -101,16 +100,6 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
   const [running, setRunning] = useState(false);
   const [bdName, setBdName] = useState('');
   const testVisitor = useRef(0);
-  const [roseDraft, setRoseDraft] = useState<RoseSettings>({ visible: true, hint: 1, deputy: 5, leader: 10, teacher: 20 });
-  const [roseMessage, setRoseMessage] = useState('');
-  const settingsKey = JSON.stringify(view?.roseSettings);
-  const testRose = (person: number, count: number) => emitTest('gift', { ...fake(person), giftName: 'Rose', giftId: 1, diamondCount: 1, repeatCount: count, roleCount: count });
-  const roseSettings = view?.roseSettings ?? roseDraft;
-  const nextLeaderCount = roseSettings.leader;
-  useEffect(() => {
-    if (view?.roseSettings) setRoseDraft({ ...view.roseSettings });
-  }, [settingsKey]);
-
   /** Giả lập n người xem cùng bình luận trong 20 giây: 15% đúng, 20% đoán sai, còn lại nói chuyện */
   const flood = async (n: number) => {
     if (!view?.answer || running) return;
@@ -160,29 +149,6 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           {sent > 0 && <div>Giả lập đã gửi: {sent}</div>}
         </div>
       )}
-      {/* Chủ kênh dùng trong lúc live */}
-      <fieldset className="space-y-3 rounded-lg bg-slate-800 p-3">
-        <legend className="px-1 text-sm font-bold">🌹 Thiết lập Hoa hồng</legend>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={roseDraft.visible} onChange={(e) => setRoseDraft({ ...roseDraft, visible: e.target.checked })} />Hiện bảng Hoa hồng trên màn chơi</label>
-        <div className="grid grid-cols-2 gap-2">
-          {([['hint', 'Mở 1 chữ'], ['deputy', 'Lớp phó'], ['leader', 'Lớp trưởng'], ['teacher', 'Cô giáo · 2 phút']] as const).map(([key, label]) => (
-            <label key={key} className="text-sm">{label}
-              <input type="number" min={1} max={9999} step={1} value={Number.isNaN(roseDraft[key]) ? '' : roseDraft[key]} onChange={(e) => setRoseDraft({ ...roseDraft, [key]: e.target.valueAsNumber })} className="mt-1 w-full rounded bg-slate-900 px-2 py-1.5 text-white" />
-            </label>
-          ))}
-        </div>
-        <p className="text-xs text-slate-300">Số Hoa hồng trong một combo. Ẩn bảng vẫn giữ cơ chế mở chữ và nhận vai.</p>
-        <Btn disabled={!view} onClick={async () => {
-          if (![roseDraft.hint, roseDraft.deputy, roseDraft.leader, roseDraft.teacher].every((n) => Number.isInteger(n) && n >= 1 && n <= 9999) || !(roseDraft.deputy < roseDraft.leader && roseDraft.leader < roseDraft.teacher)) {
-            setRoseMessage('Nhập số nguyên 1–9999; mốc lớp phó < lớp trưởng < cô giáo.'); return;
-          }
-          try {
-            const result = await sendControl('custom', `roseSettings:${JSON.stringify(roseDraft)}`);
-            setRoseMessage(result.success === false ? 'Chưa gửi được. Thử lại nhé.' : 'Đã gửi thiết lập tới màn chơi.');
-          } catch { setRoseMessage('Mất kết nối, chưa lưu được thiết lập.'); }
-        }}>Áp dụng</Btn>
-        {roseMessage && <p role="status" className="text-xs text-amber-300">{roseMessage}</p>}
-      </fieldset>
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => confirm(`Bỏ câu "${view?.answer}"? Câu này sẽ không bao giờ được hỏi lại.`) && sendControl('custom', 'ban')}
@@ -219,12 +185,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           emitTest('member', { username: `walk-test-${Date.now()}-${id}`, nickname: `Bạn mới ${id}`, avatar: '' });
         }}>🚶 1 bạn mới đi vào lớp</Btn>
         {import.meta.env.DEV && <a href="/tools/student-movement-preview.html" target="_blank" rel="noreferrer" className="rounded-lg bg-amber-700 px-3 py-2 text-sm text-white hover:bg-amber-600">🎬 Xem thử đi ra / vào</a>}
-        <Btn onClick={() => testRose(3, roseSettings.hint)}>🌹 Test mở chữ · x{roseSettings.hint}</Btn>
-        <Btn onClick={() => testRose(3, 3)}>🎆 Test pháo hoa nhẹ · x3 🌹</Btn>
         <Btn disabled={!view} onClick={() => sendControl('custom', 'teacherChatTest')}>💬 Test chat cô giáo</Btn>
-        <Btn onClick={() => testRose(1, roseSettings.leader)}>👑 Test lớp trưởng · x{roseSettings.leader} 🌹</Btn>
-        <Btn disabled={nextLeaderCount >= roseSettings.teacher} onClick={() => testRose(view?.roleHolders?.find((r) => r.label === 'Lớp trưởng')?.username === 'hs2' ? 1 : 2, nextLeaderCount)}>👑 Test đổi lớp trưởng · x{nextLeaderCount} 🌹</Btn>
-        <Btn onClick={() => testRose(4, roseSettings.teacher)}>👩‍🏫 Test cô giáo · 2 phút</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to</Btn>
         <Btn disabled={!view} onClick={() => emitTest('chat', { ...fake(0), comment: 'nam' })}>👦 Test đổi nam · Nguyễn Lan Anh</Btn>
         <Btn disabled={!view} onClick={() => emitTest('chat', { ...fake(0), comment: 'nữ' })}>👧 Test đổi nữ · Nguyễn Lan Anh</Btn>
